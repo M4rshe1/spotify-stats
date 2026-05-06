@@ -4,18 +4,68 @@ import { prismaAdapter } from "better-auth/adapters/prisma";
 import { env } from "@/env";
 import { db } from "@/server/db";
 
+const spotifyScopes = [
+  // Images
+  "ugc-image-upload",
+
+  // Spotify Connect
+  "user-read-playback-state",
+  "user-modify-playback-state",
+  "user-read-currently-playing",
+
+  // Playback
+  "app-remote-control",
+  "streaming",
+
+  // Playlists
+  "playlist-read-private",
+  "playlist-read-collaborative",
+  "playlist-modify-private",
+  "playlist-modify-public",
+
+  // Follow
+  "user-follow-modify",
+  "user-follow-read",
+
+  // Listening History
+  "user-read-playback-position",
+  "user-top-read",
+  "user-read-recently-played",
+
+  // Library
+  "user-library-modify",
+  "user-library-read",
+
+  // Users
+  "user-read-email",
+  "user-read-private",
+];
+
 export const auth = betterAuth({
   database: prismaAdapter(db, {
-    provider: "postgresql", // or "sqlite" or "mysql"
+    provider: "postgresql",
   }),
-  emailAndPassword: {
-    enabled: true,
+  user: {
+    additionalFields: {
+      role: {
+        input: false,
+        type: "string",
+        default: "user",
+        enum: ["user", "admin"],
+      },
+      product: {
+        input: false,
+        type: "string",
+        default: "free",
+      },
+    },
   },
   socialProviders: {
-    github: {
-      clientId: env.BETTER_AUTH_GITHUB_CLIENT_ID,
-      clientSecret: env.BETTER_AUTH_GITHUB_CLIENT_SECRET,
-      redirectURI: "http://localhost:3000/api/auth/callback/github",
+    spotify: {
+      scope: spotifyScopes,
+      clientId: env.BETTER_AUTH_SPOTIFY_CLIENT_ID,
+      clientSecret: env.BETTER_AUTH_SPOTIFY_CLIENT_SECRET,
+      redirectURI: `${env.BETTER_AUTH_URL}/api/auth/callback/spotify`,
     },
   },
 });

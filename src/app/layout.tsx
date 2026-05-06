@@ -1,9 +1,15 @@
 import "@/styles/globals.css";
 
 import { type Metadata } from "next";
-import { Geist } from "next/font/google";
+import { Geist, JetBrains_Mono } from "next/font/google";
 
 import { TRPCReactProvider } from "@/trpc/react";
+import { cn } from "@/lib/utils";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { Toaster } from "@/components/ui/sonner";
+import { ThemeProvider } from "next-themes";
+
+const jetbrainsMono = JetBrains_Mono({ subsets: ['latin'], variable: '--font-mono' });
 
 export const metadata: Metadata = {
   title: "Create T3 App",
@@ -20,9 +26,16 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" className={`${geist.variable}`}>
+    <html lang="en" className={cn(geist.variable, "font-mono", jetbrainsMono.variable)}>
       <body>
-        <TRPCReactProvider>{children}</TRPCReactProvider>
+        <TRPCReactProvider>
+          <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+            <TooltipProvider>
+              {children}
+            </TooltipProvider>
+          </ThemeProvider>
+          <Toaster richColors closeButton />
+        </TRPCReactProvider>
       </body>
     </html>
   );

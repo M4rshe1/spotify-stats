@@ -15,36 +15,27 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model Post {
-  id        String   @id @default(cuid())
-  name      String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  createdBy   User   @relation(fields: [createdById], references: [id])
-  createdById String
-
-  @@index([name])
-}
-
 model User {
-  id            String    @id
+  id            String     @id @default(uuid())
   name          String //@db.Text
   email         String
-  emailVerified Boolean   @default(false)
+  emailVerified Boolean    @default(false)
   image         String? //@db.Text
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @default(now()) @updatedAt
+  product       String?
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @default(now()) @updatedAt
   sessions      Session[]
   accounts      Account[]
-  posts         Post[]
+  playbacks     Playback[]
+  settings      Settings[]
+  imports       Imports[]
 
   @@unique([email])
   @@map("user")
 }
 
 model Session {
-  id        String   @id
+  id        String   @id @default(uuid())
   expiresAt DateTime
   token     String
   createdAt DateTime @default(now())
@@ -59,7 +50,7 @@ model Session {
 }
 
 model Account {
-  id                    String    @id
+  id                    String    @id @default(uuid())
   accountId             String //@db.Text
   providerId            String //@db.Text
   userId                String
@@ -78,7 +69,7 @@ model Account {
 }
 
 model Verification {
-  id         String   @id
+  id         String   @id @default(uuid())
   identifier String //@db.Text
   value      String //@db.Text
   expiresAt  DateTime
@@ -86,4 +77,149 @@ model Verification {
   updatedAt  DateTime @default(now()) @updatedAt
 
   @@map("verification")
+}
+
+model Settings {
+  id        String   @id @default(uuid())
+  key       String
+  value     String
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  @@map("settings")
+}
+
+model Artist {
+  id        String         @id @default(uuid())
+  spotifyId String         @unique
+  name      String
+  image     String?
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @default(now()) @updatedAt
+  tracks    ArtistTrack[]
+  genres    ArtistGenres[]
+  albums    AlbumArtists[]
+
+  @@map("artist")
+}
+
+model ArtistGenres {
+  id       String @id @default(uuid())
+  artistId String
+  artist   Artist @relation(fields: [artistId], references: [id], onDelete: Cascade)
+  genreId  String
+  genre    Genre  @relation(fields: [genreId], references: [id], onDelete: Cascade)
+
+  @@map("artist_genres")
+}
+
+model Genre {
+  id        String         @id @default(uuid())
+  name      String         @unique
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @default(now()) @updatedAt
+  artists   ArtistGenres[]
+
+  @@map("genre")
+}
+
+model AlbumArtists {
+  id       String @id @default(uuid())
+  albumId  String
+  album    Album  @relation(fields: [albumId], references: [id], onDelete: Cascade)
+  role     String @default("primary")
+  artistId String
+  artist   Artist @relation(fields: [artistId], references: [id], onDelete: Cascade)
+
+  @@map("album_artists")
+}
+
+model Album {
+  id        String         @id @default(uuid())
+  spotifyId String         @unique
+  name      String
+  image     String?
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @default(now()) @updatedAt
+  tracks    Track[]
+  artists   AlbumArtists[]
+
+  @@map("album")
+}
+
+model Track {
+  id           String        @id @default(uuid())
+  spotifyId    String        @unique
+  name         String
+  image        String?
+  uri          String
+  type         String
+  explicit     Boolean
+  duration     Int
+  disc_number  Int
+  track_number Int
+  is_local     Boolean
+  href         String
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @default(now()) @updatedAt
+  playbacks    Playback[]
+  album        Album?        @relation(fields: [albumId], references: [id])
+  albumId      String?
+  artists      ArtistTrack[]
+
+  @@map("track")
+}
+
+model ArtistTrack {
+  id       String @id @default(uuid())
+  artistId String
+  artist   Artist @relation(fields: [artistId], references: [id], onDelete: Cascade)
+  trackId  String
+  track    Track  @relation(fields: [trackId], references: [id], onDelete: Cascade)
+  role     String @default("primary")
+
+  @@map("artist_track")
+}
+
+model Playlist {
+  id        String   @id @default(uuid())
+  spotifyId String   @unique
+  name      String
+  image     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  @@map("playlist")
+}
+
+model Playback {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  duration  Int
+  device    String
+  trackId   String
+  track     Track    @relation(fields: [trackId], references: [id], onDelete: Cascade)
+  playedAt  DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  @@map("playback")
+}
+
+model Imports {
+  id          String    @id @default(uuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type        String
+  status      String
+  startedAt   DateTime
+  completedAt DateTime?
+  error       String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @default(now()) @updatedAt
+
+  @@map("imports")
 }

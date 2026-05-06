@@ -1,0 +1,21 @@
+services:
+  postgres:
+    image: postgres:18
+    network_mode: host
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: JkR8YtcASX4uaRse
+      POSTGRES_DB: spotify
+    volumes:
+      - ./tmp/postgres:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  redis:
+    image: redis:latest
+    network_mode: host
+    restart: unless-stopped

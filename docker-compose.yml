@@ -1,0 +1,74 @@
+services:
+  postgres:
+    image: postgres:17
+    ports:
+      - 5432:5432
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: spotify
+    volumes:
+      - ./volumes/postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - spotify-network
+
+  redis:
+    image: redis:latest
+    ports:
+      - 6379:6379
+    restart: unless-stopped
+    networks:
+      - spotify-network
+
+  app: &app-base
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - 3000:3000
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/spotify
+      - REDIS_URL=redis://redis:6379
+    volumes:
+      - ./volumes/uploads:/app/uploads
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - spotify-network
+
+  worker-stats:
+    <<: *app-base
+    command: bun run worker:stats
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/spotify
+      - REDIS_URL=redis://redis:6379
+    volumes:
+      - ./volumes/uploads:/app/uploads
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - spotify-network
+
+  worker-crucher:
+    <<: *app-base
+    command: bun run worker:crusher
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/spotify
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - spotify-network
+
+networks:
+  spotify-network:
+    driver: bridge

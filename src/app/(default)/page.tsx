@@ -4,12 +4,11 @@ import { redirect } from "next/navigation";
 
 import { LatestPost } from "@/app/_components/post";
 import { auth } from "@/server/better-auth";
-import { getSession } from "@/server/better-auth/server";
 import { api, HydrateClient } from "@/trpc/server";
+import { withAuth } from "@/lib/hoc-pages";
 
-export default async function Home() {
+export default withAuth(async ({ session }) => {
   const hello = await api.post.hello({ text: "from tRPC" });
-  const session = await getSession();
 
   if (session) {
     void api.post.getLatest.prefetch();
@@ -101,3 +100,4 @@ export default async function Home() {
     </HydrateClient>
   );
 }
+)
