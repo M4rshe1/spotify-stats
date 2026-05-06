@@ -200,6 +200,7 @@ model Playback {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   duration  Int
   device    String
+  artistId  String  // temp until prisma supports relational group by
   trackId   String
   track     Track    @relation(fields: [trackId], references: [id], onDelete: Cascade)
   playedAt  DateTime

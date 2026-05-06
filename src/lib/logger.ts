@@ -1,15 +1,17 @@
 import { env } from "@/env";
 import pino from "pino";
+import pinoPretty from "pino-pretty";
 
 const createLogger = () => {
-    return pino(env.NODE_ENV === "development" ? {
-        transport: {
-            target: "pino-pretty",
-            options: {
+    if (env.NODE_ENV === "development") {
+        return pino(
+            {},
+            pinoPretty({
                 colorize: true,
-            },
-        },
-    } : undefined);
-}
+            }),
+        );
+    }
+    return pino();
+};
 
 export const logger: pino.Logger = createLogger();
