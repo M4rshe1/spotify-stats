@@ -30,6 +30,7 @@ export function getPeriods(
   let end = periods[period as Period].end();
   let previousStart = periods[period as Period].previous();
   let previousEnd = start;
+  let grouping = periods[period].grouping;
   if (period == "custom") {
     if (!from || !to) {
       throw new TRPCError({
@@ -41,12 +42,13 @@ export function getPeriods(
     end = to;
     previousStart = getPreviousPeriod(start, end);
     previousEnd = start;
+    grouping = getGrouping(start as Date, end as Date);
   }
   return {
     start,
     end,
     previousStart,
     previousEnd,
-    grouping: getGrouping(start as Date, end as Date),
+    grouping,
   };
 }

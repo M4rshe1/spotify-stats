@@ -47,7 +47,6 @@ export const chartRouter = createTRPCRouter({
         grouping,
         ctx.session.user.timezone,
       );
-
       const playbacks = await tryCatch(
         ctx.db.$queryRaw<{ duration: number; date: string }[]>(
           Prisma.sql`
@@ -85,7 +84,10 @@ export const chartRouter = createTRPCRouter({
         );
         filledData = hours.map((hour) => {
           const result = playbacks.data.find((r) => r.date === hour);
-          return { date: hour, duration: result?.duration ?? 0 };
+          return {
+            date: hour.padStart(2, "0"),
+            duration: result?.duration ?? 0,
+          };
         });
       }
 

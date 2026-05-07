@@ -2,6 +2,7 @@
 
 import {
   createContext,
+  memo,
   useCallback,
   useContext,
   useEffect,
@@ -13,10 +14,7 @@ import { StarIcon } from "lucide-react";
 import type { DateRange } from "react-day-picker";
 import { toast } from "sonner";
 
-import {
-  Dialog,
-  DialogContent,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { periods, type Period } from "@/lib/consts/periods";
@@ -41,6 +39,8 @@ const selectablePeriods = periodOrder.filter(
   (period): period is Exclude<Period, "custom"> => period !== "custom",
 );
 const periodSet = new Set<Period>(periodOrder);
+const periodRank = new Map(periodOrder.map((period, index) => [period, index]));
+const emptyFavoritePeriods: Period[] = [];
 
 const isPeriod = (value: unknown): value is Period =>
   typeof value === "string" && periodSet.has(value as Period);
@@ -50,9 +50,6 @@ const PeriodContext = createContext<PeriodContextValue | null>(null);
 export function PeriodProvider({ children }: { children: React.ReactNode }) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedPeriod, setSelectedPeriod] = useState<Period>(defaultPeriod);
-  const [customRange, setCustomRange] = useState<DateRange | undefined>(
-    undefined,
-  );
 
   const { data: session } = authClient.useSession();
   const isSignedIn = Boolean(session?.user);
@@ -60,6 +57,7 @@ export function PeriodProvider({ children }: { children: React.ReactNode }) {
   const utils = api.useUtils();
 
   const preferredPeriodQuery = api.user.getPreferredPeriod.useQuery(undefined, {
+    enabled: isSignedIn,
     staleTime: 60_000,
   });
 
@@ -75,7 +73,9 @@ export function PeriodProvider({ children }: { children: React.ReactNode }) {
           ...(input.customStart !== undefined
             ? { customStart: input.customStart }
             : {}),
-          ...(input.customEnd !== undefined ? { customEnd: input.customEnd } : {}),
+          ...(input.customEnd !== undefined
+            ? { customEnd: input.customEnd }
+            : {}),
         });
       }
       return { prev };
@@ -128,23 +128,13 @@ export function PeriodProvider({ children }: { children: React.ReactNode }) {
     if (isPeriod(nextPeriod)) {
       setSelectedPeriod(nextPeriod);
     }
-  }, [preferredPeriodQuery.data]);
-
-  useEffect(() => {
-    const customStart = preferredPeriodQuery.data?.customStart;
-    const customEnd = preferredPeriodQuery.data?.customEnd;
-    if (customStart && customEnd) {
-      setCustomRange({
-        from: new Date(customStart),
-        to: new Date(customEnd),
-      });
-    }
-  }, [preferredPeriodQuery.data?.customEnd, preferredPeriodQuery.data?.customStart]);
+  }, [preferredPeriodQuery.data?.period]);
 
   const favoritePeriodsOrdered = useMemo(() => {
-    const fav = preferredPeriodQuery.data?.favoritePeriods ?? [];
-    const rank = (p: Period) => periodOrder.indexOf(p);
-    return [...fav].sort((a, b) => rank(a) - rank(b));
+    const fav = preferredPeriodQuery.data?.favoritePeriods ?? emptyFavoritePeriods;
+    return [...fav].sort(
+      (a, b) => (periodRank.get(a) ?? 0) - (periodRank.get(b) ?? 0),
+    );
   }, [preferredPeriodQuery.data?.favoritePeriods]);
 
   const headerFavoritePeriods = useMemo(
@@ -182,13 +172,10 @@ export function PeriodProvider({ children }: { children: React.ReactNode }) {
     [setPreferredPeriodMutation],
   );
 
-  const handlePeriodChange = useCallback(
-    (period: string) => {
-      if (!isPeriod(period)) return;
-      applyPreferredPeriod(period, { closeDialog: true });
-    },
-    [applyPreferredPeriod],
-  );
+  const handlePeriodChange = useCallback((period: string) => {
+    if (!isPeriod(period)) return;
+    applyPreferredPeriod(period, { closeDialog: true });
+  }, [applyPreferredPeriod]);
 
   const selectPeriod = useCallback(
     (period: Period) => {
@@ -215,18 +202,6 @@ export function PeriodProvider({ children }: { children: React.ReactNode }) {
     [toggleFavoritePeriodMutation, utils.user.getPreferredPeriod],
   );
 
-  const handleApplyCustomRange = useCallback(() => {
-    if (!customRange?.from || !customRange?.to) {
-      toast.error("Pick a start and end date first");
-      return;
-    }
-    applyPreferredPeriod("custom", {
-      closeDialog: true,
-      customStart: startOfDay(customRange.from),
-      customEnd: endOfDay(customRange.to),
-    });
-  }, [applyPreferredPeriod, customRange]);
-
   const value = useMemo(
     () => ({
       selectedPeriod,
@@ -245,78 +220,162 @@ export function PeriodProvider({ children }: { children: React.ReactNode }) {
   return (
     <PeriodContext.Provider value={value}>
       {children}
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="overflow-hidden p-0 sm:max-w-[46rem]">
-          <div className="grid max-h-[min(78vh,34rem)] min-h-[28rem] grid-cols-1 md:grid-cols-[15rem_1fr]">
-            <div className="border-b border-border p-4 md:border-r md:border-b-0">
-              <p className="text-sm font-medium">Common ranges</p>
-              <ul className="mt-3 space-y-1">
-                {selectablePeriods.map((period) => {
-                  const starred = favoriteSet.has(period);
-                  return (
-                    <li key={period} className="flex items-center gap-1">
-                      <Button
-                        type="button"
-                        variant={selectedPeriod === period ? "secondary" : "ghost"}
-                        className="h-9 flex-1 justify-start px-2.5 font-normal"
-                        onClick={() => handlePeriodChange(period)}
-                      >
-                        {periods[period].label}
-                      </Button>
-                      {isSignedIn ? (
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon-sm"
-                          className="size-8 shrink-0 text-muted-foreground hover:text-amber-600"
-                          aria-label={
-                            starred
-                              ? `Remove ${periods[period].label} from favorites`
-                              : `Add ${periods[period].label} to favorites`
-                          }
-                          onClick={(e) => handleToggleFavorite(period, e)}
-                        >
-                          <StarIcon
-                            className={cn(
-                              "size-4",
-                              starred && "fill-amber-500 text-amber-600",
-                            )}
-                          />
-                        </Button>
-                      ) : null}
-                    </li>
-                  );
-                })}
-              </ul>
-            </div>
-            <div className="flex flex-col p-4">
-              <p className="text-base font-medium">Custom date range</p>
-              <div className="mt-3 rounded-md border border-border p-2">
-                <Calendar
-                  mode="range"
-                  selected={customRange}
-                  onSelect={setCustomRange}
-                  numberOfMonths={1}
-                  className="mx-auto"
-                />
-              </div>
-              <div className="mt-auto pt-4">
-                <Button
-                  type="button"
-                  className="w-full md:w-auto"
-                  disabled={!customRange?.from || !customRange?.to}
-                  onClick={handleApplyCustomRange}
-                >
-                  Apply
-                </Button>
-              </div>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+      {isDialogOpen ? (
+        <PeriodSelectDialog
+          isOpen={isDialogOpen}
+          onOpenChange={setIsDialogOpen}
+          selectedPeriod={selectedPeriod}
+          isSignedIn={isSignedIn}
+          favoritePeriodsOrdered={favoritePeriodsOrdered}
+          favoriteSet={favoriteSet}
+          customStart={preferredPeriodQuery.data?.customStart ?? null}
+          customEnd={preferredPeriodQuery.data?.customEnd ?? null}
+          onPresetSelect={handlePeriodChange}
+          onToggleFavorite={handleToggleFavorite}
+          onApplyCustomRange={(range) =>
+            applyPreferredPeriod("custom", {
+              closeDialog: true,
+              customStart: startOfDay(range.from),
+              customEnd: endOfDay(range.to),
+            })
+          }
+        />
+      ) : null}
     </PeriodContext.Provider>
   );
 }
+
+type PeriodSelectDialogProps = {
+  isOpen: boolean;
+  onOpenChange: (open: boolean) => void;
+  selectedPeriod: Period;
+  isSignedIn: boolean;
+  favoritePeriodsOrdered: Period[];
+  favoriteSet: Set<Period>;
+  customStart: Date | null;
+  customEnd: Date | null;
+  onPresetSelect: (period: string) => void;
+  onToggleFavorite: (period: Period, e: React.MouseEvent) => void;
+  onApplyCustomRange: (range: { from: Date; to: Date }) => void;
+};
+
+const PeriodSelectDialog = memo(function PeriodSelectDialog({
+  isOpen,
+  onOpenChange,
+  selectedPeriod,
+  isSignedIn,
+  favoritePeriodsOrdered,
+  favoriteSet,
+  customStart,
+  customEnd,
+  onPresetSelect,
+  onToggleFavorite,
+  onApplyCustomRange,
+}: PeriodSelectDialogProps) {
+  const [customRange, setCustomRange] = useState<DateRange | undefined>(undefined);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    if (customStart && customEnd) {
+      setCustomRange({
+        from: new Date(customStart),
+        to: new Date(customEnd),
+      });
+      return;
+    }
+    setCustomRange(undefined);
+  }, [customEnd, customStart, isOpen]);
+
+  const handleApply = useCallback(() => {
+    if (!customRange?.from || !customRange?.to) {
+      toast.error("Pick a start and end date first");
+      return;
+    }
+    onApplyCustomRange({
+      from: customRange.from,
+      to: customRange.to,
+    });
+  }, [customRange, onApplyCustomRange]);
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onOpenChange}>
+      <DialogContent className="overflow-hidden p-0 sm:max-w-[52rem]">
+        <div className="grid h-[min(80vh,36rem)] min-h-[30rem] grid-cols-1 md:grid-cols-[16rem_1fr]">
+          <div className="border-border flex min-h-0 flex-col border-b p-4 md:border-r md:border-b-0">
+            <p className="text-sm font-medium">Common ranges</p>
+            {isSignedIn ? (
+              <div className="mt-2 space-y-1">
+                <p className="text-muted-foreground text-xs">
+                  Favorites: {favoritePeriodsOrdered.length}/{MAX_PINNED_PERIODS}
+                </p>
+              </div>
+            ) : null}
+            <ul className="mt-3 min-h-0 flex-1 space-y-1 overflow-y-auto pr-1">
+              {selectablePeriods.map((period) => {
+                const starred = favoriteSet.has(period);
+                return (
+                  <li key={period} className="flex items-center gap-1">
+                    <Button
+                      type="button"
+                      variant={selectedPeriod === period ? "secondary" : "ghost"}
+                      className="h-9 flex-1 justify-start px-2.5 font-normal"
+                      onClick={() => onPresetSelect(period)}
+                    >
+                      {periods[period].label}
+                    </Button>
+                    {isSignedIn ? (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon-sm"
+                        className="text-muted-foreground size-8 shrink-0 hover:text-amber-600"
+                        aria-label={
+                          starred
+                            ? `Remove ${periods[period].label} from favorites`
+                            : `Add ${periods[period].label} to favorites`
+                        }
+                        onClick={(e) => onToggleFavorite(period, e)}
+                      >
+                        <StarIcon
+                          className={cn(
+                            "size-4",
+                            starred && "fill-amber-500 text-amber-600",
+                          )}
+                        />
+                      </Button>
+                    ) : null}
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+          <div className="flex min-h-0 flex-col p-4">
+            <p className="text-base font-medium">Custom date range</p>
+            <div className="mt-3 flex-1 p-1">
+              <Calendar
+                mode="range"
+                selected={customRange}
+                onSelect={setCustomRange}
+                numberOfMonths={1}
+                className="mx-auto w-full max-w-[min(100%,24rem)] [--cell-size:clamp(1.85rem,1.6vw,2.1rem)]"
+              />
+            </div>
+            <div className="mt-auto pt-4">
+              <Button
+                type="button"
+                className="w-full md:w-auto"
+                disabled={!customRange?.from || !customRange?.to}
+                onClick={handleApply}
+              >
+                Apply
+              </Button>
+            </div>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+});
 
 export function usePeriod() {
   const context = useContext(PeriodContext);

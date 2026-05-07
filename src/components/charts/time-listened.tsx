@@ -19,6 +19,7 @@ import type { Period } from "@/lib/consts/periods";
 import { api } from "@/trpc/react";
 import { duration as formatDuration } from "@/lib/utils";
 import { periods } from "@/lib/consts/periods";
+import { format } from "date-fns";
 
 export function TimeListened({
   period,
@@ -94,11 +95,18 @@ export function TimeListened({
               tickLine={false}
               axisLine={false}
               tickMargin={8}
-              tickFormatter={(value) =>
-                typeof value === "string" && value.length >= 3
-                  ? value.slice(0, 3)
-                  : value
-              }
+              tickFormatter={(value) => {
+                switch (tracks?.grouping) {
+                  case "day":
+                    return format(new Date(value), "MMM d");
+                  case "month":
+                    return format(new Date(value), "MMM yyyy");
+                  case "year":
+                    return format(new Date(value), "yyyy");
+                  default:
+                    return value;
+                }
+              }}
               stroke="#a9adc1"
             />
             <YAxis

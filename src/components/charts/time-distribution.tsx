@@ -46,20 +46,18 @@ export function TimeDistribution({
     value: number,
     _name: string,
     _item: any,
-    index: number,
-    _payload: any,
+    _index: number,
+    payload: any,
   ) {
     if (typeof value === "number") {
       return (
         <div className="flex flex-col gap-1">
           <div>
-            {formatDuration(
-              result?.data?.[index]?.duration ?? 0,
-            ).toFormattedString("{M}min")}
+            {formatDuration(payload?.duration ?? 0).toFormattedString("{M}min")}
           </div>
           <div>{formatPercentage(value)} of total time listened</div>
           <div>
-            {result?.data?.[index]?.count} of {result?.totalCount} tracks
+            {payload?.count} of {result?.totalCount} tracks
           </div>
         </div>
       );
@@ -111,7 +109,7 @@ export function TimeDistribution({
               axisLine={false}
               tickMargin={8}
               tickFormatter={(value) =>
-                typeof value === "string" ? `${parseInt(value, 10)}` : value
+                typeof value === "string" ? `${value}` : value
               }
               stroke="#a9adc1"
             />
