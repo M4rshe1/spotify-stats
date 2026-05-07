@@ -1,3 +1,6 @@
+-- CreateSchema
+CREATE SCHEMA IF NOT EXISTS "public";
+
 -- CreateTable
 CREATE TABLE "user" (
     "id" TEXT NOT NULL,
@@ -6,6 +9,7 @@ CREATE TABLE "user" (
     "emailVerified" BOOLEAN NOT NULL DEFAULT false,
     "image" TEXT,
     "product" TEXT,
+    "timezone" TEXT NOT NULL DEFAULT 'Etc/UTC',
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
@@ -171,7 +175,6 @@ CREATE TABLE "playback" (
     "userId" TEXT NOT NULL,
     "duration" INTEGER NOT NULL,
     "device" TEXT NOT NULL,
-    "artistId" TEXT NOT NULL,
     "trackId" TEXT NOT NULL,
     "playedAt" TIMESTAMP(3) NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -254,3 +257,4 @@ ALTER TABLE "playback" ADD CONSTRAINT "playback_trackId_fkey" FOREIGN KEY ("trac
 
 -- AddForeignKey
 ALTER TABLE "imports" ADD CONSTRAINT "imports_userId_fkey" FOREIGN KEY ("userId") REFERENCES "user"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
