@@ -12,6 +12,10 @@ export function isValidIanaTimezoneEnv(value) {
   }
 }
 
+const boolean = z
+  .enum(["true", "false", "1", "0"])
+  .transform((val) => val === "true" || val === "1");
+
 export const env = createEnv({
   /**
    * Specify your server-side environment variables schema here. This way you can ensure the app
@@ -27,6 +31,7 @@ export const env = createEnv({
     DATABASE_URL: z.string().url(),
     BETTER_AUTH_URL: z.string().url(),
     REDIS_URL: z.string().url(),
+    ALLOW_REGISTER: boolean.default("false"),
     TZ: z
       .string()
       .refine(
@@ -36,7 +41,6 @@ export const env = createEnv({
     NODE_ENV: z
       .enum(["development", "test", "production"])
       .default("development"),
-    ALLOW_REGISTER: z.boolean().default(false),
   },
 
   /**
