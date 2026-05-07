@@ -32,6 +32,8 @@ services:
       dockerfile: Dockerfile
     # ports:
     #   - 3000:3000
+    env_file:
+      - .env
     environment:
       - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/spotify
       - REDIS_URL=redis://redis:6379
@@ -46,11 +48,6 @@ services:
   worker-stats:
     <<: *app-base
     command: bun run worker:stats
-    environment:
-      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/spotify
-      - REDIS_URL=redis://redis:6379
-    volumes:
-      - ../volumes/uploads:/app/uploads
     depends_on:
       - postgres
       - redis
