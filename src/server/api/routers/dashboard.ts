@@ -1,20 +1,13 @@
-import { createTRPCRouter, protectedProcedure, publicProcedure } from "../trpc";
-import z from "zod";
-import { periods, type Period } from "@/lib/consts/periods";
+import { createTRPCRouter, protectedProcedure } from "../trpc";
 import { TRPCError } from "@trpc/server";
 import { getPeriods } from "@/lib/periods";
 import { tryCatch } from "@/lib/try-catch";
 import { Prisma } from "generated/prisma";
+import { periodSchema } from "@/server/api/lib";
 
 export const dashboardRouter = createTRPCRouter({
-  getKeyMetrics: protectedProcedure
-    .input(
-      z.object({
-        period: z.enum(Object.keys(periods) as [Period, Period]),
-        from: z.date().optional(),
-        to: z.date().optional(),
-      }),
-    )
+  getTracksMetric: protectedProcedure
+    .input(periodSchema)
     .query(async ({ ctx, input }) => {
       const { start, end, previousStart } = getPeriods(
         input.period,
@@ -24,12 +17,11 @@ export const dashboardRouter = createTRPCRouter({
       const timezone = ctx.session.user.timezone;
       const userId = ctx.session.user.id;
 
-      const [period, previousPeriod, artists, previousArtists] =
-        await Promise.all([
-          tryCatch(
-            ctx.db.$queryRaw<
-              { duration: number | null; tracks: bigint }[]
-            >(Prisma.sql`
+      const [period, previousPeriod] = await Promise.all([
+        tryCatch(
+          ctx.db.$queryRaw<
+            { duration: number | null; tracks: bigint }[]
+          >(Prisma.sql`
               SELECT
                 SUM(duration)::float8 AS duration,
                 COUNT(*)::bigint AS tracks
@@ -37,12 +29,12 @@ export const dashboardRouter = createTRPCRouter({
               WHERE "userId" = ${userId}
                 AND timezone(${timezone}, "playedAt") >= timezone(${timezone}, ${start})
                 AND timezone(${timezone}, "playedAt") <= timezone(${timezone}, ${end})
-            `),
-          ),
-          tryCatch(
-            ctx.db.$queryRaw<
-              { duration: number | null; tracks: bigint }[]
-            >(Prisma.sql`
+          `),
+        ),
+        tryCatch(
+          ctx.db.$queryRaw<
+            { duration: number | null; tracks: bigint }[]
+          >(Prisma.sql`
               SELECT
                 SUM(duration)::float8 AS duration,
                 COUNT(*)::bigint AS tracks
@@ -50,27 +42,9 @@ export const dashboardRouter = createTRPCRouter({
               WHERE "userId" = ${userId}
                 AND timezone(${timezone}, "playedAt") >= timezone(${timezone}, ${previousStart})
                 AND timezone(${timezone}, "playedAt") < timezone(${timezone}, ${start})
-            `),
-          ),
-          tryCatch(
-            ctx.db.$queryRaw<{ artists: bigint }[]>(Prisma.sql`
-              SELECT COUNT(DISTINCT "artistId")::bigint AS artists
-              FROM playback
-              WHERE "userId" = ${userId}
-                AND timezone(${timezone}, "playedAt") >= timezone(${timezone}, ${start})
-                AND timezone(${timezone}, "playedAt") <= timezone(${timezone}, ${end})
-            `),
-          ),
-          tryCatch(
-            ctx.db.$queryRaw<{ artists: bigint }[]>(Prisma.sql`
-              SELECT COUNT(DISTINCT "artistId")::bigint AS artists
-              FROM playback
-              WHERE "userId" = ${userId}
-                AND timezone(${timezone}, "playedAt") >= timezone(${timezone}, ${previousStart})
-                AND timezone(${timezone}, "playedAt") < timezone(${timezone}, ${start})
-            `),
-          ),
-        ]);
+          `),
+        ),
+      ]);
       if (period.error || previousPeriod.error) {
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
@@ -79,35 +53,123 @@ export const dashboardRouter = createTRPCRouter({
       }
       const currentMetrics = period.data?.[0];
       const previousMetrics = previousPeriod.data?.[0];
-      const currentArtists = artists.data?.[0];
-      const previousArtistsMetrics = previousArtists.data?.[0];
       return {
-        duration: currentMetrics?.duration ?? 0,
         tracks: Number(currentMetrics?.tracks ?? 0n),
-        previousDuration: previousMetrics?.duration ?? 0,
         previousTracks: Number(previousMetrics?.tracks ?? 0n),
-        artists: Number(currentArtists?.artists ?? 0n),
-        previousArtists: Number(previousArtistsMetrics?.artists ?? 0n),
       };
     }),
-  getTopTrack: protectedProcedure
-    .input(
-      z.object({
-        period: z.enum(Object.keys(periods) as [Period, string]),
-        from: z.date().optional(),
-        to: z.date().optional(),
-      }),
-    )
+  getDurationMetric: protectedProcedure
+    .input(periodSchema)
     .query(async ({ ctx, input }) => {
-      const { start, end } = getPeriods(
-        input.period as Period,
+      const { start, end, previousStart } = getPeriods(
+        input.period,
         input.from,
         input.to,
       );
       const timezone = ctx.session.user.timezone;
       const userId = ctx.session.user.id;
+
+      const [period, previousPeriod] = await Promise.all([
+        tryCatch(
+          ctx.db.$queryRaw<
+            { duration: number | null; tracks: bigint }[]
+          >(Prisma.sql`
+              SELECT
+                SUM(duration)::float8 AS duration,
+                COUNT(*)::bigint AS tracks
+              FROM playback
+              WHERE "userId" = ${userId}
+                AND timezone(${timezone}, "playedAt") >= timezone(${timezone}, ${start})
+                AND timezone(${timezone}, "playedAt") <= timezone(${timezone}, ${end})
+            `),
+        ),
+        tryCatch(
+          ctx.db.$queryRaw<
+            { duration: number | null; tracks: bigint }[]
+          >(Prisma.sql`
+              SELECT
+                SUM(duration)::float8 AS duration,
+                COUNT(*)::bigint AS tracks
+              FROM playback
+              WHERE "userId" = ${userId}
+                AND timezone(${timezone}, "playedAt") >= timezone(${timezone}, ${previousStart})
+                AND timezone(${timezone}, "playedAt") < timezone(${timezone}, ${start})
+            `),
+        ),
+      ]);
+      if (period.error || previousPeriod.error) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to get duration listened",
+        });
+      }
+      const currentMetrics = period.data?.[0];
+      const previousMetrics = previousPeriod.data?.[0];
+      return {
+        duration: currentMetrics?.duration ?? 0,
+        previousDuration: previousMetrics?.duration ?? 0,
+      };
+    }),
+  getArtistsMetric: protectedProcedure
+    .input(periodSchema)
+    .query(async ({ ctx, input }) => {
+      const { start, end, previousStart } = getPeriods(
+        input.period,
+        input.from,
+        input.to,
+      );
+      const timezone = ctx.session.user.timezone;
+      const userId = ctx.session.user.id;
+
+      const [artists, previousArtists] = await Promise.all([
+        tryCatch(
+          ctx.db.$queryRaw<{ artists: bigint }[]>(Prisma.sql`
+              SELECT COUNT(DISTINCT artist_track."artistId")::bigint AS artists
+              FROM playback
+              JOIN track ON playback."trackId" = track."id"
+              JOIN artist_track ON track."id" = artist_track."trackId" and artist_track."role" = 'primary'
+              JOIN artist ON artist_track."artistId" = artist."id"
+              WHERE playback."userId" = ${userId}
+                AND timezone(${timezone}, "playedAt") >= timezone(${timezone}, ${start})
+                AND timezone(${timezone}, "playedAt") <= timezone(${timezone}, ${end})
+            `),
+        ),
+        tryCatch(
+          ctx.db.$queryRaw<{ artists: bigint }[]>(Prisma.sql`
+              SELECT COUNT(DISTINCT artist_track."artistId")::bigint AS artists
+              FROM playback
+              JOIN track ON playback."trackId" = track."id"
+              JOIN artist_track ON track."id" = artist_track."trackId" and artist_track."role" = 'primary'
+              JOIN artist ON artist_track."artistId" = artist."id"
+              WHERE playback."userId" = ${userId}
+                AND timezone(${timezone}, "playedAt") >= timezone(${timezone}, ${previousStart})
+                AND timezone(${timezone}, "playedAt") < timezone(${timezone}, ${start})
+            `),
+        ),
+      ]);
+      if (artists.error || previousArtists.error) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to get artists listened",
+        });
+      }
+      const currentArtists = artists.data?.[0];
+      const previousArtistsMetrics = previousArtists.data?.[0];
+      return {
+        artists: Number(currentArtists?.artists ?? 0n),
+        previousArtists: Number(previousArtistsMetrics?.artists ?? 0n),
+      };
+    }),
+  getTopTrack: protectedProcedure
+    .input(periodSchema)
+    .query(async ({ ctx, input }) => {
+      const { start, end } = getPeriods(input.period, input.from, input.to);
+      const timezone = ctx.session.user.timezone;
+      const userId = ctx.session.user.id;
       const topTrack = await tryCatch(
-        ctx.db.$queryRaw<{ trackId: string; duration: number; tracks: bigint }[]>(
+        ctx.db.$queryRaw<
+          { trackId: string; duration: number; tracks: bigint }[]
+        >(
           Prisma.sql`
             SELECT
               "trackId",
@@ -149,34 +211,28 @@ export const dashboardRouter = createTRPCRouter({
       };
     }),
   getTopArtist: protectedProcedure
-    .input(
-      z.object({
-        period: z.enum(Object.keys(periods) as [Period, string]),
-        from: z.date().optional(),
-        to: z.date().optional(),
-      }),
-    )
+    .input(periodSchema)
     .query(async ({ ctx, input }) => {
-      const { start, end } = getPeriods(
-        input.period as Period,
-        input.from,
-        input.to,
-      );
+      const { start, end } = getPeriods(input.period, input.from, input.to);
       const timezone = ctx.session.user.timezone;
       const userId = ctx.session.user.id;
       const groupResult = await tryCatch(
-        ctx.db.$queryRaw<{ artistId: string; tracks: bigint; duration: number }[]>(
+        ctx.db.$queryRaw<
+          { artistId: string; tracks: bigint; duration: number }[]
+        >(
           Prisma.sql`
             SELECT
-              "artistId",
-              COUNT(*)::bigint AS tracks,
-              SUM(duration)::float8 AS duration
+              artist_track."artistId",
+              COUNT(*)::bigint AS "tracks",
+              SUM(playback."duration")::float8 AS duration
             FROM playback
-            WHERE "userId" = ${userId}
+            JOIN track ON playback."trackId" = track."id"
+            JOIN artist_track ON track."id" = artist_track."trackId" and artist_track."role" = 'primary'
+            WHERE playback."userId" = ${userId}
               AND timezone(${timezone}, "playedAt") >= timezone(${timezone}, ${start})
               AND timezone(${timezone}, "playedAt") <= timezone(${timezone}, ${end})
-            GROUP BY "artistId"
-            ORDER BY SUM(duration) DESC
+            GROUP BY artist_track."artistId"
+            ORDER BY SUM(playback."duration") DESC
             LIMIT 1
           `,
         ),
@@ -184,15 +240,17 @@ export const dashboardRouter = createTRPCRouter({
       if (groupResult.error) {
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
-          message: "Failed to group playbacks",
+          message: "Failed to get top artist",
         });
       }
       const topTrackGroup = await tryCatch(
         ctx.db.$queryRaw<{ differentTracks: bigint }[]>(Prisma.sql`
-          SELECT COUNT(DISTINCT "trackId")::bigint AS "differentTracks"
+          SELECT COUNT(DISTINCT playback."trackId")::bigint AS "differentTracks"
           FROM playback
-          WHERE "userId" = ${userId}
-            AND "artistId" = ${groupResult.data?.[0]?.artistId ?? ""}
+          JOIN track ON playback."trackId" = track."id"
+          JOIN artist_track ON track."id" = artist_track."trackId" and artist_track."role" = 'primary'
+          WHERE playback."userId" = ${userId}
+            AND artist_track."artistId" = ${groupResult.data?.[0]?.artistId ?? ""}
             AND timezone(${timezone}, "playedAt") >= timezone(${timezone}, ${start})
             AND timezone(${timezone}, "playedAt") <= timezone(${timezone}, ${end})
         `),
@@ -200,20 +258,27 @@ export const dashboardRouter = createTRPCRouter({
       if (topTrackGroup.error) {
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
-          message: "Failed to group playbacks",
+          message: "Failed to get top artist",
         });
       }
       const artist = await tryCatch(
         ctx.db.artist.findFirst({
           where: {
-            spotifyId: groupResult.data?.[0]?.artistId,
+            id: groupResult.data?.[0]?.artistId,
           },
         }),
       );
-      if (artist.error || !artist.data) {
+
+      if (artist.error) {
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
           message: "Failed to get artist for top track",
+        });
+      }
+      if (!artist.data) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Artist for top track not found",
         });
       }
       return {

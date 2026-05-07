@@ -317,7 +317,6 @@ export async function createPlaybacks(
           },
           track: { connect: { spotifyId: playback.track.id } },
           duration: playback.track.duration_ms,
-          artistId: playback.track.artists[0]?.id ?? "unknown",
           device: "unknown",
           playedAt: new Date(playback.played_at),
         },
