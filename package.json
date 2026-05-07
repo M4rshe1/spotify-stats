@@ -19,6 +19,7 @@
     "lint:fix": "next lint --fix",
     "preview": "next build && next start",
     "start": "next start",
+    "deploy": "bun run db:migrate && bun run start",
     "typecheck": "tsc --noEmit",
     "worker:stats": "bun run worker/stats.ts",
     "worker:cruncher": "bun run worker/cruncher.ts"
