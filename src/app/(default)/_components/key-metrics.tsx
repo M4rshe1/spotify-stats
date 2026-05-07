@@ -1,6 +1,8 @@
+"use client";
+
 import { api } from "@/trpc/react";
-import { usePeriod } from "@/providers/period-provider";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Loading } from "@/components/ui/loading";
 import { TrendingDownIcon, TrendingUpIcon } from "lucide-react";
 import { cn, duration, formatPercentage } from "@/lib/utils";
 import type { Period } from "@/lib/consts/periods";
@@ -12,7 +14,7 @@ export default function KeyMetrics({ period }: { period: Period }) {
     });
 
   if (isLoadingTracks) {
-    return <div>Loading...</div>;
+    return <Loading />;
   }
 
   if (!tracks) {
@@ -36,7 +38,7 @@ export default function KeyMetrics({ period }: { period: Period }) {
         <CardContent className="flex items-end justify-between gap-2">
           <div className="flex items-center gap-2">
             <p className="text-5xl font-bold">{tracks.tracks}</p>
-            {tracksPercentage > 100 ? (
+            {tracksPercentage > 0 ? (
               <TrendingUpIcon size={24} className="text-success" />
             ) : (
               <TrendingDownIcon size={24} className="text-destructive" />
@@ -64,7 +66,7 @@ export default function KeyMetrics({ period }: { period: Period }) {
             <p className="text-5xl font-bold">
               {duration(tracks.duration).toFormattedString("{M}min")}
             </p>
-            {durationPercentage > 100 ? (
+            {durationPercentage > 0 ? (
               <TrendingUpIcon size={24} className="text-success" />
             ) : (
               <TrendingDownIcon size={24} className="text-destructive" />
@@ -89,7 +91,7 @@ export default function KeyMetrics({ period }: { period: Period }) {
         <CardContent className="flex items-end justify-between gap-2">
           <div className="flex items-center gap-2">
             <p className="text-5xl font-bold">{tracks.artists}</p>
-            {artistsPercentage > 100 ? (
+            {artistsPercentage > 0 ? (
               <TrendingUpIcon size={24} className="text-success" />
             ) : (
               <TrendingDownIcon size={24} className="text-destructive" />

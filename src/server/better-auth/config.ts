@@ -2,6 +2,7 @@ import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 
 import { env } from "@/env";
+import { DEFAULT_IANA_TIMEZONE } from "@/lib/timezone";
 import { db } from "@/server/db";
 
 const spotifyScopes = [
@@ -57,6 +58,11 @@ export const auth = betterAuth({
         input: false,
         type: "string",
         default: "free",
+      },
+      timezone: {
+        input: false,
+        type: "string",
+        default: DEFAULT_IANA_TIMEZONE,
       },
     },
   },

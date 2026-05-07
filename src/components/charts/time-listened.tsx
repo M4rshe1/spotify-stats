@@ -14,9 +14,11 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from "@/components/ui/chart";
+import { Loading } from "@/components/ui/loading";
 import type { Period } from "@/lib/consts/periods";
 import { api } from "@/trpc/react";
 import { duration as formatDuration } from "@/lib/utils";
+import { periods } from "@/lib/consts/periods";
 
 export function TimeListened({
   period,
@@ -35,14 +37,22 @@ export function TimeListened({
     });
 
   if (isLoadingTracks) {
-    return <div>Loading...</div>;
+    return <Loading />;
   }
-  function formatTooltipLabel(label: string) {
-    return label;
-  }
-  function formatTooltipValue(value: number) {
+
+  function formatTooltipValue(
+    value: number,
+    _name: string,
+    _item: any,
+    _index: number,
+    _payload: any,
+  ) {
     if (typeof value === "number") {
-      return formatDuration(value).toFormattedString("{m}m {s}s");
+      return (
+        <div className="flex flex-col gap-1">
+          <div>{formatDuration(value).toFormattedString("{M}min {s}s")}</div>
+        </div>
+      );
     }
     return value;
   }
@@ -57,7 +67,7 @@ export function TimeListened({
     <Card className="h-full min-h-0">
       <CardHeader>
         <CardTitle>Time Listened</CardTitle>
-        <CardDescription>January - June 2024</CardDescription>
+        <CardDescription>{periods[period].label}</CardDescription>
       </CardHeader>
       <CardContent className="flex min-h-0 flex-1 flex-col">
         <ChartContainer
@@ -97,6 +107,7 @@ export function TimeListened({
               axisLine={false}
               tickLine={false}
               tickMargin={8}
+              domain={[0, 1000 * 60 * 60]}
               stroke="#a9adc1"
               tickFormatter={(value) =>
                 typeof value === "number"
@@ -112,12 +123,14 @@ export function TimeListened({
               }}
               content={
                 <ChartTooltipContent
-                  hideLabel
                   formatter={(value, name, item, index, payload) =>
-                    formatTooltipValue(value as number)
-                  }
-                  labelFormatter={(label, payload) =>
-                    formatTooltipLabel(label as string)
+                    formatTooltipValue(
+                      value as number,
+                      name as string,
+                      item as any,
+                      index as number,
+                      payload as any,
+                    )
                   }
                 />
               }

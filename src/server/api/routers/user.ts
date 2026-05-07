@@ -9,6 +9,12 @@ import { tryCatch } from "@/lib/try-catch";
 import { userSettings } from "@/lib/consts/settings";
 import { TRPCError } from "@trpc/server";
 import { MAX_PINNED_PERIODS } from "@/lib/consts/favorite-periods";
+import { Prisma } from "generated/prisma";
+import {
+  DEFAULT_IANA_TIMEZONE,
+  isValidIanaTimezone,
+  normalizeIanaTimezone,
+} from "@/lib/timezone";
 
 const periodKeys = Object.keys(periods) as Period[];
 const periodSet = new Set<string>(periodKeys);
@@ -29,6 +35,36 @@ function parseFavoritePeriodsJson(raw: string | undefined): Period[] {
 }
 
 export const userRouter = createTRPCRouter({
+  getTimezone: protectedProcedure.query(async ({ ctx }) => {
+    return { timezone: ctx.session.user.timezone ?? DEFAULT_IANA_TIMEZONE };
+  }),
+
+  setTimezone: protectedProcedure
+    .input(
+      z.object({
+        timezone: z
+          .string()
+          .refine(isValidIanaTimezone, "Invalid IANA timezone identifier"),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const timezone = normalizeIanaTimezone(input.timezone);
+      const { error } = await tryCatch(
+        ctx.db.$executeRaw(
+          Prisma.sql`UPDATE "user" SET "timezone" = ${timezone} WHERE "id" = ${ctx.session.user.id}`,
+        ),
+      );
+
+      if (error) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to update timezone",
+        });
+      }
+
+      return { timezone };
+    }),
+
   getPreferredPeriod: publicProcedure.query(async ({ ctx }) => {
     const settingResult = await tryCatch(
       ctx.db.settings.findMany({

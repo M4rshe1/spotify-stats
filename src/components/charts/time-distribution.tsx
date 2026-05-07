@@ -14,9 +14,10 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from "@/components/ui/chart";
+import { Loading } from "@/components/ui/loading";
 import type { Period } from "@/lib/consts/periods";
 import { api } from "@/trpc/react";
-import { duration as formatDuration } from "@/lib/utils";
+import { duration as formatDuration, formatPercentage } from "@/lib/utils";
 
 export function TimeDistribution({
   period,
@@ -34,16 +35,34 @@ export function TimeDistribution({
   });
 
   if (isLoading) {
-    return <div>Loading...</div>;
+    return <Loading />;
   }
 
   function formatTooltipLabel(label: string) {
     return `${label}:00`;
   }
 
-  function formatTooltipValue(value: number) {
+  function formatTooltipValue(
+    value: number,
+    _name: string,
+    _item: any,
+    index: number,
+    _payload: any,
+  ) {
     if (typeof value === "number") {
-      return formatDuration(value).toFormattedString("{M}m {s}s");
+      return (
+        <div className="flex flex-col gap-1">
+          <div>
+            {formatDuration(
+              result?.data?.[index]?.duration ?? 0,
+            ).toFormattedString("{M}min")}
+          </div>
+          <div>{formatPercentage(value)} of total time listened</div>
+          <div>
+            {result?.data?.[index]?.count} of {result?.totalCount} tracks
+          </div>
+        </div>
+      );
     }
     return value;
   }
@@ -52,6 +71,10 @@ export function TimeDistribution({
     Array.isArray(result?.data) && result.data.length > 0
       ? result.data
       : [{ date: "00", duration: 0 }];
+
+  const maxPercentage = Math.max(
+    ...(result?.data?.map((d) => d.percentage) ?? []),
+  );
 
   return (
     <Card className="h-full min-h-0">
@@ -65,8 +88,8 @@ export function TimeDistribution({
         <ChartContainer
           className="aspect-auto h-full min-h-0 w-full flex-1"
           config={{
-            duration: {
-              label: "Time listened",
+            percentage: {
+              label: "Time Listened Distribution",
               color: "var(--chart-1)",
             },
           }}
@@ -93,23 +116,29 @@ export function TimeDistribution({
               stroke="#a9adc1"
             />
             <YAxis
-              dataKey="duration"
+              dataKey="percentage"
               axisLine={false}
               tickLine={false}
               tickMargin={8}
               stroke="#a9adc1"
-              domain={[0, 1000 * 60 * 60]}
+              domain={[0, maxPercentage]}
               tickFormatter={(value) =>
-                typeof value === "number"
-                  ? formatDuration(value).toFormattedString("{M}m")
-                  : value
+                typeof value === "number" ? formatPercentage(value) : value
               }
             />
             <ChartTooltip
               cursor={{ fill: "rgba(255,255,255,0.06)" }}
               content={
                 <ChartTooltipContent
-                  formatter={(value) => formatTooltipValue(value as number)}
+                  formatter={(value, name, item, index, payload) =>
+                    formatTooltipValue(
+                      value as number,
+                      name as string,
+                      item,
+                      index,
+                      payload,
+                    )
+                  }
                   labelFormatter={(_label, payload) => {
                     const row = payload?.[0]?.payload as
                       | { date?: string }
@@ -121,7 +150,7 @@ export function TimeDistribution({
                 />
               }
             />
-            <Bar dataKey="duration" fill="var(--color-duration)" radius={6} />
+            <Bar dataKey="percentage" fill="var(--chart-1)" radius={6} />
           </BarChart>
         </ChartContainer>
       </CardContent>

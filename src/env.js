@@ -1,6 +1,17 @@
 import { createEnv } from "@t3-oss/env-nextjs";
 import { z } from "zod";
 
+/** @param {string} value */
+export function isValidIanaTimezoneEnv(value) {
+  try {
+    // Intl throws RangeError for invalid IANA time zone identifiers.
+    new Intl.DateTimeFormat("en-US", { timeZone: value });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export const env = createEnv({
   /**
    * Specify your server-side environment variables schema here. This way you can ensure the app
@@ -16,7 +27,12 @@ export const env = createEnv({
     DATABASE_URL: z.string().url(),
     BETTER_AUTH_URL: z.string().url(),
     REDIS_URL: z.string().url(),
-    TZ: z.string(),
+    TZ: z
+      .string()
+      .refine(
+        (value) => isValidIanaTimezoneEnv(value),
+        "TZ must be an IANA timezone",
+      ),
     NODE_ENV: z
       .enum(["development", "test", "production"])
       .default("development"),

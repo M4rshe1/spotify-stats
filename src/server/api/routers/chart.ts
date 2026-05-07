@@ -6,19 +6,31 @@ import { tryCatch } from "@/lib/try-catch";
 import { TRPCError } from "@trpc/server";
 import { Prisma } from "generated/prisma";
 
-function getSQLGroupingString(grouping: PeriodGrouping) {
+function getSQLPlayedAt(timezone: string) {
+  return `("playedAt" AT TIME ZONE 'UTC' AT TIME ZONE '${timezone}')`;
+}
+
+function getSQLGroupingString(grouping: PeriodGrouping, timezone: string) {
+  const column = getSQLPlayedAt(timezone);
+  let sql = "";
   switch (grouping) {
     case "hour":
-      return `TO_CHAR("playedAt", 'HH24')`;
+      sql = `TO_CHAR(${column}, 'HH24')`;
+      break;
     case "day":
-      return `TO_CHAR("playedAt", 'YYYY-MM-DD')`;
+      sql = `TO_CHAR(${column}, 'YYYY-MM-DD')`;
+      break;
     case "month":
-      return `TO_CHAR("playedAt", 'YYYY-MM')`;
+      sql = `TO_CHAR(${column}, 'YYYY-MM')`;
+      break;
     case "year":
-      return `TO_CHAR("playedAt", 'YYYY')`;
+      sql = `TO_CHAR(${column}, 'YYYY')`;
+      break;
     default:
-      return `DATE_TRUNC('hour', "playedAt")`;
+      sql = `DATE_TRUNC('hour', ${column})`;
+      break;
   }
+  return Prisma.raw(sql);
 }
 
 export const chartRouter = createTRPCRouter({
@@ -31,7 +43,10 @@ export const chartRouter = createTRPCRouter({
         input.to,
       );
 
-      const groupSql = Prisma.raw(getSQLGroupingString(grouping));
+      const groupSql = getSQLGroupingString(
+        grouping,
+        ctx.session.user.timezone,
+      );
 
       const playbacks = await tryCatch(
         ctx.db.$queryRaw<{ duration: number; date: string }[]>(
@@ -47,7 +62,6 @@ export const chartRouter = createTRPCRouter({
           `,
         ),
       );
-      console.log(JSON.stringify(playbacks.data, null, 2));
       if (playbacks.error) {
         console.error(playbacks.error);
         throw new TRPCError({
@@ -56,8 +70,27 @@ export const chartRouter = createTRPCRouter({
         });
       }
 
+      let filledData: { date: string; duration: number }[] = playbacks.data;
+
+      if (grouping === "hour") {
+        const lowestHour = Math.min(
+          ...playbacks.data.map((r) => parseInt(r.date, 10)),
+        );
+        const highestHour = Math.max(
+          ...playbacks.data.map((r) => parseInt(r.date, 10)),
+        );
+        const hours = Array.from(
+          { length: highestHour - lowestHour + 1 },
+          (_, i) => String(lowestHour + i).padStart(2, "0"),
+        );
+        filledData = hours.map((hour) => {
+          const result = playbacks.data.find((r) => r.date === hour);
+          return { date: hour, duration: result?.duration ?? 0 };
+        });
+      }
+
       return {
-        data: playbacks.data,
+        data: filledData,
         grouping,
       };
     }),
@@ -65,17 +98,21 @@ export const chartRouter = createTRPCRouter({
     .input(periodSchema)
     .query(async ({ ctx, input }) => {
       const { start, end } = getPeriods(input.period, input.from, input.to);
+      const groupSql = getSQLGroupingString("hour", ctx.session.user.timezone);
       const playbacks = await tryCatch(
-        ctx.db.$queryRaw`
-        SELECT 
-          COALESCE(SUM(duration), 0)::float8 AS duration,
-          TO_CHAR("playedAt", 'HH24') AS "date"
-        FROM playback
-        WHERE "playedAt" >= ${start} AND "playedAt" <= ${end}
-          AND "userId" = ${ctx.session.user.id}
-        GROUP BY TO_CHAR("playedAt", 'HH24')
-        ORDER BY "date"
-      `,
+        ctx.db.$queryRaw<{ duration: number; date: string }[]>(
+          Prisma.sql`
+          SELECT
+            COALESCE(SUM(duration), 0)::float8 AS duration,
+            ${groupSql} AS "date",
+            COUNT(*)::float8 AS count
+          FROM playback
+          WHERE "playedAt" >= ${start} AND "playedAt" <= ${end}
+            AND "userId" = ${ctx.session.user.id}
+          GROUP BY ${groupSql}
+          ORDER BY "date" ASC
+        `,
+        ),
       );
       if (playbacks.error) {
         throw new TRPCError({
@@ -84,14 +121,26 @@ export const chartRouter = createTRPCRouter({
         });
       }
 
-      const rows = playbacks.data as { duration: number; date: string }[];
+      const rows = playbacks.data as {
+        duration: number;
+        date: string;
+        count: number;
+      }[];
+      const totalDuration = rows.reduce((acc, r) => acc + r.duration, 0);
+      const totalCount = rows.reduce((acc, r) => acc + r.count, 0);
 
       const byHour = new Map(rows.map((r) => [r.date, r.duration]));
+      const byCount = new Map(rows.map((r) => [r.date, r.count]));
       const data = Array.from({ length: 24 }, (_, h) => {
         const key = String(h).padStart(2, "0");
-        return { date: key, duration: byHour.get(key) ?? 0 };
+        return {
+          date: key,
+          duration: byHour.get(key) ?? 0,
+          count: byCount.get(key) ?? 0,
+          percentage: ((byHour.get(key) ?? 0) / totalDuration) * 100,
+        };
       });
 
-      return { data };
+      return { data, totalDuration, totalCount };
     }),
 });

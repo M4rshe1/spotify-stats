@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Loading } from "@/components/ui/loading";
 import type { Period } from "@/lib/consts/periods";
 import { duration } from "@/lib/utils";
 import { api } from "@/trpc/react";
@@ -12,7 +13,7 @@ export default function TopArtist({ period }: { period: Period }) {
       period,
     });
   if (isLoadingTopArtist) {
-    return <div>Loading...</div>;
+    return <Loading />;
   }
   if (!topArtist) {
     return <div>No data</div>;
@@ -43,7 +44,7 @@ export default function TopArtist({ period }: { period: Period }) {
               )}
             </div>
             <div className="grid h-full min-w-0 grid-cols-1 grid-rows-[1fr_auto_1fr] justify-between">
-              <div className="overflow-hidden text-xl font-bold">
+              <div className="overflow-hidden text-2xl font-bold">
                 {artistName}
               </div>
               <div className="mt-3 space-y-1">

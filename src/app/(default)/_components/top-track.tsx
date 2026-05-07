@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Loading } from "@/components/ui/loading";
 import type { Period } from "@/lib/consts/periods";
 import { duration } from "@/lib/utils";
 import { api } from "@/trpc/react";
@@ -13,7 +14,7 @@ export default function TopTrack({ period }: { period: Period }) {
     });
   const { mutate: playTrack } = api.control.play.useMutation();
   if (isLoadingTopTrack) {
-    return <div>Loading...</div>;
+    return <Loading />;
   }
   if (!topTrack) {
     return <div>No data</div>;
@@ -58,7 +59,7 @@ export default function TopTrack({ period }: { period: Period }) {
               )}
             </div>
             <div className="flex h-full min-w-0 flex-1 flex-col justify-between">
-              <div className="overflow-hidden text-xl font-bold">
+              <div className="overflow-hidden text-2xl font-bold">
                 {trackName}
               </div>
               <div className="mt-3 space-y-1">
