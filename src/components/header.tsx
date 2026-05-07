@@ -8,18 +8,35 @@ import {
   BreadcrumbLink,
   BreadcrumbList,
 } from "./ui/breadcrumb";
+import Link from "next/link";
 import { Button } from "./ui/button";
 import { Separator } from "./ui/separator";
 import { SidebarTrigger } from "./ui/sidebar";
 import { periods } from "@/lib/consts/periods";
 import { usePeriod } from "@/providers/period-provider";
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import { CalendarIcon, RefreshCcwDotIcon, RefreshCcwIcon } from "lucide-react";
 import { api } from "@/trpc/react";
+import { usePathname } from "next/navigation";
 
 const AUTO_REFRESH_LS_KEY = "header-auto-refresh-enabled";
+const breadcrumbLabels: Record<string, string> = {
+  top: "Top",
+  tracks: "Songs",
+  artists: "Artists",
+  albums: "Albums",
+  "longest-session": "Longest session",
+};
+
+const segmentToLabel = (segment: string) =>
+  breadcrumbLabels[segment] ??
+  segment
+    .split("-")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
 
 const Header = () => {
+  const pathname = usePathname();
   const {
     selectedPeriod,
     openPeriodSelectDialog,
@@ -30,6 +47,17 @@ const Header = () => {
     periods[selectedPeriod]?.label ?? periods.today.label;
   const [autoRefresh, setAutoRefresh] = useState<boolean>(false);
   const utils = api.useUtils();
+  const breadcrumbs = useMemo(() => {
+    const segments = pathname.split("/").filter(Boolean);
+    if (segments.length === 0) {
+      return [{ href: "/", label: "Dashboard" }];
+    }
+
+    return segments.map((segment, index) => ({
+      href: `/${segments.slice(0, index + 1).join("/")}`,
+      label: segmentToLabel(segment),
+    }));
+  }, [pathname]);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -79,13 +107,24 @@ const Header = () => {
           />
           <Breadcrumb>
             <BreadcrumbList>
-              <BreadcrumbItem className="hidden md:block">
-                <BreadcrumbLink href="#">Build Your Application</BreadcrumbLink>
-              </BreadcrumbItem>
-              <BreadcrumbSeparator className="hidden md:block" />
-              <BreadcrumbItem>
-                <BreadcrumbPage>Data Fetching</BreadcrumbPage>
-              </BreadcrumbItem>
+              {breadcrumbs.map((crumb, index) => {
+                const isLast = index === breadcrumbs.length - 1;
+
+                return (
+                  <Fragment key={crumb.href}>
+                    <BreadcrumbItem>
+                      {isLast ? (
+                        <BreadcrumbPage>{crumb.label}</BreadcrumbPage>
+                      ) : (
+                        <BreadcrumbLink asChild>
+                          <Link href={crumb.href}>{crumb.label}</Link>
+                        </BreadcrumbLink>
+                      )}
+                    </BreadcrumbItem>
+                    {!isLast ? <BreadcrumbSeparator /> : null}
+                  </Fragment>
+                );
+              })}
             </BreadcrumbList>
           </Breadcrumb>
         </div>

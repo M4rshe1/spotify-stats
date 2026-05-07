@@ -37,12 +37,13 @@ export default function LongestSessionPage() {
       from,
       to,
     });
+  const expandedSession = data?.find(
+    (session) => session.sessionId === expandedSessionId,
+  );
   const sessionTracksQuery = api.dashboard.getSessionTracks.useQuery(
     {
-      period: selectedPeriod,
-      from,
-      to,
-      sessionId: expandedSessionId ?? 1,
+      startAt: expandedSession?.startAt ?? new Date(0),
+      endAt: expandedSession?.endAt ?? new Date(0),
     },
     {
       enabled: expandedSessionId !== null,

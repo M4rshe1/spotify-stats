@@ -720,13 +720,12 @@ export const dashboardRouter = createTRPCRouter({
     }),
   getSessionTracks: protectedProcedure
     .input(
-      periodSchema.extend({
-        sessionId: z.number().int().positive(),
+      z.object({
+        startAt: z.date(),
+        endAt: z.date(),
       }),
     )
     .query(async ({ ctx, input }) => {
-      const { start, end } = getPeriods(input.period, input.from, input.to);
-      const timezone = ctx.session.user.timezone;
       const userId = ctx.session.user.id;
 
       const tracksResult = await tryCatch(
@@ -742,38 +741,10 @@ export const dashboardRouter = createTRPCRouter({
             artistIds: string[] | null;
           }[]
         >(Prisma.sql`
-          WITH ordered AS (
-            SELECT
-              playback."id",
-              playback."trackId",
-              playback."playedAt",
-              playback."duration",
-              playback."playedAt" + (playback."duration" * INTERVAL '1 millisecond') AS "endedAt"
-            FROM playback
-            WHERE playback."userId" = ${userId}
-              AND timezone(${timezone}, playback."playedAt") >= timezone(${timezone}, ${start})
-              AND timezone(${timezone}, playback."playedAt") <= timezone(${timezone}, ${end})
-          ),
-          flagged AS (
-            SELECT
-              ordered.*,
-              CASE
-                WHEN LAG(ordered."endedAt") OVER (ORDER BY ordered."playedAt", ordered."id") IS NULL THEN 1
-                WHEN ordered."playedAt" - LAG(ordered."endedAt") OVER (ORDER BY ordered."playedAt", ordered."id") > INTERVAL '30 minutes' THEN 1
-                ELSE 0
-              END AS "newSession"
-            FROM ordered
-          ),
-          grouped AS (
-            SELECT
-              *,
-              SUM("newSession") OVER (ORDER BY "playedAt", "id") AS "sessionId"
-            FROM flagged
-          )
           SELECT
-            grouped."id" AS "playbackId",
-            grouped."playedAt",
-            grouped."duration",
+            playback."id" AS "playbackId",
+            playback."playedAt",
+            playback."duration",
             track."id" AS "trackId",
             track."name" AS "trackName",
             track."image" AS "trackImage",
@@ -785,19 +756,21 @@ export const dashboardRouter = createTRPCRouter({
               ARRAY_AGG(artist."id" ORDER BY artist."name") FILTER (WHERE artist."id" IS NOT NULL),
               ARRAY[]::text[]
             ) AS "artistIds"
-          FROM grouped
-          JOIN track ON grouped."trackId" = track."id"
+          FROM playback
+          JOIN track ON playback."trackId" = track."id"
           LEFT JOIN artist_track ON track."id" = artist_track."trackId" AND artist_track."role" = 'primary'
           LEFT JOIN artist ON artist_track."artistId" = artist."id"
-          WHERE grouped."sessionId" = ${input.sessionId}
+          WHERE playback."userId" = ${userId}
+            AND playback."playedAt" >= ${input.startAt}
+            AND playback."playedAt" <= ${input.endAt}
           GROUP BY
-            grouped."id",
-            grouped."playedAt",
-            grouped."duration",
+            playback."id",
+            playback."playedAt",
+            playback."duration",
             track."id",
             track."name",
             track."image"
-          ORDER BY grouped."playedAt" ASC, grouped."id" ASC
+          ORDER BY playback."playedAt" ASC, playback."id" ASC
         `),
       );
 
