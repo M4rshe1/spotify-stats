@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loading } from "@/components/ui/loading";
 import { Spinner } from "@/components/ui/spinner";
+import Link from "next/link";
 
 type RecentlyPlayedProps = {
   period: Period;
@@ -38,8 +39,10 @@ export default function RecentlyPlayed({ period }: RecentlyPlayedProps) {
       image: string | null;
       title: string;
       artists: string[];
+      artistIds: string[];
       duration: number;
       playedAt: Date;
+      albumId: string | null;
       album: string;
     }[]
   >([]);
@@ -143,22 +146,26 @@ export default function RecentlyPlayed({ period }: RecentlyPlayedProps) {
                 className="bg-muted/30 flex items-center gap-3 rounded-md border p-2"
               >
                 <div className="group relative h-12 w-12 shrink-0 overflow-hidden rounded-sm">
-                  {item.image ? (
-                    <img
-                      src={item.image}
-                      alt={item.title}
-                      className="h-12 w-12 object-cover"
-                    />
-                  ) : (
-                    <div className="bg-muted text-muted-foreground flex h-12 w-12 items-center justify-center text-xs">
-                      No img
-                    </div>
-                  )}
+                  <Link href={`/track/${item.trackId}`} className="block">
+                    {item.image ? (
+                      <img
+                        src={item.image}
+                        alt={item.title}
+                        className="h-12 w-12 object-cover"
+                      />
+                    ) : (
+                      <div className="bg-muted text-muted-foreground flex h-12 w-12 items-center justify-center text-xs">
+                        No img
+                      </div>
+                    )}
+                  </Link>
                   <div className="absolute inset-0 flex items-center justify-center bg-black/45 opacity-0 transition-opacity group-hover:opacity-100">
                     <Button
                       size="icon-sm"
                       variant="secondary"
-                      onClick={() =>
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
                         playTrack(
                           { trackId: item.trackId },
                           {
@@ -166,20 +173,54 @@ export default function RecentlyPlayed({ period }: RecentlyPlayedProps) {
                             onError: () => toast.error("Failed to play track"),
                           },
                         )
-                      }
+                      }}
                     >
                       <PlayIcon className="size-3.5 fill-current" />
                     </Button>
                   </div>
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-semibold">{item.title}</p>
+                  <Link
+                    href={`/track/${item.trackId}`}
+                    className="truncate text-sm font-semibold underline-offset-2 hover:underline"
+                  >
+                    {item.title}
+                  </Link>
                   <p className="text-muted-foreground truncate text-xs">
-                    {item.artists.join(", ") || "Unknown Artist"}
+                    {item.artists.length > 0
+                      ? item.artists.map((artist, artistIndex) => {
+                          const artistId = item.artistIds[artistIndex];
+                          return artistId ? (
+                            <span key={artistId}>
+                              {artistIndex > 0 ? ", " : ""}
+                              <Link
+                                href={`/artist/${artistId}`}
+                                className="underline-offset-2 hover:underline"
+                              >
+                                {artist}
+                              </Link>
+                            </span>
+                          ) : (
+                            <span key={`${artist}-${artistIndex}`}>
+                              {artistIndex > 0 ? ", " : ""}
+                              {artist}
+                            </span>
+                          );
+                        })
+                      : "Unknown Artist"}
                   </p>
                 </div>
                 <div className="hidden w-56 truncate text-right text-xs xl:block">
-                  {item.album}
+                  {item.albumId ? (
+                    <Link
+                      href={`/album/${item.albumId}`}
+                      className="underline-offset-2 hover:underline"
+                    >
+                      {item.album}
+                    </Link>
+                  ) : (
+                    item.album
+                  )}
                 </div>
                 <div className="hidden w-28 text-right text-xs md:block">
                   {formatDurationShort(item.duration)}

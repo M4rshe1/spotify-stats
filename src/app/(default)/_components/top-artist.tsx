@@ -5,6 +5,7 @@ import type { Period } from "@/lib/consts/periods";
 import { duration } from "@/lib/utils";
 import { api } from "@/trpc/react";
 import { PlayIcon } from "lucide-react";
+import Link from "next/link";
 import { toast } from "sonner";
 
 export default function TopArtist({ period }: { period: Period }) {
@@ -44,9 +45,12 @@ export default function TopArtist({ period }: { period: Period }) {
               )}
             </div>
             <div className="grid h-full min-w-0 grid-cols-1 grid-rows-[1fr_auto_1fr] justify-between">
-              <div className="overflow-hidden text-2xl font-bold">
+              <Link
+                href={`/artist/${topArtist.artist?.id}`}
+                className="overflow-hidden text-2xl font-bold hover:underline"
+              >
                 {artistName}
-              </div>
+              </Link>
               <div className="mt-3 space-y-1">
                 <div className="text-sm">
                   {topArtist.differentTracks}{" "}

@@ -5,6 +5,7 @@ import type { Period } from "@/lib/consts/periods";
 import { duration } from "@/lib/utils";
 import { api } from "@/trpc/react";
 import { PlayIcon } from "lucide-react";
+import Link from "next/link";
 import { toast } from "sonner";
 
 export default function TopTrack({ period }: { period: Period }) {
@@ -59,9 +60,9 @@ export default function TopTrack({ period }: { period: Period }) {
               )}
             </div>
             <div className="flex h-full min-w-0 flex-1 flex-col justify-between">
-              <div className="overflow-hidden text-2xl font-bold">
+              <Link href={`/track/${topTrack.track?.id}`} className="overflow-hidden text-2xl font-bold hover:underline">
                 {trackName}
-              </div>
+              </Link>
               <div className="mt-3 space-y-1">
                 <div className="text-sm">{topTrack.tracks} times listened</div>
                 <div className="text-sm">

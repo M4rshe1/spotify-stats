@@ -346,23 +346,30 @@ export const dashboardRouter = createTRPCRouter({
             id: string;
             name: string;
             image: string | null;
+            albumId: string | null;
             albumName: string | null;
             duration: number;
             count: number;
             artistNames: string[] | null;
+            artistIds: string[] | null;
           }[]
         >(Prisma.sql`
           SELECT
             track."id",
             track."name",
             track."image",
+            album."id" AS "albumId",
             album."name" AS "albumName",
             SUM(playback."duration")::float8 AS "duration",
             COUNT(*)::float8 AS "count",
             COALESCE(
               ARRAY_AGG(DISTINCT artist."name") FILTER (WHERE artist."name" IS NOT NULL),
               ARRAY[]::text[]
-            ) AS "artistNames"
+            ) AS "artistNames",
+            COALESCE(
+              ARRAY_AGG(DISTINCT artist."id") FILTER (WHERE artist."id" IS NOT NULL),
+              ARRAY[]::text[]
+            ) AS "artistIds"
           FROM playback
           JOIN track ON playback."trackId" = track."id"
           LEFT JOIN album ON track."albumId" = album."id"
@@ -371,7 +378,7 @@ export const dashboardRouter = createTRPCRouter({
           WHERE playback."userId" = ${userId}
             AND timezone(${timezone}, playback."playedAt") >= timezone(${timezone}, ${start})
             AND timezone(${timezone}, playback."playedAt") <= timezone(${timezone}, ${end})
-          GROUP BY track."id", track."name", track."image", album."name"
+          GROUP BY track."id", track."name", track."image", album."id", album."name"
           ${cursorCondition}
           ORDER BY ${sortColumn} DESC, track."id" ASC
           LIMIT ${limit + 1}
@@ -396,6 +403,8 @@ export const dashboardRouter = createTRPCRouter({
           title: row.name,
           image: row.image,
           artists: row.artistNames ?? [],
+          artistIds: row.artistIds ?? [],
+          albumId: row.albumId,
           album: row.albumName ?? "Unknown Album",
           duration: row.duration,
           count: row.count,
@@ -567,6 +576,7 @@ export const dashboardRouter = createTRPCRouter({
             duration: number;
             count: number;
             artistNames: string[] | null;
+            artistIds: string[] | null;
           }[]
         >(Prisma.sql`
           SELECT
@@ -578,7 +588,11 @@ export const dashboardRouter = createTRPCRouter({
             COALESCE(
               ARRAY_AGG(DISTINCT artist."name") FILTER (WHERE artist."name" IS NOT NULL),
               ARRAY[]::text[]
-            ) AS "artistNames"
+            ) AS "artistNames",
+            COALESCE(
+              ARRAY_AGG(DISTINCT artist."id") FILTER (WHERE artist."id" IS NOT NULL),
+              ARRAY[]::text[]
+            ) AS "artistIds"
           FROM playback
           JOIN track ON playback."trackId" = track."id"
           LEFT JOIN album ON track."albumId" = album."id"
@@ -612,6 +626,7 @@ export const dashboardRouter = createTRPCRouter({
           title: row.name,
           image: row.image,
           artists: row.artistNames ?? [],
+          artistIds: row.artistIds ?? [],
           duration: row.duration,
           count: row.count,
         })),
@@ -660,8 +675,10 @@ export const dashboardRouter = createTRPCRouter({
             trackImage: string | null;
             trackDuration: number;
             playedAt: Date;
+            albumId: string | null;
             albumName: string | null;
             artistNames: string[] | null;
+            artistIds: string[] | null;
           }[]
         >(
           Prisma.sql`
@@ -672,11 +689,16 @@ export const dashboardRouter = createTRPCRouter({
               track."image" AS "trackImage",
               track."duration" AS "trackDuration",
               playback."playedAt",
+              album."id" AS "albumId",
               album."name" AS "albumName",
               COALESCE(
                 ARRAY_AGG(artist."name" ORDER BY artist."name") FILTER (WHERE artist."name" IS NOT NULL),
                 ARRAY[]::text[]
-              ) AS "artistNames"
+              ) AS "artistNames",
+              COALESCE(
+                ARRAY_AGG(artist."id" ORDER BY artist."name") FILTER (WHERE artist."id" IS NOT NULL),
+                ARRAY[]::text[]
+              ) AS "artistIds"
             FROM playback
             JOIN track ON playback."trackId" = track."id"
             LEFT JOIN album ON track."albumId" = album."id"
@@ -686,7 +708,7 @@ export const dashboardRouter = createTRPCRouter({
               AND timezone(${timezone}, playback."playedAt") >= timezone(${timezone}, ${start})
               AND timezone(${timezone}, playback."playedAt") <= timezone(${timezone}, ${end})
               ${cursorCondition}
-            GROUP BY playback."id", track."id", track."name", track."image", track."duration", playback."playedAt", album."name"
+            GROUP BY playback."id", track."id", track."name", track."image", track."duration", playback."playedAt", album."id", album."name"
             ORDER BY playback."playedAt" DESC, playback."id" DESC
             LIMIT ${limit + 1}
           `,
@@ -711,8 +733,10 @@ export const dashboardRouter = createTRPCRouter({
           image: row.trackImage,
           title: row.trackName,
           artists: row.artistNames ?? [],
+          artistIds: row.artistIds ?? [],
           duration: row.trackDuration,
           playedAt: row.playedAt,
+          albumId: row.albumId,
           album: row.albumName ?? "Unknown Album",
         })),
         nextCursor:

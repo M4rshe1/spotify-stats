@@ -15,6 +15,9 @@ import { usePeriod } from "@/providers/period-provider";
 import { api } from "@/trpc/react";
 import { duration, formatPercent } from "@/lib/utils";
 import { toast } from "sonner";
+import { PlayIcon } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import Link from "next/link";
 
 type SortBy = "count" | "duration";
 type TopType = "tracks" | "artists" | "albums";
@@ -26,7 +29,9 @@ type ListItem = {
   duration: number;
   count: number;
   album?: string;
+  albumId?: string | null;
   artists?: string[];
+  artistIds?: string[];
 };
 
 const meta: Record<TopType, { title: string; empty: string; error: string }> = {
@@ -49,48 +54,117 @@ const meta: Record<TopType, { title: string; empty: string; error: string }> = {
 
 function TopListItem({
   rank,
+  type,
   item,
   countPercentage,
   durationPercentage,
-  isPlayable,
   onPlay,
 }: {
   rank: number;
+  type: TopType;
   item: ListItem;
   countPercentage: number;
   durationPercentage: number;
-  isPlayable: boolean;
   onPlay?: (trackId: string) => void;
 }) {
+  const href =
+    type === "tracks"
+      ? `/track/${item.id}`
+      : type === "artists"
+        ? `/artist/${item.id}`
+        : item.id === "unknown"
+          ? null
+          : `/album/${item.id}`;
   const content = (
     <>
-      <div className="text-muted-foreground w-8 shrink-0 text-right text-sm font-semibold">
+      <div className="text-muted-foreground w-8 shrink-0 text-right text-xl font-semibold">
         {rank}
       </div>
-      <div className="h-12 w-12 shrink-0 overflow-hidden rounded-sm">
-        {item.image ? (
-          <img
-            src={item.image}
-            alt={item.title}
-            className="h-12 w-12 object-cover"
-          />
+      <div className="group relative h-12 w-12 shrink-0 overflow-hidden rounded-sm">
+        {href ? (
+          <Link href={href} className="block">
+            {item.image ? (
+              <img
+                src={item.image}
+                alt={item.title}
+                className="h-12 w-12 object-cover"
+              />
+            ) : (
+              <div className="bg-muted text-muted-foreground flex h-12 w-12 items-center justify-center text-xs">
+                No img
+              </div>
+            )}
+          </Link>
+        ) : item.image ? (
+          <img src={item.image} alt={item.title} className="h-12 w-12 object-cover" />
         ) : (
           <div className="bg-muted text-muted-foreground flex h-12 w-12 items-center justify-center text-xs">
             No img
           </div>
         )}
+        {onPlay ? (
+          <div className="absolute inset-0 flex items-center justify-center bg-black/45 opacity-0 transition-opacity group-hover:opacity-100">
+            <Button
+              size="icon-sm"
+              variant="secondary"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onPlay(item.id);
+              }}
+            >
+              <PlayIcon className="size-3.5 fill-current" />
+            </Button>
+          </div>
+        ) : null}
       </div>
       <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-semibold">{item.title}</p>
+        {href ? (
+          <Link
+            href={href}
+            className="truncate text-sm font-semibold underline-offset-2 hover:underline"
+          >
+            {item.title}
+          </Link>
+        ) : (
+          <p className="truncate text-sm font-semibold">{item.title}</p>
+        )}
         {item.artists?.length ? (
           <p className="text-muted-foreground truncate text-xs">
-            {item.artists.join(", ")}
+            {item.artists.map((artist, index) => {
+              const artistId = item.artistIds?.[index];
+              return artistId ? (
+                <span key={artistId}>
+                  {index > 0 ? ", " : ""}
+                  <Link
+                    href={`/artist/${artistId}`}
+                    className="underline-offset-2 hover:underline"
+                  >
+                    {artist}
+                  </Link>
+                </span>
+              ) : (
+                <span key={`${artist}-${index}`}>
+                  {index > 0 ? ", " : ""}
+                  {artist}
+                </span>
+              );
+            })}
           </p>
         ) : null}
       </div>
       {item.album ? (
         <div className="hidden w-56 shrink-0 text-right text-xs lg:block">
-          <p className="text-muted-foreground truncate">{item.album}</p>
+          {item.albumId ? (
+            <Link
+              href={`/album/${item.albumId}`}
+              className="text-muted-foreground truncate underline-offset-2 hover:underline"
+            >
+              {item.album}
+            </Link>
+          ) : (
+            <p className="text-muted-foreground truncate">{item.album}</p>
+          )}
         </div>
       ) : null}
       <div className="space-y-0.5 text-right text-xs">
@@ -104,18 +178,6 @@ function TopListItem({
       </div>
     </>
   );
-
-  if (isPlayable && onPlay) {
-    return (
-      <button
-        type="button"
-        className="bg-muted/30 hover:bg-muted/50 flex w-full items-center gap-3 rounded-md border p-2 text-left transition-colors"
-        onClick={() => onPlay(item.id)}
-      >
-        {content}
-      </button>
-    );
-  }
 
   return (
     <div className="bg-muted/30 flex w-full items-center gap-3 rounded-md border p-2">
@@ -271,18 +333,21 @@ export default function TopEntityPage({ type }: { type: TopType }) {
                   <TopListItem
                     key={item.id}
                     rank={index + 1}
+                    type={type}
                     item={item}
                     countPercentage={countPercentage}
                     durationPercentage={durationPercentage}
-                    isPlayable={type === "tracks"}
-                    onPlay={(trackId) =>
-                      playTrack(
-                        { trackId },
-                        {
-                          onSuccess: () => toast.success("Track played"),
-                          onError: () => toast.error("Failed to play track"),
-                        },
-                      )
+                    onPlay={
+                      type === "tracks"
+                        ? (trackId) =>
+                            playTrack(
+                              { trackId },
+                              {
+                                onSuccess: () => toast.success("Track played"),
+                                onError: () => toast.error("Failed to play track"),
+                              },
+                            )
+                        : undefined
                     }
                   />
                 );
