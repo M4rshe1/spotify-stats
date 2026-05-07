@@ -54,6 +54,7 @@ const Header = () => {
         void utils.invalidate();
       }
     }, 60_000);
+    void utils.invalidate();
     return () => clearInterval(interval);
   }, [autoRefresh]);
 
