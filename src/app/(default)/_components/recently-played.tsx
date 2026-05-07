@@ -4,17 +4,14 @@ import { useEffect, useRef, useState } from "react";
 import { format, formatDistanceToNowStrict } from "date-fns";
 import { PlayIcon } from "lucide-react";
 import { toast } from "sonner";
-import type { Period } from "@/lib/consts/periods";
+import type { ProviderPeriod } from "@/lib/consts/periods";
+import { providerPeriodToQueryInput } from "@/lib/provider-period-query-input";
 import { api } from "@/trpc/react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loading } from "@/components/ui/loading";
 import { Spinner } from "@/components/ui/spinner";
 import Link from "next/link";
-
-type RecentlyPlayedProps = {
-  period: Period;
-};
 
 function formatDurationShort(durationMs: number) {
   const totalSeconds = Math.floor(durationMs / 1000);
@@ -30,7 +27,7 @@ function formatRelativePlayedAt(playedAt: Date) {
   });
 }
 
-export default function RecentlyPlayed({ period }: RecentlyPlayedProps) {
+export default function RecentlyPlayed({ period }: { period: ProviderPeriod }) {
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
   const [items, setItems] = useState<
     {
@@ -53,7 +50,7 @@ export default function RecentlyPlayed({ period }: RecentlyPlayedProps) {
 
   const { data, isLoading, isFetching, isError } =
     api.dashboard.getRecentlyPlayed.useQuery({
-      period,
+      ...providerPeriodToQueryInput(period),
       limit: 20,
       cursorPlayedAt: cursor?.cursorPlayedAt,
       cursorId: cursor?.cursorId,
@@ -62,10 +59,15 @@ export default function RecentlyPlayed({ period }: RecentlyPlayedProps) {
 
   const hasNextPage = Boolean(data?.nextCursor);
 
+  const periodResetKey =
+    period.type === "custom"
+      ? `custom:${period.from.getTime()}:${period.end.getTime()}`
+      : period.type;
+
   useEffect(() => {
     setCursor(null);
     setItems([]);
-  }, [period]);
+  }, [periodResetKey]);
 
   useEffect(() => {
     if (!data) return;
@@ -172,7 +174,7 @@ export default function RecentlyPlayed({ period }: RecentlyPlayedProps) {
                             onSuccess: () => toast.success("Track played"),
                             onError: () => toast.error("Failed to play track"),
                           },
-                        )
+                        );
                       }}
                     >
                       <PlayIcon className="size-3.5 fill-current" />

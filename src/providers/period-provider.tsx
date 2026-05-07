@@ -2,54 +2,50 @@
 
 import {
   createContext,
-  memo,
   useCallback,
   useContext,
-  useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 import { endOfDay, startOfDay } from "date-fns";
-import { StarIcon } from "lucide-react";
-import type { DateRange } from "react-day-picker";
 import { toast } from "sonner";
 
-import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Calendar } from "@/components/ui/calendar";
-import { periods, type Period } from "@/lib/consts/periods";
-import { cn } from "@/lib/utils";
+import { type Period, type ProviderPeriod } from "@/lib/consts/periods";
 import { MAX_PINNED_PERIODS } from "@/lib/consts/favorite-periods";
-import { userSettings } from "@/lib/consts/settings";
-import { api, type RouterOutputs } from "@/trpc/react";
+import {
+  defaultProviderPeriod,
+  isPeriod,
+  periodRank,
+  preferredSnapshotBase,
+  snapshotToProviderPeriod,
+  type PreferredPeriodSnapshot,
+} from "@/lib/preferred-period";
+import { PeriodSelectDialog } from "@/providers/period-select-dialog";
+import { api } from "@/trpc/react";
 import { authClient } from "@/server/better-auth/client";
 
-type PreferredSnapshot = RouterOutputs["user"]["getPreferredPeriod"];
+export type { PreferredPeriodSnapshot };
 
-type PeriodContextValue = {
-  selectedPeriod: Period;
+export type PeriodContextValue = {
+  selectedPeriod: ProviderPeriod;
   openPeriodSelectDialog: () => void;
-  selectPeriod: (period: Period) => void;
+  selectPeriod: (period: ProviderPeriod) => void;
   headerFavoritePeriods: Period[];
 };
 
-const defaultPeriod = userSettings.PREFERRED_PERIOD.defaultValue as Period;
-const periodOrder = Object.keys(periods) as Period[];
-const selectablePeriods = periodOrder.filter(
-  (period): period is Exclude<Period, "custom"> => period !== "custom",
-);
-const periodSet = new Set<Period>(periodOrder);
-const periodRank = new Map(periodOrder.map((period, index) => [period, index]));
-const emptyFavoritePeriods: Period[] = [];
-
-const isPeriod = (value: unknown): value is Period =>
-  typeof value === "string" && periodSet.has(value as Period);
-
 const PeriodContext = createContext<PeriodContextValue | null>(null);
 
-export function PeriodProvider({ children }: { children: React.ReactNode }) {
+type PeriodProviderProps = {
+  children: React.ReactNode;
+  initialPreferredSnapshot?: PreferredPeriodSnapshot;
+};
+
+export function PeriodProvider({
+  children,
+  initialPreferredSnapshot,
+}: PeriodProviderProps) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [selectedPeriod, setSelectedPeriod] = useState<Period>(defaultPeriod);
 
   const { data: session } = authClient.useSession();
   const isSignedIn = Boolean(session?.user);
@@ -57,27 +53,39 @@ export function PeriodProvider({ children }: { children: React.ReactNode }) {
   const utils = api.useUtils();
 
   const preferredPeriodQuery = api.user.getPreferredPeriod.useQuery(undefined, {
-    enabled: isSignedIn,
     staleTime: 60_000,
   });
+
+  const preferredSnapshot =
+    preferredPeriodQuery.data ?? initialPreferredSnapshot ?? null;
+
+  const snapshotPeriodKey = preferredSnapshot?.period;
+  const snapshotCustomStartMs =
+    preferredSnapshot?.customStart?.getTime() ?? null;
+  const snapshotCustomEndMs =
+    preferredSnapshot?.customEnd?.getTime() ?? null;
+
+  const selectedPeriod = useMemo(() => {
+    const snapshot =
+      preferredPeriodQuery.data ?? initialPreferredSnapshot ?? null;
+    if (!snapshot) return defaultProviderPeriod();
+    return snapshotToProviderPeriod(snapshot) ?? defaultProviderPeriod();
+  }, [
+    snapshotPeriodKey,
+    snapshotCustomStartMs,
+    snapshotCustomEndMs,
+  ]);
 
   const setPreferredPeriodMutation = api.user.setPreferredPeriod.useMutation({
     onMutate: async (input) => {
       await utils.user.getPreferredPeriod.cancel();
-      const prev: PreferredSnapshot | undefined =
-        utils.user.getPreferredPeriod.getData();
-      if (prev) {
-        utils.user.getPreferredPeriod.setData(undefined, {
-          ...prev,
-          period: input.period,
-          ...(input.customStart !== undefined
-            ? { customStart: input.customStart }
-            : {}),
-          ...(input.customEnd !== undefined
-            ? { customEnd: input.customEnd }
-            : {}),
-        });
-      }
+      const prev = utils.user.getPreferredPeriod.getData();
+      utils.user.getPreferredPeriod.setData(undefined, {
+        ...preferredSnapshotBase(prev, initialPreferredSnapshot),
+        period: input.period,
+        ...(input.customStart !== undefined ? { customStart: input.customStart } : {}),
+        ...(input.customEnd !== undefined ? { customEnd: input.customEnd } : {}),
+      });
       return { prev };
     },
     onError: (_err, _input, ctx) => {
@@ -95,18 +103,14 @@ export function PeriodProvider({ children }: { children: React.ReactNode }) {
     api.user.toggleFavoritePeriod.useMutation({
       onMutate: async ({ period }) => {
         await utils.user.getPreferredPeriod.cancel();
-        const prev: PreferredSnapshot | undefined =
-          utils.user.getPreferredPeriod.getData();
-        if (!prev) return { prev };
-
-        const fav = prev.favoritePeriods ?? [];
+        const prev = utils.user.getPreferredPeriod.getData();
+        const base = preferredSnapshotBase(prev, initialPreferredSnapshot);
+        const fav = base.favoritePeriods ?? [];
         const isRemoving = fav.includes(period);
-        const next = isRemoving
-          ? fav.filter((p) => p !== period)
-          : [...fav, period];
+        const next = isRemoving ? fav.filter((p) => p !== period) : [...fav, period];
 
         utils.user.getPreferredPeriod.setData(undefined, {
-          ...prev,
+          ...base,
           favoritePeriods: next,
         });
         return { prev };
@@ -123,15 +127,8 @@ export function PeriodProvider({ children }: { children: React.ReactNode }) {
       },
     });
 
-  useEffect(() => {
-    const nextPeriod = preferredPeriodQuery.data?.period;
-    if (isPeriod(nextPeriod)) {
-      setSelectedPeriod(nextPeriod);
-    }
-  }, [preferredPeriodQuery.data?.period]);
-
   const favoritePeriodsOrdered = useMemo(() => {
-    const fav = preferredPeriodQuery.data?.favoritePeriods ?? emptyFavoritePeriods;
+    const fav = preferredPeriodQuery.data?.favoritePeriods ?? [];
     return [...fav].sort(
       (a, b) => (periodRank.get(a) ?? 0) - (periodRank.get(b) ?? 0),
     );
@@ -161,7 +158,20 @@ export function PeriodProvider({ children }: { children: React.ReactNode }) {
       },
     ) => {
       if (!isPeriod(period)) return;
-      setSelectedPeriod(period);
+
+      if (period === "custom") {
+        const from = options?.customStart ?? null;
+        const end = options?.customEnd ?? null;
+        if (
+          !from ||
+          !end ||
+          Number.isNaN(from.getTime()) ||
+          Number.isNaN(end.getTime())
+        ) {
+          return;
+        }
+      }
+
       setPreferredPeriodMutation.mutate({
         period,
         customStart: options?.customStart,
@@ -172,14 +182,19 @@ export function PeriodProvider({ children }: { children: React.ReactNode }) {
     [setPreferredPeriodMutation],
   );
 
-  const handlePeriodChange = useCallback((period: string) => {
-    if (!isPeriod(period)) return;
-    applyPreferredPeriod(period, { closeDialog: true });
-  }, [applyPreferredPeriod]);
+  const handlePeriodChange = useCallback(
+    (period: Exclude<Period, "custom">) => {
+      applyPreferredPeriod(period, { closeDialog: true });
+    },
+    [applyPreferredPeriod],
+  );
 
   const selectPeriod = useCallback(
-    (period: Period) => {
-      applyPreferredPeriod(period);
+    (period: ProviderPeriod) => {
+      applyPreferredPeriod(period.type, {
+        customStart: period.type === "custom" ? period.from : undefined,
+        customEnd: period.type === "custom" ? period.end : undefined,
+      });
     },
     [applyPreferredPeriod],
   );
@@ -190,7 +205,10 @@ export function PeriodProvider({ children }: { children: React.ReactNode }) {
       e.stopPropagation();
 
       const fav =
-        utils.user.getPreferredPeriod.getData()?.favoritePeriods ?? [];
+        preferredSnapshotBase(
+          utils.user.getPreferredPeriod.getData(),
+          initialPreferredSnapshot,
+        ).favoritePeriods ?? [];
       const isRemoving = fav.includes(period);
       if (!isRemoving && fav.length >= MAX_PINNED_PERIODS) {
         toast.error(`You can pin at most ${MAX_PINNED_PERIODS} periods`);
@@ -199,7 +217,42 @@ export function PeriodProvider({ children }: { children: React.ReactNode }) {
 
       toggleFavoritePeriodMutation.mutate({ period });
     },
-    [toggleFavoritePeriodMutation, utils.user.getPreferredPeriod],
+    [
+      initialPreferredSnapshot,
+      toggleFavoritePeriodMutation,
+      utils.user.getPreferredPeriod,
+    ],
+  );
+
+  const applyPreferredPeriodRef = useRef(applyPreferredPeriod);
+  applyPreferredPeriodRef.current = applyPreferredPeriod;
+
+  const handlePeriodChangeRef = useRef(handlePeriodChange);
+  handlePeriodChangeRef.current = handlePeriodChange;
+
+  const handleToggleFavoriteRef = useRef(handleToggleFavorite);
+  handleToggleFavoriteRef.current = handleToggleFavorite;
+
+  const onApplyCustomRange = useCallback((range: { from: Date; to: Date }) => {
+    applyPreferredPeriodRef.current("custom", {
+      closeDialog: true,
+      customStart: startOfDay(range.from),
+      customEnd: endOfDay(range.to),
+    });
+  }, []);
+
+  const onPresetSelectStable = useCallback(
+    (period: Exclude<Period, "custom">) => {
+      handlePeriodChangeRef.current(period);
+    },
+    [],
+  );
+
+  const onToggleFavoriteStable = useCallback(
+    (period: Exclude<Period, "custom">, e: React.MouseEvent) => {
+      handleToggleFavoriteRef.current(period, e);
+    },
+    [],
   );
 
   const value = useMemo(
@@ -230,154 +283,16 @@ export function PeriodProvider({ children }: { children: React.ReactNode }) {
           favoriteSet={favoriteSet}
           customStart={preferredPeriodQuery.data?.customStart ?? null}
           customEnd={preferredPeriodQuery.data?.customEnd ?? null}
-          onPresetSelect={handlePeriodChange}
-          onToggleFavorite={handleToggleFavorite}
-          onApplyCustomRange={(range) =>
-            applyPreferredPeriod("custom", {
-              closeDialog: true,
-              customStart: startOfDay(range.from),
-              customEnd: endOfDay(range.to),
-            })
-          }
+          onPresetSelect={onPresetSelectStable}
+          onToggleFavorite={onToggleFavoriteStable}
+          onApplyCustomRange={onApplyCustomRange}
         />
       ) : null}
     </PeriodContext.Provider>
   );
 }
 
-type PeriodSelectDialogProps = {
-  isOpen: boolean;
-  onOpenChange: (open: boolean) => void;
-  selectedPeriod: Period;
-  isSignedIn: boolean;
-  favoritePeriodsOrdered: Period[];
-  favoriteSet: Set<Period>;
-  customStart: Date | null;
-  customEnd: Date | null;
-  onPresetSelect: (period: string) => void;
-  onToggleFavorite: (period: Period, e: React.MouseEvent) => void;
-  onApplyCustomRange: (range: { from: Date; to: Date }) => void;
-};
-
-const PeriodSelectDialog = memo(function PeriodSelectDialog({
-  isOpen,
-  onOpenChange,
-  selectedPeriod,
-  isSignedIn,
-  favoritePeriodsOrdered,
-  favoriteSet,
-  customStart,
-  customEnd,
-  onPresetSelect,
-  onToggleFavorite,
-  onApplyCustomRange,
-}: PeriodSelectDialogProps) {
-  const [customRange, setCustomRange] = useState<DateRange | undefined>(undefined);
-
-  useEffect(() => {
-    if (!isOpen) return;
-    if (customStart && customEnd) {
-      setCustomRange({
-        from: new Date(customStart),
-        to: new Date(customEnd),
-      });
-      return;
-    }
-    setCustomRange(undefined);
-  }, [customEnd, customStart, isOpen]);
-
-  const handleApply = useCallback(() => {
-    if (!customRange?.from || !customRange?.to) {
-      toast.error("Pick a start and end date first");
-      return;
-    }
-    onApplyCustomRange({
-      from: customRange.from,
-      to: customRange.to,
-    });
-  }, [customRange, onApplyCustomRange]);
-
-  return (
-    <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="overflow-hidden p-0 sm:max-w-[52rem]">
-        <div className="grid h-[min(80vh,36rem)] min-h-[30rem] grid-cols-1 md:grid-cols-[16rem_1fr]">
-          <div className="border-border flex min-h-0 flex-col border-b p-4 md:border-r md:border-b-0">
-            <p className="text-sm font-medium">Common ranges</p>
-            {isSignedIn ? (
-              <div className="mt-2 space-y-1">
-                <p className="text-muted-foreground text-xs">
-                  Favorites: {favoritePeriodsOrdered.length}/{MAX_PINNED_PERIODS}
-                </p>
-              </div>
-            ) : null}
-            <ul className="mt-3 min-h-0 flex-1 space-y-1 overflow-y-auto pr-1">
-              {selectablePeriods.map((period) => {
-                const starred = favoriteSet.has(period);
-                return (
-                  <li key={period} className="flex items-center gap-1">
-                    <Button
-                      type="button"
-                      variant={selectedPeriod === period ? "secondary" : "ghost"}
-                      className="h-9 flex-1 justify-start px-2.5 font-normal"
-                      onClick={() => onPresetSelect(period)}
-                    >
-                      {periods[period].label}
-                    </Button>
-                    {isSignedIn ? (
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon-sm"
-                        className="text-muted-foreground size-8 shrink-0 hover:text-amber-600"
-                        aria-label={
-                          starred
-                            ? `Remove ${periods[period].label} from favorites`
-                            : `Add ${periods[period].label} to favorites`
-                        }
-                        onClick={(e) => onToggleFavorite(period, e)}
-                      >
-                        <StarIcon
-                          className={cn(
-                            "size-4",
-                            starred && "fill-amber-500 text-amber-600",
-                          )}
-                        />
-                      </Button>
-                    ) : null}
-                  </li>
-                );
-              })}
-            </ul>
-          </div>
-          <div className="flex min-h-0 flex-col p-4">
-            <p className="text-base font-medium">Custom date range</p>
-            <div className="mt-3 flex-1 p-1">
-              <Calendar
-                mode="range"
-                selected={customRange}
-                onSelect={setCustomRange}
-                numberOfMonths={1}
-                className="mx-auto w-full max-w-[min(100%,24rem)] [--cell-size:clamp(1.85rem,1.6vw,2.1rem)]"
-              />
-            </div>
-            <div className="mt-auto pt-4">
-              <Button
-                type="button"
-                className="w-full md:w-auto"
-                disabled={!customRange?.from || !customRange?.to}
-                onClick={handleApply}
-              >
-                Apply
-              </Button>
-            </div>
-          </div>
-        </div>
-      </DialogContent>
-    </Dialog>
-  );
-});
-
-export function usePeriod() {
+export function usePeriod(): PeriodContextValue {
   const context = useContext(PeriodContext);
   if (!context) {
     throw new Error("usePeriod must be used within a PeriodProvider");

@@ -1,18 +1,17 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loading } from "@/components/ui/loading";
-import type { Period } from "@/lib/consts/periods";
+import type { ProviderPeriod } from "@/lib/consts/periods";
+import { providerPeriodToQueryInput } from "@/lib/provider-period-query-input";
 import { duration } from "@/lib/utils";
 import { api } from "@/trpc/react";
 import { PlayIcon } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
 
-export default function TopTrack({ period }: { period: Period }) {
+export default function TopTrack({ period }: { period: ProviderPeriod }) {
   const { data: topTrack, isLoading: isLoadingTopTrack } =
-    api.dashboard.getTopTrack.useQuery({
-      period,
-    });
+    api.dashboard.getTopTrack.useQuery(providerPeriodToQueryInput(period));
   const { mutate: playTrack } = api.control.play.useMutation();
   if (isLoadingTopTrack) {
     return <Loading />;

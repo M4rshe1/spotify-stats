@@ -4,6 +4,7 @@ import { useState } from "react";
 import { format } from "date-fns";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loading } from "@/components/ui/loading";
+import { providerPeriodToQueryInput } from "@/lib/provider-period-query-input";
 import { usePeriod } from "@/providers/period-provider";
 import { duration } from "@/lib/utils";
 import { api } from "@/trpc/react";
@@ -21,22 +22,11 @@ export default function LongestSessionPage() {
   const [expandedSessionId, setExpandedSessionId] = useState<number | null>(
     null,
   );
-  const { data: preferredPeriod } = api.user.getPreferredPeriod.useQuery();
-  const from =
-    selectedPeriod === "custom"
-      ? (preferredPeriod?.customStart ?? undefined)
-      : undefined;
-  const to =
-    selectedPeriod === "custom"
-      ? (preferredPeriod?.customEnd ?? undefined)
-      : undefined;
 
   const { data, isLoading, isError } =
-    api.dashboard.getLongestSessions.useQuery({
-      period: selectedPeriod,
-      from,
-      to,
-    });
+    api.dashboard.getLongestSessions.useQuery(
+      providerPeriodToQueryInput(selectedPeriod),
+    );
   const expandedSession = data?.find(
     (session) => session.sessionId === expandedSessionId,
   );

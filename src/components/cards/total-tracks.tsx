@@ -5,12 +5,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loading } from "@/components/ui/loading";
 import { TrendingDownIcon, TrendingUpIcon } from "lucide-react";
 import { cn, formatPercent } from "@/lib/utils";
-import type { Period } from "@/lib/consts/periods";
+import type { ProviderPeriod } from "@/lib/consts/periods";
+import { providerPeriodToQueryInput } from "@/lib/provider-period-query-input";
 
-export function TotalTracks({ period }: { period: Period }) {
-  const { data, isLoading } = api.dashboard.getTracksMetric.useQuery({
-    period,
-  });
+export function TotalTracks({ period }: { period: ProviderPeriod }) {
+  const { data, isLoading } = api.dashboard.getTracksMetric.useQuery(
+    providerPeriodToQueryInput(period),
+  );
 
   if (isLoading) {
     return <Loading />;

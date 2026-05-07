@@ -1,18 +1,15 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loading } from "@/components/ui/loading";
-import type { Period } from "@/lib/consts/periods";
+import type { ProviderPeriod } from "@/lib/consts/periods";
+import { providerPeriodToQueryInput } from "@/lib/provider-period-query-input";
 import { duration } from "@/lib/utils";
 import { api } from "@/trpc/react";
-import { PlayIcon } from "lucide-react";
 import Link from "next/link";
-import { toast } from "sonner";
 
-export default function TopArtist({ period }: { period: Period }) {
+export default function TopArtist({ period }: { period: ProviderPeriod }) {
   const { data: topArtist, isLoading: isLoadingTopArtist } =
-    api.dashboard.getTopArtist.useQuery({
-      period,
-    });
+    api.dashboard.getTopArtist.useQuery(providerPeriodToQueryInput(period));
   if (isLoadingTopArtist) {
     return <Loading />;
   }

@@ -12,7 +12,7 @@ import Link from "next/link";
 import { Button } from "./ui/button";
 import { Separator } from "./ui/separator";
 import { SidebarTrigger } from "./ui/sidebar";
-import { periods } from "@/lib/consts/periods";
+import { periods, type Period } from "@/lib/consts/periods";
 import { usePeriod } from "@/providers/period-provider";
 import { Fragment, useEffect, useMemo, useState } from "react";
 import { CalendarIcon, RefreshCcwDotIcon, RefreshCcwIcon } from "lucide-react";
@@ -44,7 +44,7 @@ const Header = () => {
     headerFavoritePeriods,
   } = usePeriod();
   const selectedPeriodLabel =
-    periods[selectedPeriod]?.label ?? periods.today.label;
+    periods[selectedPeriod.type]?.label ?? periods.today.label;
   const [autoRefresh, setAutoRefresh] = useState<boolean>(false);
   const utils = api.useUtils();
   const breadcrumbs = useMemo(() => {
@@ -131,16 +131,24 @@ const Header = () => {
         <div className="flex items-center gap-2">
           {headerFavoritePeriods.length > 0 ? (
             <div className="hidden max-w-[min(72vw,32rem)] items-center gap-1 overflow-x-auto py-0.5 [-ms-overflow-style:none] [scrollbar-width:none] sm:max-w-md lg:flex [&::-webkit-scrollbar]:hidden">
-              {headerFavoritePeriods.map((p) => (
+              {headerFavoritePeriods.map((preset) => (
                 <Button
-                  key={p}
+                  key={preset}
                   type="button"
-                  variant={selectedPeriod === p ? "default" : "outline"}
+                  variant={
+                    selectedPeriod.type === preset ? "default" : "outline"
+                  }
                   size="sm"
                   className="h-8 shrink-0 px-2.5 whitespace-nowrap"
-                  onClick={() => selectPeriod(p)}
+                  onClick={() =>
+                    preset !== "custom"
+                      ? selectPeriod({
+                          type: preset as Exclude<Period, "custom">,
+                        })
+                      : openPeriodSelectDialog()
+                  }
                 >
-                  {periods[p]?.label ?? p}
+                  {periods[preset]?.label ?? preset}
                 </Button>
               ))}
             </div>

@@ -15,27 +15,16 @@ import {
   ChartTooltipContent,
 } from "@/components/ui/chart";
 import { Loading } from "@/components/ui/loading";
-import type { Period } from "@/lib/consts/periods";
+import type { ProviderPeriod } from "@/lib/consts/periods";
+import { providerPeriodToQueryInput } from "@/lib/provider-period-query-input";
 import { api } from "@/trpc/react";
 import { duration as formatDuration } from "@/lib/utils";
 import { periods } from "@/lib/consts/periods";
 import { format } from "date-fns";
 
-export function TimeListened({
-  period,
-  from,
-  to,
-}: {
-  period: Period;
-  from: Date | undefined | null;
-  to: Date | undefined | null;
-}) {
+export function TimeListened({ period }: { period: ProviderPeriod }) {
   const { data: tracks, isLoading: isLoadingTracks } =
-    api.chart.getTimeListened.useQuery({
-      period,
-      from,
-      to,
-    });
+    api.chart.getTimeListened.useQuery(providerPeriodToQueryInput(period));
 
   if (isLoadingTracks) {
     return <Loading />;
@@ -68,7 +57,7 @@ export function TimeListened({
     <Card className="h-full min-h-0">
       <CardHeader>
         <CardTitle>Time Listened</CardTitle>
-        <CardDescription>{periods[period].label}</CardDescription>
+        <CardDescription>{periods[period.type]?.label}</CardDescription>
       </CardHeader>
       <CardContent className="flex min-h-0 flex-1 flex-col">
         <ChartContainer

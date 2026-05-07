@@ -14,15 +14,11 @@ export default function ClientPage() {
     <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
       <KeyMetrics period={selectedPeriod} />
       <div className="flex h-85 min-h-0 flex-col lg:col-span-2">
-        <TimeListened period={selectedPeriod} from={undefined} to={undefined} />
+        <TimeListened period={selectedPeriod} />
       </div>
       <TopArtist period={selectedPeriod} />
       <div className="flex h-85 min-h-0 flex-col lg:col-span-2">
-        <TimeDistribution
-          period={selectedPeriod}
-          from={undefined}
-          to={undefined}
-        />
+        <TimeDistribution period={selectedPeriod} />
       </div>
       <TopTrack period={selectedPeriod} />
       <div className="lg:col-span-3">

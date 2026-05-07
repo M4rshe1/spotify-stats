@@ -9,6 +9,7 @@ import { db } from "@/server/db";
 import { tryCatch } from "@/lib/try-catch";
 import { logger } from "@/lib/logger";
 import { env } from "@/env";
+import SpotifyResponseDeserializer from "@/server/spotify-response-deserializer";
 
 class NextAuthStrategy implements IAuthStrategy {
     private userId: string;
@@ -140,5 +141,8 @@ class NextAuthStrategy implements IAuthStrategy {
 
 export default function getSpotifyApi(userId: string, config?: SdkOptions) {
     const strategy = new NextAuthStrategy(userId);
-    return new SpotifyApi(strategy, config);
+    return new SpotifyApi(strategy, {
+        deserializer: new SpotifyResponseDeserializer(),
+        ...config,
+    });
 }

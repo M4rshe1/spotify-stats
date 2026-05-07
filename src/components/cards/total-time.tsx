@@ -5,12 +5,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loading } from "@/components/ui/loading";
 import { TrendingDownIcon, TrendingUpIcon } from "lucide-react";
 import { cn, duration, formatPercent } from "@/lib/utils";
-import type { Period } from "@/lib/consts/periods";
+import type { ProviderPeriod } from "@/lib/consts/periods";
+import { providerPeriodToQueryInput } from "@/lib/provider-period-query-input";
 
-export function TotalTime({ period }: { period: Period }) {
-  const { data, isLoading } = api.dashboard.getDurationMetric.useQuery({
-    period,
-  });
+export function TotalTime({ period }: { period: ProviderPeriod }) {
+  const { data, isLoading } = api.dashboard.getDurationMetric.useQuery(
+    providerPeriodToQueryInput(period),
+  );
 
   if (isLoading) {
     return <Loading />;

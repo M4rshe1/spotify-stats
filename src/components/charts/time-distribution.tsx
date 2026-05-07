@@ -15,24 +15,15 @@ import {
   ChartTooltipContent,
 } from "@/components/ui/chart";
 import { Loading } from "@/components/ui/loading";
-import type { Period } from "@/lib/consts/periods";
+import type { ProviderPeriod } from "@/lib/consts/periods";
+import { providerPeriodToQueryInput } from "@/lib/provider-period-query-input";
 import { api } from "@/trpc/react";
 import { duration as formatDuration, formatPercent } from "@/lib/utils";
 
-export function TimeDistribution({
-  period,
-  from,
-  to,
-}: {
-  period: Period;
-  from: Date | undefined | null;
-  to: Date | undefined | null;
-}) {
-  const { data: result, isLoading } = api.chart.getTimeDistribution.useQuery({
-    period,
-    from,
-    to,
-  });
+export function TimeDistribution({ period }: { period: ProviderPeriod }) {
+  const { data: result, isLoading } = api.chart.getTimeDistribution.useQuery(
+    providerPeriodToQueryInput(period),
+  );
 
   if (isLoading) {
     return <Loading />;

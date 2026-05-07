@@ -11,6 +11,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Spinner } from "@/components/ui/spinner";
+import { providerPeriodToQueryInput } from "@/lib/provider-period-query-input";
 import { usePeriod } from "@/providers/period-provider";
 import { api } from "@/trpc/react";
 import { duration, formatPercent } from "@/lib/utils";
@@ -96,7 +97,11 @@ function TopListItem({
             )}
           </Link>
         ) : item.image ? (
-          <img src={item.image} alt={item.title} className="h-12 w-12 object-cover" />
+          <img
+            src={item.image}
+            alt={item.title}
+            className="h-12 w-12 object-cover"
+          />
         ) : (
           <div className="bg-muted text-muted-foreground flex h-12 w-12 items-center justify-center text-xs">
             No img
@@ -195,22 +200,12 @@ export default function TopEntityPage({ type }: { type: TopType }) {
     cursorValue: number;
   } | null>(null);
   const { selectedPeriod } = usePeriod();
+  const periodInput = providerPeriodToQueryInput(selectedPeriod);
   const { mutate: playTrack } = api.control.play.useMutation();
-  const { data: preferredPeriod } = api.user.getPreferredPeriod.useQuery();
-  const from =
-    selectedPeriod === "custom"
-      ? (preferredPeriod?.customStart ?? undefined)
-      : undefined;
-  const to =
-    selectedPeriod === "custom"
-      ? (preferredPeriod?.customEnd ?? undefined)
-      : undefined;
 
   const songsQuery = api.dashboard.getTopSongs.useQuery(
     {
-      period: selectedPeriod,
-      from,
-      to,
+      ...periodInput,
       sortBy,
       limit: 20,
       cursorId: cursor?.cursorId,
@@ -220,9 +215,7 @@ export default function TopEntityPage({ type }: { type: TopType }) {
   );
   const artistsQuery = api.dashboard.getTopArtists.useQuery(
     {
-      period: selectedPeriod,
-      from,
-      to,
+      ...periodInput,
       sortBy,
       limit: 20,
       cursorId: cursor?.cursorId,
@@ -232,9 +225,7 @@ export default function TopEntityPage({ type }: { type: TopType }) {
   );
   const albumsQuery = api.dashboard.getTopAlbums.useQuery(
     {
-      period: selectedPeriod,
-      from,
-      to,
+      ...periodInput,
       sortBy,
       limit: 20,
       cursorId: cursor?.cursorId,
@@ -256,7 +247,7 @@ export default function TopEntityPage({ type }: { type: TopType }) {
   useEffect(() => {
     setItems([]);
     setCursor(null);
-  }, [selectedPeriod, from?.getTime(), to?.getTime(), sortBy, type]);
+  }, [selectedPeriod, sortBy, type]);
 
   useEffect(() => {
     if (!data) return;
@@ -344,7 +335,8 @@ export default function TopEntityPage({ type }: { type: TopType }) {
                               { trackId },
                               {
                                 onSuccess: () => toast.success("Track played"),
-                                onError: () => toast.error("Failed to play track"),
+                                onError: () =>
+                                  toast.error("Failed to play track"),
                               },
                             )
                         : undefined

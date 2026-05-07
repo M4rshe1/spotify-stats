@@ -5,7 +5,7 @@ import { TRPCError } from "@trpc/server";
 
 export const getGrouping = (start: Date, end: Date): PeriodGrouping => {
   const diffInDays = differenceInDays(end, start);
-  if (diffInDays < 7) {
+  if (diffInDays < 1) {
     return "hour";
   } else if (diffInDays < 30) {
     return "day";

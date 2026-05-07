@@ -1,8 +1,12 @@
+import { getPreferredMetricsInput } from "@/lib/get-preferred-metrics-input";
 import { withAuth } from "@/lib/hoc-pages";
-import { HydrateClient } from "@/trpc/server";
+import { api, HydrateClient } from "@/trpc/server";
 import LongestSessionPage from "./_components/longest-session-page";
 
 export default withAuth(async () => {
+  const metricsInput = await getPreferredMetricsInput();
+  await api.dashboard.getLongestSessions.prefetch(metricsInput);
+
   return (
     <HydrateClient>
       <LongestSessionPage />

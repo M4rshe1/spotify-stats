@@ -141,3 +141,12 @@ export type PeriodStart = (typeof periods)[Period]["start"];
 export type PeriodEnd = (typeof periods)[Period]["end"];
 export type PeriodPrevious = (typeof periods)[Period]["previous"];
 export type PeriodGrouping = (typeof periods)[Period]["grouping"];
+export type ProviderPeriod =
+  | {
+      type: "custom";
+      from: Date;
+      end: Date;
+    }
+  | {
+      type: Exclude<Period, "custom">;
+    };

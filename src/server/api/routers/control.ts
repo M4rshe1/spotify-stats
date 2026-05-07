@@ -25,7 +25,6 @@ export const controlRouter = createTRPCRouter({
         () => spotify.player.addItemToPlaybackQueue(track.uri),
         "player.addItemToPlaybackQueue",
       );
-      console.log(result);
       if (result.error) {
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",

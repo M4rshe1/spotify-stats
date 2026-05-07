@@ -3,6 +3,7 @@ import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { PeriodProvider } from "@/providers/period-provider";
 import Header from "@/components/header";
 import { getSession } from "@/server/better-auth/server";
+import { api } from "@/trpc/server";
 
 export default async function Layout({
   children,
@@ -10,9 +11,10 @@ export default async function Layout({
   children: React.ReactNode;
 }) {
   const session = await getSession();
+  const initialPreferredPeriod = await api.user.getPreferredPeriod();
   return (
     <SidebarProvider>
-      <PeriodProvider>
+      <PeriodProvider initialPreferredSnapshot={initialPreferredPeriod}>
         <AppSidebar user={session?.user ?? null} />
         <SidebarInset>
           <Header />

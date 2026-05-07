@@ -10,3 +10,5 @@ export const periodSchema = z.object({
   from: z.date().nullable().optional(),
   to: z.date().nullable().optional(),
 });
+
+export type PeriodQueryInput = z.infer<typeof periodSchema>;
