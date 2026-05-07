@@ -4,6 +4,7 @@ import { getPeriods } from "@/lib/periods";
 import { tryCatch } from "@/lib/try-catch";
 import { Prisma } from "generated/prisma";
 import { periodSchema } from "@/server/api/lib";
+import z from "zod";
 
 export const dashboardRouter = createTRPCRouter({
   getTracksMetric: protectedProcedure
@@ -288,6 +289,103 @@ export const dashboardRouter = createTRPCRouter({
         differentTracks: Number(topTrackGroup.data?.[0]?.differentTracks ?? 0n),
         tracks: Number(groupResult.data?.[0]?.tracks ?? 0n),
         duration: groupResult.data?.[0]?.duration ?? 0,
+      };
+    }),
+  getRecentlyPlayed: protectedProcedure
+    .input(
+      periodSchema.extend({
+        limit: z.number().int().min(1).max(50).default(20),
+        cursorPlayedAt: z.date().optional(),
+        cursorId: z.string().uuid().optional(),
+      }),
+    )
+    .query(async ({ ctx, input }) => {
+      const { start, end } = getPeriods(input.period, input.from, input.to);
+      const timezone = ctx.session.user.timezone;
+      const userId = ctx.session.user.id;
+      const limit = input.limit;
+
+      const cursorCondition =
+        input.cursorPlayedAt && input.cursorId
+          ? Prisma.sql`
+            AND (
+              playback."playedAt" < ${input.cursorPlayedAt}
+              OR (playback."playedAt" = ${input.cursorPlayedAt} AND playback."id" < ${input.cursorId})
+            )
+          `
+          : Prisma.empty;
+
+      const rows = await tryCatch(
+        ctx.db.$queryRaw<
+          {
+            id: string;
+            trackId: string;
+            trackName: string;
+            trackImage: string | null;
+            trackDuration: number;
+            playedAt: Date;
+            albumName: string | null;
+            artistNames: string[] | null;
+          }[]
+        >(
+          Prisma.sql`
+            SELECT
+              playback."id",
+              track."id" AS "trackId",
+              track."name" AS "trackName",
+              track."image" AS "trackImage",
+              track."duration" AS "trackDuration",
+              playback."playedAt",
+              album."name" AS "albumName",
+              COALESCE(
+                ARRAY_AGG(artist."name" ORDER BY artist."name") FILTER (WHERE artist."name" IS NOT NULL),
+                ARRAY[]::text[]
+              ) AS "artistNames"
+            FROM playback
+            JOIN track ON playback."trackId" = track."id"
+            LEFT JOIN album ON track."albumId" = album."id"
+            LEFT JOIN artist_track ON track."id" = artist_track."trackId" AND artist_track."role" = 'primary'
+            LEFT JOIN artist ON artist_track."artistId" = artist."id"
+            WHERE playback."userId" = ${userId}
+              AND timezone(${timezone}, playback."playedAt") >= timezone(${timezone}, ${start})
+              AND timezone(${timezone}, playback."playedAt") <= timezone(${timezone}, ${end})
+              ${cursorCondition}
+            GROUP BY playback."id", track."id", track."name", track."image", track."duration", playback."playedAt", album."name"
+            ORDER BY playback."playedAt" DESC, playback."id" DESC
+            LIMIT ${limit + 1}
+          `,
+        ),
+      );
+
+      if (rows.error) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to get recently played tracks",
+        });
+      }
+
+      const hasMore = rows.data.length > limit;
+      const items = hasMore ? rows.data.slice(0, limit) : rows.data;
+      const last = items[items.length - 1];
+
+      return {
+        items: items.map((row) => ({
+          id: row.id,
+          trackId: row.trackId,
+          image: row.trackImage,
+          title: row.trackName,
+          artists: row.artistNames ?? [],
+          duration: row.trackDuration,
+          playedAt: row.playedAt,
+          album: row.albumName ?? "Unknown Album",
+        })),
+        nextCursor:
+          hasMore && last
+            ? {
+                cursorPlayedAt: last.playedAt,
+                cursorId: last.id,
+              }
+            : null,
       };
     }),
 });

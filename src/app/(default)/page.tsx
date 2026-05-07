@@ -13,6 +13,10 @@ export default withAuth(async () => {
   void api.dashboard.getTracksMetric.prefetch(metricsInput);
   void api.dashboard.getDurationMetric.prefetch(metricsInput);
   void api.dashboard.getArtistsMetric.prefetch(metricsInput);
+  void api.dashboard.getRecentlyPlayed.prefetch({
+    ...metricsInput,
+    limit: 20,
+  });
 
   return (
     <HydrateClient>

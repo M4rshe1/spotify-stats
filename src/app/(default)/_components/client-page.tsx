@@ -6,6 +6,7 @@ import TopTrack from "./top-track";
 import TopArtist from "./top-artist";
 import { TimeListened } from "@/components/charts/time-listened";
 import { TimeDistribution } from "@/components/charts/time-distribution";
+import RecentlyPlayed from "./recently-played";
 
 export default function ClientPage() {
   const { selectedPeriod } = usePeriod();
@@ -24,6 +25,9 @@ export default function ClientPage() {
         />
       </div>
       <TopTrack period={selectedPeriod} />
+      <div className="lg:col-span-3">
+        <RecentlyPlayed period={selectedPeriod} />
+      </div>
     </div>
   );
 }

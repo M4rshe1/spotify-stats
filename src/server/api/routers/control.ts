@@ -25,14 +25,26 @@ export const controlRouter = createTRPCRouter({
         () => spotify.player.addItemToPlaybackQueue(track.uri),
         "player.addItemToPlaybackQueue",
       );
+      console.log(result);
       if (result.error) {
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
           message: "Failed to play track",
         });
       }
+      const playbackState = await retrySpotifyCall(
+        () => spotify.player.getPlaybackState(),
+        "player.getPlaybackState",
+      );
+      if (playbackState.error) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to get playback state",
+        });
+      }
+
       const nextTrack = await retrySpotifyCall(
-        () => spotify.player.skipToNext(""),
+        () => spotify.player.skipToNext(playbackState.data?.device?.id ?? ""),
         "player.skipToNext",
       );
       if (nextTrack.error) {
