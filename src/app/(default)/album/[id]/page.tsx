@@ -1,6 +1,7 @@
-const Page = async ({ params }: { params: { id: string } }) => {
-  const { id } = await params;
-  return <div>Album {id}</div>;
-};
+import { withAuth } from "@/lib/hoc-pages";
+
+const Page = withAuth(async () => {
+  return <div>Album</div>;
+});
 
 export default Page;
