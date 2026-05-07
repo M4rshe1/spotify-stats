@@ -66,6 +66,9 @@ export const auth = betterAuth({
       },
     },
   },
+  account: {
+    
+  },
   socialProviders: {
     spotify: {
       scope: spotifyScopes,

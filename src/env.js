@@ -36,6 +36,7 @@ export const env = createEnv({
     NODE_ENV: z
       .enum(["development", "test", "production"])
       .default("development"),
+    ALLOW_REGISTER: z.boolean().default(false),
   },
 
   /**
@@ -61,6 +62,7 @@ export const env = createEnv({
     TZ: process.env.TZ,
     NODE_ENV: process.env.NODE_ENV,
     REDIS_URL: process.env.REDIS_URL,
+    ALLOW_REGISTER: process.env.ALLOW_REGISTER,
   },
   /**
    * Run `build` or `dev` with `SKIP_ENV_VALIDATION` to skip env validation. This is especially
