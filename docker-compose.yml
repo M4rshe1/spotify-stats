@@ -15,16 +15,12 @@ services:
       timeout: 5s
       retries: 5
     restart: unless-stopped
-    networks:
-      - spotify-network
 
   redis:
     image: redis:latest
     # ports:
     #   - 6379:6379
     restart: unless-stopped
-    networks:
-      - spotify-network
 
   app: &app-base
     build:
@@ -42,8 +38,6 @@ services:
     depends_on:
       - postgres
       - redis
-    networks:
-      - spotify-network
 
   worker-stats:
     <<: *app-base
@@ -51,8 +45,6 @@ services:
     depends_on:
       - postgres
       - redis
-    networks:
-      - spotify-network
 
   worker-crucher:
     <<: *app-base
@@ -63,9 +55,3 @@ services:
     depends_on:
       - postgres
       - redis
-    networks:
-      - spotify-network
-
-networks:
-  spotify-network:
-    driver: bridge
