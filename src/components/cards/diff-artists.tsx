@@ -4,7 +4,7 @@ import { api } from "@/trpc/react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loading } from "@/components/ui/loading";
 import { TrendingDownIcon, TrendingUpIcon } from "lucide-react";
-import { cn, formatPercentage } from "@/lib/utils";
+import { cn, formatPercent } from "@/lib/utils";
 import type { Period } from "@/lib/consts/periods";
 
 export function DiffArtists({ period }: { period: Period }) {
@@ -39,8 +39,12 @@ export function DiffArtists({ period }: { period: Period }) {
         </div>
         <p className="text-muted-foreground text-sm">
           {Math.abs(data.artists - data.previousArtists)} diff /{" "}
-          <span className={cn(artistsPercentage > 0 ? "text-success" : "text-destructive")}>
-            {formatPercentage(Math.abs(artistsPercentage))}{" "}
+          <span
+            className={cn(
+              artistsPercentage > 0 ? "text-success" : "text-destructive",
+            )}
+          >
+            {formatPercent(Math.abs(artistsPercentage))}{" "}
             {artistsPercentage > 0 ? "more" : "less"}
           </span>
         </p>

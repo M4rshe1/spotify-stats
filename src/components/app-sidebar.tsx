@@ -50,6 +50,7 @@ const data = {
       title: "Top",
       icon: TrendingUp,
       url: "/top",
+      isActive: true,
       items: [
         {
           title: "Top Artists",
@@ -69,6 +70,7 @@ const data = {
       title: "Afinity",
       url: "/affinity",
       icon: Heart,
+      isActive: true,
       items: [
         {
           title: "Introduction",

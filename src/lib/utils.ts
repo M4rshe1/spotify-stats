@@ -52,9 +52,10 @@ export function msToMin(durationMs: number) {
   return Math.floor(durationMs / 60000);
 }
 
-export function formatPercentage(percentage: number) {
+export function formatPercent(percentage: number) {
   if (percentage == Infinity) {
     return "∞";
   }
+  if (!Number.isFinite(percentage)) return "0%";
   return `${percentage.toFixed(2)}%`;
 }

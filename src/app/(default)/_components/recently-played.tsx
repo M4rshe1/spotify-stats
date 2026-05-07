@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { format } from "date-fns";
+import { format, formatDistanceToNowStrict } from "date-fns";
 import { PlayIcon } from "lucide-react";
 import { toast } from "sonner";
 import type { Period } from "@/lib/consts/periods";
@@ -20,6 +20,13 @@ function formatDurationShort(durationMs: number) {
   const minutes = Math.floor(totalSeconds / 60);
   const seconds = totalSeconds % 60;
   return `${minutes}:${seconds.toString().padStart(2, "0")}`;
+}
+
+function formatRelativePlayedAt(playedAt: Date) {
+  return formatDistanceToNowStrict(new Date(playedAt), {
+    addSuffix: true,
+    unit: "minute",
+  });
 }
 
 export default function RecentlyPlayed({ period }: RecentlyPlayedProps) {
@@ -177,8 +184,9 @@ export default function RecentlyPlayed({ period }: RecentlyPlayedProps) {
                 <div className="hidden w-28 text-right text-xs md:block">
                   {formatDurationShort(item.duration)}
                 </div>
-                <div className="hidden w-44 text-right text-xs lg:block">
-                  {format(new Date(item.playedAt), "yyyy-MM-dd HH:mm")}
+                <div className="hidden w-64 text-right text-xs lg:block">
+                  {format(new Date(item.playedAt), "HH:mm")} (
+                  {formatRelativePlayedAt(item.playedAt)})
                 </div>
               </div>
             ))}

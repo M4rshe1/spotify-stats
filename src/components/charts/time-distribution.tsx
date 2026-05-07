@@ -17,7 +17,7 @@ import {
 import { Loading } from "@/components/ui/loading";
 import type { Period } from "@/lib/consts/periods";
 import { api } from "@/trpc/react";
-import { duration as formatDuration, formatPercentage } from "@/lib/utils";
+import { duration as formatDuration, formatPercent } from "@/lib/utils";
 
 export function TimeDistribution({
   period,
@@ -55,7 +55,7 @@ export function TimeDistribution({
           <div>
             {formatDuration(payload?.duration ?? 0).toFormattedString("{M}min")}
           </div>
-          <div>{formatPercentage(value)} of total time listened</div>
+          <div>{formatPercent(value)} of total time listened</div>
           <div>
             {payload?.count} of {result?.totalCount} tracks
           </div>
@@ -121,7 +121,7 @@ export function TimeDistribution({
               stroke="#a9adc1"
               domain={[0, maxPercentage]}
               tickFormatter={(value) =>
-                typeof value === "number" ? formatPercentage(value) : value
+                typeof value === "number" ? formatPercent(value) : value
               }
             />
             <ChartTooltip

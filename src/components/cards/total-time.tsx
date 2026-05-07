@@ -4,7 +4,7 @@ import { api } from "@/trpc/react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loading } from "@/components/ui/loading";
 import { TrendingDownIcon, TrendingUpIcon } from "lucide-react";
-import { cn, duration, formatPercentage } from "@/lib/utils";
+import { cn, duration, formatPercent } from "@/lib/utils";
 import type { Period } from "@/lib/consts/periods";
 
 export function TotalTime({ period }: { period: Period }) {
@@ -40,8 +40,12 @@ export function TotalTime({ period }: { period: Period }) {
           )}
         </div>
         <p className="text-muted-foreground text-sm">
-          <span className={cn(durationPercentage > 0 ? "text-success" : "text-destructive")}>
-            {formatPercentage(Math.abs(durationPercentage))}{" "}
+          <span
+            className={cn(
+              durationPercentage > 0 ? "text-success" : "text-destructive",
+            )}
+          >
+            {formatPercent(Math.abs(durationPercentage))}{" "}
             {durationPercentage > 0 ? "more" : "less"}
           </span>
         </p>
