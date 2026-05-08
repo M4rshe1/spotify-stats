@@ -53,6 +53,8 @@ services:
       - redis
     networks:
       - backend
+    labels:
+      - "traefik.enable=false"
 
   worker-cruncher:
     <<: *app-base
@@ -65,6 +67,8 @@ services:
       - redis
     networks:
       - backend
+    labels:
+      - "traefik.enable=false"
 
 networks:
   backend:

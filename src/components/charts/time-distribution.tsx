@@ -44,7 +44,9 @@ export function TimeDistribution({ period }: { period: ProviderPeriod }) {
       return (
         <div className="flex flex-col gap-1">
           <div>
-            {formatDuration(payload?.duration ?? 0).toFormattedString("{M}min")}
+            {formatDuration(payload?.duration ?? 0).toFormattedString(
+              "{M} min",
+            )}
           </div>
           <div>{formatPercent(value)} of total time listened</div>
           <div>
@@ -70,7 +72,7 @@ export function TimeDistribution({ period }: { period: ProviderPeriod }) {
       <CardHeader>
         <CardTitle>Listening by hour</CardTitle>
         <CardDescription>
-          Total time played in each hour of the day for this period
+          Total time played in each hour of the day
         </CardDescription>
       </CardHeader>
       <CardContent className="flex min-h-0 flex-1 flex-col">

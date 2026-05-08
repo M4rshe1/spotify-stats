@@ -58,7 +58,10 @@ export function TimeListened({ period }: { period: ProviderPeriod }) {
   return (
     <Card className="h-full min-h-0">
       <CardHeader>
-        <CardTitle>Time Listened</CardTitle>
+        <CardTitle>
+          Time Listened{" "}
+          <span className="text-muted-foreground text-sm">(minutes)</span>
+        </CardTitle>
         <CardDescription>{periods[period.type]?.label}</CardDescription>
       </CardHeader>
       <CardContent className="flex min-h-0 flex-1 flex-col">
@@ -110,7 +113,7 @@ export function TimeListened({ period }: { period: ProviderPeriod }) {
               stroke="#a9adc1"
               tickFormatter={(value) =>
                 typeof value === "number"
-                  ? formatDuration(value).toFormattedString("{M}m")
+                  ? formatDuration(value).toFormattedString("{M}")
                   : value
               }
             />
