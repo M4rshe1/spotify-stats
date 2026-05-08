@@ -1,4 +1,3 @@
-
 /**
  * Converts a raw platform/device string to a canonical platform name.
  * @param platform The platform string (usually a UserAgent or device label)
@@ -8,19 +7,32 @@
 export function platform(platform: string): string {
   if (!platform) return "Unknown";
 
+  //   const platformMatchers: [RegExp, string][] = [
+  //     [/(google|nest hub|cast)/i, "Google"],
+  //     [/(android|linux.*android)/i, "Android"],
+  //     [/(ipad|iphone|ios)/i, "iOS"],
+  //     [/(win|windows)/i, "Windows"],
+  //     [/(mac\s?os|os x|darwin)/i, "Mac"],
+  //     [/(web|chrome|firefox|safari|edge)/i, "Web"],
+  //     [/(sonos)/i, "Sonos"],
+  //     [/(alexa|echo|voice)/i, "Alexa"],
+  //     [/(tv|chromecast)/i, "TV"],
+  //     [/(playstation|ps4|ps5)/i, "PlayStation"],
+  //     [/(xbox)/i, "Xbox"],
+  //     [/(linux)/i, "Linux"],
+  //     [/(roku)/i, "Roku"],
+  //     [/(car|auto)/i, "Car"],
+  //   ];
+
   const platformMatchers: [RegExp, string][] = [
-    [/(google|nest hub|cast)/i, "Google"],
-    [/(android|linux.*android)/i, "Android"],
-    [/(ipad|iphone|ios)/i, "iOS"],
-    [/(win|windows)/i, "Windows"],
-    [/(mac\s?os|os x|darwin)/i, "Mac"],
+    [/(google|nest hub|cast|alexa|echo|voice)/i, "Cast Device"],
+    [/(android|linux.*android|ipad|iphone|ios)/i, "Smartphone"],
+    [/(win|windows|mac\s?os|os x|darwin|linux)/i, "Computer"],
     [/(web|chrome|firefox|safari|edge)/i, "Web"],
     [/(sonos)/i, "Sonos"],
-    [/(alexa|echo|voice)/i, "Alexa"],
     [/(tv|chromecast)/i, "TV"],
     [/(playstation|ps4|ps5)/i, "PlayStation"],
     [/(xbox)/i, "Xbox"],
-    [/(linux)/i, "Linux"],
     [/(roku)/i, "Roku"],
     [/(car|auto)/i, "Car"],
   ];

@@ -1,9 +1,12 @@
 "use client";
 
+import { useEffect, useMemo, useState } from "react";
+import { SlidersHorizontalIcon } from "lucide-react";
 import { Pie, PieChart } from "recharts";
 
 import {
   Card,
+  CardAction,
   CardContent,
   CardDescription,
   CardHeader,
@@ -17,6 +20,15 @@ import {
   ChartTooltipContent,
   type ChartConfig,
 } from "@/components/ui/chart";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { duration as formatDuration, formatPercent } from "@/lib/utils";
 
 const PIE_COLORS = [
@@ -88,53 +100,151 @@ export function DistributionPieCard({
   data: DistributionDatum[];
   chartConfig: ChartConfig;
 }) {
+  const [hiddenNames, setHiddenNames] = useState<Set<string>>(() => new Set());
+
+  useEffect(() => {
+    const names = new Set(data.map((d) => d.name));
+    setHiddenNames((prev) => {
+      const next = new Set<string>();
+      for (const n of prev) {
+        if (names.has(n)) next.add(n);
+      }
+      return next;
+    });
+  }, [data]);
+
+  const visibleData = useMemo(() => {
+    const rows = data.filter((d) => !hiddenNames.has(d.name));
+    const totalDuration = rows.reduce((acc, row) => acc + row.duration, 0);
+    return rows.map((row) => ({
+      ...row,
+      percentage:
+        totalDuration > 0 ? (row.duration / totalDuration) * 100 : row.percentage,
+    }));
+  }, [data, hiddenNames]);
+
+  const visibleChartConfig = useMemo(() => {
+    const next: ChartConfig = { ...chartConfig };
+    for (const row of visibleData) {
+      const prev = chartConfig[row.name];
+      if (!prev) continue;
+      next[row.name] = {
+        ...prev,
+        label: (
+          <span>
+            {row.name}{" "}
+            <span className="text-muted-foreground">
+              ({formatPercent(row.percentage)})
+            </span>
+          </span>
+        ),
+      };
+    }
+    return next;
+  }, [chartConfig, visibleData]);
+
+  function setSegmentVisible(name: string, visible: boolean) {
+    setHiddenNames((prev) => {
+      const next = new Set(prev);
+      if (visible) {
+        next.delete(name);
+      } else {
+        const visibleAfter = data.filter(
+          (d) => d.name !== name && !prev.has(d.name),
+        );
+        if (visibleAfter.length === 0) return prev;
+        next.add(name);
+      }
+      return next;
+    });
+  }
+
   return (
     <Card className="flex h-full min-h-0 flex-col">
       <CardHeader>
         <CardTitle>{title}</CardTitle>
+        {description ? (
+          <CardDescription>{description}</CardDescription>
+        ) : null}
+        <CardAction>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="outline"
+                size="icon-sm"
+                className="rounded-none"
+                aria-label="Choose segments to show"
+              >
+                <SlidersHorizontalIcon />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuLabel>Segments</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              {data.map((row) => (
+                <DropdownMenuCheckboxItem
+                  key={row.name}
+                  checked={!hiddenNames.has(row.name)}
+                  onCheckedChange={(checked) =>
+                    setSegmentVisible(row.name, checked === true)
+                  }
+                  onSelect={(e) => e.preventDefault()}
+                >
+                  {row.name}
+                </DropdownMenuCheckboxItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </CardAction>
       </CardHeader>
       <CardContent className="flex min-h-0 flex-1 flex-col">
-        <ChartContainer config={chartConfig} className="h-[260px] w-full">
-          <PieChart margin={{ top: 8, right: 8, bottom: 8, left: 8 }}>
-            <ChartTooltip
-              cursor={false}
-              content={
-                <ChartTooltipContent
-                  nameKey="name"
-                  indicator="line"
-                  labelFormatter={(_label, payload) => {
-                    return payload?.[0]?.name ?? "";
-                  }}
-                  formatter={(_value, _name, item, _index, _payload) => {
-                    return (
-                      <div className="flex flex-col gap-1">
-                        <div>{item.payload.value.toLocaleString()} plays</div>
-                        <div>
-                          {formatDuration(
-                            item.payload.duration,
-                          ).toFormattedString("{h}h {m}m")}
+        {visibleData.length === 0 ? (
+          <div className="text-muted-foreground flex flex-1 items-center justify-center py-12 text-center text-xs">
+            Enable at least one segment to show the chart.
+          </div>
+        ) : (
+          <ChartContainer config={visibleChartConfig} className="h-[260px] w-full">
+            <PieChart margin={{ top: 8, right: 8, bottom: 8, left: 8 }}>
+              <ChartTooltip
+                cursor={false}
+                content={
+                  <ChartTooltipContent
+                    nameKey="name"
+                    indicator="line"
+                    labelFormatter={(_label, payload) => {
+                      return payload?.[0]?.name ?? "";
+                    }}
+                    formatter={(_value, _name, item, _index, _payload) => {
+                      return (
+                        <div className="flex flex-col gap-1">
+                          <div>{item.payload.value.toLocaleString()} plays</div>
+                          <div>
+                            {formatDuration(
+                              item.payload.duration,
+                            ).toFormattedString("{h}h {m}m")}
+                          </div>
+                          <div>{formatPercent(item.payload.percentage)}</div>
                         </div>
-                        <div>{formatPercent(item.payload.percentage)}</div>
-                      </div>
-                    );
-                  }}
-                />
-              }
-            />
-            <Pie data={data} dataKey="value" nameKey="name" />
-            <ChartLegend
-              align="right"
-              layout="vertical"
-              verticalAlign="middle"
-              content={
-                <ChartLegendContent
-                  nameKey="name"
-                  className="flex-col items-start gap-2 pt-0"
-                />
-              }
-            />
-          </PieChart>
-        </ChartContainer>
+                      );
+                    }}
+                  />
+                }
+              />
+              <Pie data={visibleData} dataKey="value" nameKey="name" />
+              <ChartLegend
+                align="right"
+                layout="vertical"
+                verticalAlign="middle"
+                content={
+                  <ChartLegendContent
+                    nameKey="name"
+                    className="flex-col items-start gap-2 pt-0"
+                  />
+                }
+              />
+            </PieChart>
+          </ChartContainer>
+        )}
       </CardContent>
     </Card>
   );
