@@ -35,7 +35,7 @@ export default function TopArtist({ period }: { period: ProviderPeriod }) {
 
   return (
     <Card className="relative isolate">
-      <CoverTintBackdrop coverUrl={artistImage} />
+      <CoverTintBackdrop coverUrl={artistImage} fillsContainer />
       <CardContent className="relative z-10">
         <div className="flex flex-col items-start gap-2">
           <div className="grid grid-cols-2 gap-4">

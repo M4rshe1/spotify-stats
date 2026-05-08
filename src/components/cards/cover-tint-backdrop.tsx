@@ -98,10 +98,13 @@ function rgba(rgb: Rgb, alpha: number) {
 export function CoverTintBackdrop({
   coverUrl,
   className,
+  /** Tint extends edge-to-edge; row lists keep a softer fade-out on the right. */
+  fillsContainer = false,
 }: {
   coverUrl: string | null;
   /** Include rounding (e.g. `rounded-md`) so the tint clips to row cards. */
   className?: string;
+  fillsContainer?: boolean;
 }) {
   const [accent, setAccent] = useState<Rgb | null>(null);
 
@@ -129,7 +132,15 @@ export function CoverTintBackdrop({
       )}
       aria-hidden
       style={{
-        background: `linear-gradient(
+        background: fillsContainer
+          ? `linear-gradient(
+          to right,
+          ${rgba(accent, 0.72)} 0%,
+          ${rgba(accent, 0.38)} 28%,
+          ${rgba(accent, 0.22)} 55%,
+          ${rgba(accent, 0.12)} 100%
+        )`
+          : `linear-gradient(
           to right,
           ${rgba(accent, 0.72)} 0%,
           ${rgba(accent, 0.32)} 32%,
