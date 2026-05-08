@@ -4,6 +4,7 @@ import { prismaAdapter } from "better-auth/adapters/prisma";
 import { env } from "@/env";
 import { DEFAULT_IANA_TIMEZONE } from "@/lib/timezone";
 import { db } from "@/server/db";
+import { admin } from "better-auth/plugins";
 
 const spotifyScopes = [
   // Images
@@ -46,6 +47,21 @@ export const auth = betterAuth({
   database: prismaAdapter(db, {
     provider: "postgresql",
   }),
+  plugins: [admin()],
+  databaseHooks: {
+    user: {
+      create: {
+        after: async (user) => {
+          const usersCount = await db.user.count();
+          const role = usersCount === 0 ? "admin" : "user";
+          await db.user.update({
+            where: { id: user.id },
+            data: { role },
+          });
+        },
+      },
+    },
+  },
   user: {
     additionalFields: {
       role: {
@@ -65,9 +81,6 @@ export const auth = betterAuth({
         default: DEFAULT_IANA_TIMEZONE,
       },
     },
-  },
-  account: {
-    
   },
   socialProviders: {
     spotify: {

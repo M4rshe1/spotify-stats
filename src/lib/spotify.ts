@@ -8,7 +8,49 @@ import type {
   SpotifyApi,
 } from "@spotify/web-api-ts-sdk";
 
-const BATCH_SIZE = 20;
+type HistoryItem = {
+  ts: string;
+  platform: string;
+  ms_played: number;
+  conn_country: string;
+  ip_addr: string;
+  master_metadata_track_name: string;
+  master_metadata_album_artist_name: string;
+  master_metadata_album_album_name: string;
+  spotify_track_uri: string;
+  episode_name: string | null;
+  episode_show_name: string | null;
+  spotify_episode_uri: string | null;
+  audiobook_title: string | null;
+  audiobook_uri: string | null;
+  audiobook_chapter_uri: string | null;
+  audiobook_chapter_title: string | null;
+  reason_start: string;
+  reason_end: string;
+  shuffle: boolean;
+  skipped: boolean;
+  offline: boolean;
+  offline_timestamp: number;
+  incognito_mode: boolean;
+};
+
+export class Batches {
+  private batchSize: number = 20;
+  public withSize(size: number): this {
+    this.batchSize = size;
+    return this;
+  }
+  public fromQueue(queue: keyof typeof creationQueues): string[][] {
+    return batch(Array.from(creationQueues[queue]), this.batchSize);
+  }
+  public fromSet(set: Set<string>): string[][] {
+    return batch(Array.from(set), this.batchSize);
+  }
+  public fromArray<T>(array: T[]): T[][] {
+    return batch(array, this.batchSize);
+  }
+}
+
 const SPOTIFY_RETRY_LIMIT = 5;
 const SPOTIFY_RETRY_DELAY_MS = 2000;
 
@@ -56,12 +98,12 @@ export function cleanQueues() {
   createdEntities.tracks.clear();
 }
 
-function batch<T>(array: T[], batchSize: number): T[][] {
+export function batch<T>(array: T[], batchSize: number): T[][] {
   const result = [];
   for (let i = 0; i < array.length; i += batchSize) {
-    result.push(array.slice(i, i + batchSize));
+    result.push(array.slice(i, i + batchSize) as T[]);
   }
-  return result;
+  return result as T[][];
 }
 
 export async function retrySpotifyCall<T>(
@@ -152,11 +194,11 @@ export async function createArtists(spotify: SpotifyApi) {
   existingArtist.data.forEach((artist) => {
     createEntity("artists", artist.spotifyId);
   });
-  const batches = batch(Array.from(creationQueues.artists), BATCH_SIZE);
+  const batches = new Batches().fromQueue("artists");
   const newArtists: Artist[] = [];
   for (const batchIds of batches) {
     const { error, data: artistsData } = await retrySpotifyCall(
-      () => spotify.artists.get(batchIds),
+      () => spotify.artists.get(Array.from(batchIds) as string[]),
       "artists.get",
     );
     if (error || !artistsData) {
@@ -214,10 +256,10 @@ export async function createAlbums(spotify: SpotifyApi) {
   existingAlbums.data.forEach((album) => {
     createEntity("albums", album.spotifyId);
   });
-  const batches = batch(Array.from(creationQueues.albums), BATCH_SIZE);
+  const batches = new Batches().fromQueue("albums");
   for (const batchIds of batches) {
     const { error, data: albumsData } = await retrySpotifyCall(
-      () => spotify.albums.get(batchIds),
+      () => spotify.albums.get(Array.from(batchIds) as string[]),
       "albums.get",
     );
     if (error) {
@@ -265,10 +307,10 @@ export async function createTracks(spotify: SpotifyApi) {
   existingTracks.data.forEach((track) => {
     createEntity("tracks", track.spotifyId);
   });
-  const batches = batch(Array.from(creationQueues.tracks), BATCH_SIZE);
+  const batches = new Batches().fromQueue("tracks");
   for (const batchIds of batches) {
     const { error, data: tracksData } = await retrySpotifyCall(
-      () => spotify.tracks.get(batchIds),
+      () => spotify.tracks.get(Array.from(batchIds) as string[]),
       "tracks.get",
     );
     if (error) {
@@ -333,5 +375,53 @@ export async function createPlaybacks(
       logger.error(createdPlayback.error);
       return;
     }
+  }
+}
+
+export async function createHistory(
+  spotify: SpotifyApi,
+  userId: string,
+  importId: number,
+  history: HistoryItem[],
+) {
+  const length = history.length;
+  const batchSize = Math.ceil(length / 100);
+  const batches = new Batches()
+    .withSize(batchSize)
+    .fromArray<HistoryItem>(history);
+  const totalBatches = batches.length;
+  let completedBatches = 0;
+  for (const batch of batches) {
+    completedBatches++;
+    batch.forEach(async (item) => {
+      const createdPlayback = await tryCatch(
+        db.playback.create({
+          data: {
+            user: { connect: { id: userId } },
+            track: {
+              connect: {
+                spotifyId: item.spotify_track_uri.split(":")[2] ?? "",
+              },
+            },
+            duration: item.ms_played ?? 0,
+            device: "Unknown",
+            platform: item.platform,
+            playedAt: new Date(item.ts),
+          },
+        }),
+      );
+      if (createdPlayback.error) {
+        logger.error(createdPlayback.error);
+        return;
+      }
+      tryCatch(
+        db.import.update({
+          where: { id: importId },
+          data: {
+            progress: completedBatches / totalBatches,
+          },
+        }),
+      );
+    });
   }
 }
