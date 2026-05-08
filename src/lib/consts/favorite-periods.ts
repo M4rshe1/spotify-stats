@@ -1,1 +1,1 @@
-export const MAX_PINNED_PERIODS = 5;
+export const MAX_PINNED_PERIODS = 7;

@@ -40,7 +40,7 @@ export function TimeListened({ period }: { period: ProviderPeriod }) {
     if (typeof value === "number") {
       return (
         <div className="flex flex-col gap-1">
-          <div>{formatDuration(value).toFormattedString("{M}min {s}s")}</div>
+          <div>{formatDuration(value).toFormattedString("{M} min")}</div>
         </div>
       );
     }

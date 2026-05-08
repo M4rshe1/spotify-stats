@@ -1,3 +1,4 @@
+import { NoDataCard } from "@/components/cards/no-data-card";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loading } from "@/components/ui/loading";
@@ -5,6 +6,7 @@ import type { ProviderPeriod } from "@/lib/consts/periods";
 import { providerPeriodToQueryInput } from "@/lib/provider-period-query-input";
 import { duration } from "@/lib/utils";
 import { api } from "@/trpc/react";
+import { MicVocalIcon } from "lucide-react";
 import Link from "next/link";
 
 export default function TopArtist({ period }: { period: ProviderPeriod }) {
@@ -14,7 +16,14 @@ export default function TopArtist({ period }: { period: ProviderPeriod }) {
     return <Loading />;
   }
   if (!topArtist) {
-    return <div>No data</div>;
+    return (
+      <NoDataCard
+        title="Best artist"
+        icon={<MicVocalIcon />}
+        emptyTitle="No artist data"
+        description="We couldn't find any artists for this period. Try a different time range."
+      />
+    );
   }
 
   const artistName = topArtist.artist?.name || "Unknown";

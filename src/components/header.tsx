@@ -15,7 +15,19 @@ import { SidebarTrigger } from "./ui/sidebar";
 import { periods, type Period } from "@/lib/consts/periods";
 import { usePeriod } from "@/providers/period-provider";
 import { Fragment, useEffect, useMemo, useState } from "react";
-import { CalendarIcon, RefreshCcwDotIcon, RefreshCcwIcon } from "lucide-react";
+import {
+  CalendarIcon,
+  ChevronDownIcon,
+  RefreshCcwDotIcon,
+  RefreshCcwIcon,
+  StarIcon,
+} from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "./ui/dropdown-menu";
 import { api } from "@/trpc/react";
 import { usePathname } from "next/navigation";
 
@@ -96,6 +108,16 @@ const Header = () => {
     });
   };
 
+  const selectFavoritePreset = (preset: Period) => {
+    if (preset !== "custom") {
+      selectPeriod({
+        type: preset as Exclude<Period, "custom">,
+      });
+    } else {
+      openPeriodSelectDialog();
+    }
+  };
+
   return (
     <header className="flex h-16 shrink-0 items-center gap-2">
       <div className="flex w-full items-center justify-between gap-2 px-4">
@@ -130,28 +152,58 @@ const Header = () => {
         </div>
         <div className="flex items-center gap-2">
           {headerFavoritePeriods.length > 0 ? (
-            <div className="hidden max-w-[min(72vw,32rem)] items-center gap-1 overflow-x-auto py-0.5 [-ms-overflow-style:none] [scrollbar-width:none] sm:max-w-md lg:flex [&::-webkit-scrollbar]:hidden">
-              {headerFavoritePeriods.map((preset) => (
-                <Button
-                  key={preset}
-                  type="button"
-                  variant={
-                    selectedPeriod.type === preset ? "default" : "outline"
-                  }
-                  size="sm"
-                  className="h-8 shrink-0 px-2.5 whitespace-nowrap"
-                  onClick={() =>
-                    preset !== "custom"
-                      ? selectPeriod({
-                          type: preset as Exclude<Period, "custom">,
-                        })
-                      : openPeriodSelectDialog()
-                  }
-                >
-                  {periods[preset]?.label ?? preset}
-                </Button>
-              ))}
-            </div>
+            <>
+              <div className="hidden max-w-[min(80vw,40rem)] items-center gap-2 overflow-x-auto py-1 [-ms-overflow-style:none] [scrollbar-width:none] sm:max-w-lg lg:flex [&::-webkit-scrollbar]:hidden">
+                {headerFavoritePeriods.map((preset) => (
+                  <Button
+                    key={preset}
+                    type="button"
+                    variant={
+                      selectedPeriod.type === preset ? "default" : "outline"
+                    }
+                    size="sm"
+                    className="h-8 shrink-0 px-2.5 whitespace-nowrap"
+                    onClick={() => selectFavoritePreset(preset)}
+                  >
+                    {periods[preset]?.label ?? preset}
+                  </Button>
+                ))}
+              </div>
+              <div className="flex lg:hidden">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="h-8 max-w-[11rem] gap-1.5 px-2.5"
+                      aria-label="Favorite time periods"
+                    >
+                      <StarIcon className="size-4 shrink-0" />
+                      <span className="min-w-0 flex-1 truncate text-left">
+                        {selectedPeriodLabel}
+                      </span>
+                      <ChevronDownIcon className="size-4 shrink-0 opacity-70" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="min-w-40">
+                    {headerFavoritePeriods.map((preset) => (
+                      <DropdownMenuItem
+                        key={preset}
+                        variant={
+                          selectedPeriod.type === preset
+                            ? "accent"
+                            : "ghost"
+                        }
+                        onSelect={() => selectFavoritePreset(preset)}
+                      >
+                        {periods[preset]?.label ?? preset}
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            </>
           ) : null}
           <Separator orientation="vertical" className="my-auto h-8" />
           <Button

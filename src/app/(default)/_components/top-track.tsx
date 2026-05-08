@@ -1,3 +1,4 @@
+import { NoDataCard } from "@/components/cards/no-data-card";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loading } from "@/components/ui/loading";
@@ -5,7 +6,7 @@ import type { ProviderPeriod } from "@/lib/consts/periods";
 import { providerPeriodToQueryInput } from "@/lib/provider-period-query-input";
 import { duration } from "@/lib/utils";
 import { api } from "@/trpc/react";
-import { PlayIcon } from "lucide-react";
+import { MusicIcon, PlayIcon } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
 
@@ -17,7 +18,14 @@ export default function TopTrack({ period }: { period: ProviderPeriod }) {
     return <Loading />;
   }
   if (!topTrack) {
-    return <div>No data</div>;
+    return (
+      <NoDataCard
+        title="Best song"
+        icon={<MusicIcon />}
+        emptyTitle="No track data"
+        description="We couldn't find any tracks for this period. Try a different time range."
+      />
+    );
   }
 
   function handlePlayTrack() {

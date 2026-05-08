@@ -13,7 +13,7 @@ import { StarIcon } from "lucide-react";
 import type { DateRange } from "react-day-picker";
 import { toast } from "sonner";
 
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { periods, type Period } from "@/lib/consts/periods";
@@ -284,6 +284,7 @@ function PeriodSelectDialogInner({
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="overflow-hidden p-0 sm:max-w-[52rem]">
+        <DialogTitle className="sr-only">Select time period</DialogTitle>
         <div className="grid h-[min(80vh,36rem)] min-h-[30rem] grid-cols-1 md:grid-cols-[16rem_1fr]">
           <PresetPeriodList
             selectedType={selectedType}
