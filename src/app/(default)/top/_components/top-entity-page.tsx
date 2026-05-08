@@ -203,7 +203,7 @@ export default function TopEntityPage({ type }: { type: TopType }) {
   const periodInput = providerPeriodToQueryInput(selectedPeriod);
   const { mutate: playTrack } = api.control.play.useMutation();
 
-  const songsQuery = api.dashboard.getTopSongs.useQuery(
+  const songsQuery = api.dashboard.getTopTracks.useQuery(
     {
       ...periodInput,
       sortBy,

@@ -11,6 +11,7 @@ import {
   addToCreationQueues,
   cleanQueues,
   getCreatedEntitySize,
+  retrySpotifyCall,
 } from "@/lib/spotify";
 
 async function fetchPlaybackStats() {
@@ -40,16 +41,17 @@ async function fetchPlaybackStats() {
   );
   for (const user of users.data) {
     const spotify = getSpotifyApi(user.id);
-    const recentlyPlayed = await tryCatch(
-      spotify.player.getRecentlyPlayedTracks(50),
+    const recentlyPlayed = await retrySpotifyCall(
+      () => spotify.player.getRecentlyPlayedTracks(50),
+      "player.getRecentlyPlayedTracks",
     );
 
-    if (recentlyPlayed.error) {
+    if (recentlyPlayed.error || !recentlyPlayed.data) {
       logger.error(recentlyPlayed.error);
       continue;
     }
 
-    const filteredPlaybacks = recentlyPlayed.data.items.filter(
+    const filteredPlaybacks = recentlyPlayed.data?.items.filter(
       (playback) =>
         new Date(playback.played_at) >
         new Date(user.playbacks[0]?.playedAt ?? 0),
@@ -75,6 +77,14 @@ async function fetchPlaybackStats() {
       addToCreationQueues("albums", track.track.album.id);
 
       addToCreationQueues("tracks", track.track.id);
+    }
+    const state = await retrySpotifyCall(
+      () => spotify.player.getPlaybackState(),
+      "player.getPlaybackState",
+    );
+    if (state.error || !state.data) {
+      logger.error(state.error);
+      continue;
     }
 
     await createGenres();
@@ -106,7 +116,7 @@ async function fetchPlaybackStats() {
       },
       "Created tracks",
     );
-    await createPlaybacks(user.id, filteredPlaybacks);
+    await createPlaybacks(user.id, filteredPlaybacks, state.data);
     logger.info(
       {
         count: filteredPlaybacks.length,

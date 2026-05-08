@@ -145,4 +145,76 @@ export const chartRouter = createTRPCRouter({
 
       return { data, totalDuration, totalCount };
     }),
+  getPlatformDistribution: protectedProcedure
+    .input(periodSchema)
+    .query(async ({ ctx, input }) => {
+      const { start, end } = getPeriods(input.period, input.from, input.to);
+      const result = await tryCatch(
+        ctx.db.$queryRaw<
+          { platform: string | null; count: number; duration: number }[]
+        >(
+          Prisma.sql`
+            SELECT
+              NULLIF(TRIM(playback."platform"), '') AS "platform",
+              COUNT(*)::float8 AS "count",
+              COALESCE(SUM(playback."duration"), 0)::float8 AS "duration"
+            FROM playback
+            WHERE playback."playedAt" >= ${start}
+              AND playback."playedAt" <= ${end}
+              AND playback."userId" = ${ctx.session.user.id}
+            GROUP BY NULLIF(TRIM(playback."platform"), '')
+            ORDER BY "count" DESC
+          `,
+        ),
+      );
+
+      if (result.error) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to get platform distribution",
+        });
+      }
+
+      return result.data.map((row) => ({
+        name: row.platform ?? "Unknown",
+        value: row.count,
+        duration: row.duration,
+      }));
+    }),
+  getDeviceDistribution: protectedProcedure
+    .input(periodSchema)
+    .query(async ({ ctx, input }) => {
+      const { start, end } = getPeriods(input.period, input.from, input.to);
+      const result = await tryCatch(
+        ctx.db.$queryRaw<
+          { device: string | null; count: number; duration: number }[]
+        >(
+          Prisma.sql`
+            SELECT
+              NULLIF(TRIM(playback."device"), '') AS "device",
+              COUNT(*)::float8 AS "count",
+              COALESCE(SUM(playback."duration"), 0)::float8 AS "duration"
+            FROM playback
+            WHERE playback."playedAt" >= ${start}
+              AND playback."playedAt" <= ${end}
+              AND playback."userId" = ${ctx.session.user.id}
+            GROUP BY NULLIF(TRIM(playback."device"), '')
+            ORDER BY "count" DESC
+          `,
+        ),
+      );
+
+      if (result.error) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to get device distribution",
+        });
+      }
+
+      return result.data.map((row) => ({
+        name: row.device ?? "Unknown",
+        value: row.count,
+        duration: row.duration,
+      }));
+    }),
 });

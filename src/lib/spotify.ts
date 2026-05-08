@@ -1,7 +1,12 @@
 import { logger } from "./logger";
 import { tryCatch } from "./try-catch";
 import { db } from "@/server/db";
-import type { Artist, PlayHistory, SpotifyApi } from "@spotify/web-api-ts-sdk";
+import type {
+  Artist,
+  PlaybackState,
+  PlayHistory,
+  SpotifyApi,
+} from "@spotify/web-api-ts-sdk";
 
 const BATCH_SIZE = 20;
 const SPOTIFY_RETRY_LIMIT = 5;
@@ -307,6 +312,7 @@ export async function createTracks(spotify: SpotifyApi) {
 export async function createPlaybacks(
   userId: string,
   playbacks: PlayHistory[],
+  state: PlaybackState,
 ) {
   for (const playback of playbacks) {
     const createdPlayback = await tryCatch(
@@ -317,7 +323,8 @@ export async function createPlaybacks(
           },
           track: { connect: { spotifyId: playback.track.id } },
           duration: playback.track.duration_ms,
-          device: "unknown",
+          device: state.device?.name ?? "Unknown",
+          platform: state.device?.type ?? "Unknown",
           playedAt: new Date(playback.played_at),
         },
       }),

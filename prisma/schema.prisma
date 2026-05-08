@@ -16,9 +16,9 @@ datasource db {
 }
 
 model User {
-  id            String     @id @default(uuid())
+  id            Int        @id @default(autoincrement())
   name          String //@db.Text
-  email         String
+  email         String     @unique
   emailVerified Boolean    @default(false)
   image         String? //@db.Text
   product       String?
@@ -36,14 +36,14 @@ model User {
 }
 
 model Session {
-  id        String   @id @default(uuid())
+  id        Int      @id @default(autoincrement())
   expiresAt DateTime
   token     String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   ipAddress String? //@db.Text
   userAgent String? //@db.Text
-  userId    String
+  userId    Int
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([token])
@@ -51,10 +51,10 @@ model Session {
 }
 
 model Account {
-  id                    String    @id @default(uuid())
-  accountId             String //@db.Text
+  id                    Int       @id @default(autoincrement())
+  accountId             Int //@db.Text
   providerId            String //@db.Text
-  userId                String
+  userId                Int
   user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   accessToken           String? //@db.Text
   refreshToken          String? //@db.Text
@@ -70,7 +70,7 @@ model Account {
 }
 
 model Verification {
-  id         String   @id @default(uuid())
+  id         Int      @id @default(autoincrement())
   identifier String //@db.Text
   value      String //@db.Text
   expiresAt  DateTime
@@ -81,10 +81,10 @@ model Verification {
 }
 
 model Settings {
-  id        String   @id @default(uuid())
+  id        Int      @id @default(autoincrement())
   key       String
   value     String
-  userId    String?
+  userId    Int?
   user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now()) @updatedAt
@@ -93,7 +93,7 @@ model Settings {
 }
 
 model Artist {
-  id        String         @id @default(uuid())
+  id        Int            @id @default(autoincrement())
   spotifyId String         @unique
   name      String
   image     String?
@@ -107,17 +107,17 @@ model Artist {
 }
 
 model ArtistGenres {
-  id       String @id @default(uuid())
-  artistId String
+  id       Int    @id @default(autoincrement())
+  artistId Int
   artist   Artist @relation(fields: [artistId], references: [id], onDelete: Cascade)
-  genreId  String
+  genreId  Int
   genre    Genre  @relation(fields: [genreId], references: [id], onDelete: Cascade)
 
   @@map("artist_genres")
 }
 
 model Genre {
-  id        String         @id @default(uuid())
+  id        Int            @id @default(autoincrement())
   name      String         @unique
   createdAt DateTime       @default(now())
   updatedAt DateTime       @default(now()) @updatedAt
@@ -127,18 +127,18 @@ model Genre {
 }
 
 model AlbumArtists {
-  id       String @id @default(uuid())
-  albumId  String
+  id       Int    @id @default(autoincrement())
+  albumId  Int
   album    Album  @relation(fields: [albumId], references: [id], onDelete: Cascade)
   role     String @default("primary")
-  artistId String
+  artistId Int
   artist   Artist @relation(fields: [artistId], references: [id], onDelete: Cascade)
 
   @@map("album_artists")
 }
 
 model Album {
-  id        String         @id @default(uuid())
+  id        Int            @id @default(autoincrement())
   spotifyId String         @unique
   name      String
   image     String?
@@ -151,7 +151,7 @@ model Album {
 }
 
 model Track {
-  id           String        @id @default(uuid())
+  id           Int           @id @default(autoincrement())
   spotifyId    String        @unique
   name         String
   image        String?
@@ -167,17 +167,17 @@ model Track {
   updatedAt    DateTime      @default(now()) @updatedAt
   playbacks    Playback[]
   album        Album?        @relation(fields: [albumId], references: [id])
-  albumId      String?
+  albumId      Int?
   artists      ArtistTrack[]
 
   @@map("track")
 }
 
 model ArtistTrack {
-  id       String @id @default(uuid())
-  artistId String
+  id       Int    @id @default(autoincrement())
+  artistId Int
   artist   Artist @relation(fields: [artistId], references: [id], onDelete: Cascade)
-  trackId  String
+  trackId  Int
   track    Track  @relation(fields: [trackId], references: [id], onDelete: Cascade)
   role     String @default("primary")
 
@@ -185,7 +185,7 @@ model ArtistTrack {
 }
 
 model Playlist {
-  id        String   @id @default(uuid())
+  id        Int      @id @default(autoincrement())
   spotifyId String   @unique
   name      String
   image     String?
@@ -196,12 +196,13 @@ model Playlist {
 }
 
 model Playback {
-  id        String   @id @default(uuid())
-  userId    String
+  id        Int      @id @default(autoincrement())
+  userId    Int
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   duration  Int
   device    String
-  trackId   String
+  platform  String
+  trackId   Int
   track     Track    @relation(fields: [trackId], references: [id], onDelete: Cascade)
   playedAt  DateTime
   createdAt DateTime @default(now())
@@ -211,8 +212,8 @@ model Playback {
 }
 
 model Imports {
-  id          String    @id @default(uuid())
-  userId      String
+  id          Int       @id @default(autoincrement())
+  userId      Int
   user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   type        String
   status      String

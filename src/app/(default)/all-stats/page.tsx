@@ -1,19 +1,19 @@
 import { getPreferredMetricsInput } from "@/lib/get-preferred-metrics-input";
 import { withAuth } from "@/lib/hoc-pages";
 import { api, HydrateClient } from "@/trpc/server";
-import TopEntityPage from "../_components/top-entity-page";
+import AllStatsPage from "./_components/all-stats-page";
 
 export default withAuth(async () => {
   const metricsInput = await getPreferredMetricsInput();
-  await api.dashboard.getTopTracks.prefetch({
-    ...metricsInput,
-    limit: 20,
-    sortBy: "duration",
-  });
+
+  await Promise.all([
+    api.chart.getPlatformDistribution.prefetch(metricsInput),
+    api.chart.getDeviceDistribution.prefetch(metricsInput),
+  ]);
 
   return (
     <HydrateClient>
-      <TopEntityPage type="tracks" />
+      <AllStatsPage />
     </HydrateClient>
   );
 });

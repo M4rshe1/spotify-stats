@@ -175,6 +175,7 @@ CREATE TABLE "playback" (
     "userId" TEXT NOT NULL,
     "duration" INTEGER NOT NULL,
     "device" TEXT NOT NULL,
+    "platform" TEXT NOT NULL,
     "trackId" TEXT NOT NULL,
     "playedAt" TIMESTAMP(3) NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,

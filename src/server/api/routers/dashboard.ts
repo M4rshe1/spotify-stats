@@ -300,7 +300,7 @@ export const dashboardRouter = createTRPCRouter({
         duration: groupResult.data?.[0]?.duration ?? 0,
       };
     }),
-  getTopSongs: protectedProcedure
+  getTopTracks: protectedProcedure
     .input(topItemsSchema)
     .query(async ({ ctx, input }) => {
       const { start, end } = getPeriods(input.period, input.from, input.to);
@@ -395,7 +395,10 @@ export const dashboardRouter = createTRPCRouter({
       const hasMore = rows.data.length > limit;
       const items = hasMore ? rows.data.slice(0, limit) : rows.data;
       const last = items[items.length - 1];
-      const totals = totalsResult.data?.[0] ?? { totalCount: 0, totalDuration: 0 };
+      const totals = totalsResult.data?.[0] ?? {
+        totalCount: 0,
+        totalDuration: 0,
+      };
 
       return {
         items: items.map((row) => ({
@@ -503,7 +506,10 @@ export const dashboardRouter = createTRPCRouter({
       const hasMore = rows.data.length > limit;
       const items = hasMore ? rows.data.slice(0, limit) : rows.data;
       const last = items[items.length - 1];
-      const totals = totalsResult.data?.[0] ?? { totalCount: 0, totalDuration: 0 };
+      const totals = totalsResult.data?.[0] ?? {
+        totalCount: 0,
+        totalDuration: 0,
+      };
 
       return {
         items: items.map((row) => ({
@@ -618,7 +624,10 @@ export const dashboardRouter = createTRPCRouter({
       const hasMore = rows.data.length > limit;
       const items = hasMore ? rows.data.slice(0, limit) : rows.data;
       const last = items[items.length - 1];
-      const totals = totalsResult.data?.[0] ?? { totalCount: 0, totalDuration: 0 };
+      const totals = totalsResult.data?.[0] ?? {
+        totalCount: 0,
+        totalDuration: 0,
+      };
 
       return {
         items: items.map((row) => ({
