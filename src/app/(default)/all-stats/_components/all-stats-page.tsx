@@ -99,7 +99,10 @@ function DistributionPieCard({
                 <ChartTooltipContent
                   nameKey="name"
                   formatter={(_value, _name, _item, _index, payload) => {
-                    const row = payload as DistributionDatum;
+                    const row = payload?.[0]?.payload as DistributionDatum;
+                    if (!row) {
+                      return null;
+                    }
                     return (
                       <div className="flex flex-col gap-1">
                         <div>{row.value.toLocaleString()} plays</div>
