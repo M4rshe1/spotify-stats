@@ -101,6 +101,7 @@ export function DistributionPieCard({
               content={
                 <ChartTooltipContent
                   nameKey="name"
+                  indicator="line"
                   labelFormatter={(_label, payload) => {
                     return payload?.[0]?.name ?? "";
                   }}

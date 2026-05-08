@@ -13,18 +13,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loading } from "@/components/ui/loading";
 import { Spinner } from "@/components/ui/spinner";
 import Link from "next/link";
-
-function formatDurationShort(durationMs: number) {
-  const totalSeconds = Math.floor(durationMs / 1000);
-  const minutes = Math.floor(totalSeconds / 60);
-  const seconds = totalSeconds % 60;
-  return `${minutes}:${seconds.toString().padStart(2, "0")}`;
-}
+import { duration } from "@/lib/utils";
 
 function formatRelativePlayedAt(playedAt: Date) {
   return formatDistanceToNowStrict(new Date(playedAt), {
     addSuffix: true,
-    unit: "minute",
+    unit: undefined,
   });
 }
 
@@ -146,7 +140,7 @@ export default function RecentlyPlayed({ period }: { period: ProviderPeriod }) {
             {items.map((item, index) => (
               <div
                 key={`${item.id}-${index}`}
-                className="relative isolate overflow-hidden rounded-md border bg-muted/30"
+                className="bg-muted/30 relative isolate overflow-hidden rounded-md border"
               >
                 <CoverTintBackdrop
                   coverUrl={item.image}
@@ -232,11 +226,13 @@ export default function RecentlyPlayed({ period }: { period: ProviderPeriod }) {
                     )}
                   </div>
                   <div className="hidden w-28 text-right text-xs md:block">
-                    {formatDurationShort(item.duration)}
+                    {duration(item.duration).toBestDurationString(false)}
                   </div>
                   <div className="hidden w-64 text-right text-xs lg:block">
-                    {format(new Date(item.playedAt), "HH:mm")} (
-                    {formatRelativePlayedAt(item.playedAt)})
+                    {format(new Date(item.playedAt), "HH:mm")}{" "}
+                    <span className="text-muted-foreground">
+                      ({formatRelativePlayedAt(item.playedAt)})
+                    </span>
                   </div>
                 </div>
               </div>

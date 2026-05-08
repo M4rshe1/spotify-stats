@@ -204,6 +204,30 @@ function ChartTooltipContent({
             const itemConfig = getPayloadConfigFromPayload(config, item, key)
             const indicatorColor = color ?? item.payload?.fill ?? item.color
 
+            const indicatorEl =
+              !itemConfig?.icon && !hideIndicator ? (
+                <div
+                  className={cn(
+                    "shrink-0 rounded-[2px] border-(--color-border) bg-(--color-bg)",
+                    {
+                      "h-2.5 w-2.5": indicator === "dot",
+                      "w-1 self-stretch": indicator === "line",
+                      "w-0 border-[1.5px] border-dashed bg-transparent":
+                        indicator === "dashed",
+                      "my-0.5": nestLabel && indicator === "dashed",
+                    }
+                  )}
+                  style={
+                    {
+                      "--color-bg": indicatorColor,
+                      "--color-border": indicatorColor,
+                    } as React.CSSProperties
+                  }
+                />
+              ) : itemConfig?.icon ? (
+                <itemConfig.icon />
+              ) : null
+
             return (
               <div
                 key={index}
@@ -213,33 +237,21 @@ function ChartTooltipContent({
                 )}
               >
                 {formatter && item?.value !== undefined && item.name ? (
-                  formatter(item.value, item.name, item, index, item.payload)
+                  <>
+                    {indicatorEl}
+                    <div className="flex min-w-0 flex-1 flex-col">
+                      {formatter(
+                        item.value,
+                        item.name,
+                        item,
+                        index,
+                        item.payload
+                      )}
+                    </div>
+                  </>
                 ) : (
                   <>
-                    {itemConfig?.icon ? (
-                      <itemConfig.icon />
-                    ) : (
-                      !hideIndicator && (
-                        <div
-                          className={cn(
-                            "shrink-0 rounded-[2px] border-(--color-border) bg-(--color-bg)",
-                            {
-                              "h-2.5 w-2.5": indicator === "dot",
-                              "w-1": indicator === "line",
-                              "w-0 border-[1.5px] border-dashed bg-transparent":
-                                indicator === "dashed",
-                              "my-0.5": nestLabel && indicator === "dashed",
-                            }
-                          )}
-                          style={
-                            {
-                              "--color-bg": indicatorColor,
-                              "--color-border": indicatorColor,
-                            } as React.CSSProperties
-                          }
-                        />
-                      )
-                    )}
+                    {indicatorEl}
                     <div
                       className={cn(
                         "flex flex-1 justify-between leading-none",
