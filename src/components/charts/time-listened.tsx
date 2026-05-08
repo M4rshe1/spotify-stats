@@ -52,6 +52,8 @@ export function TimeListened({ period }: { period: ProviderPeriod }) {
     Array.isArray(tracks?.data) && tracks?.data.length > 0
       ? tracks.data
       : [{ date: "", duration: 0 }];
+  const maxDuration = Math.max(...data.map((entry) => entry.duration), 0);
+  const yAxisMax = maxDuration > 0 ? Math.ceil(maxDuration * 1.1) : 1;
 
   return (
     <Card className="h-full min-h-0">
@@ -87,7 +89,7 @@ export function TimeListened({ period }: { period: ProviderPeriod }) {
               tickFormatter={(value) => {
                 switch (tracks?.grouping) {
                   case "day":
-                    return format(new Date(value), "EE, d. MMM");
+                    return format(new Date(value), "d. MMM");
                   case "month":
                     return format(new Date(value), "MMM yyyy");
                   case "year":
@@ -104,7 +106,7 @@ export function TimeListened({ period }: { period: ProviderPeriod }) {
               axisLine={false}
               tickLine={false}
               tickMargin={8}
-              domain={[0, 1000 * 60 * 60]}
+              domain={[0, yAxisMax]}
               stroke="#a9adc1"
               tickFormatter={(value) =>
                 typeof value === "number"
@@ -120,6 +122,9 @@ export function TimeListened({ period }: { period: ProviderPeriod }) {
               }}
               content={
                 <ChartTooltipContent
+                  labelFormatter={(label) => {
+                    return format(new Date(label), "EE, d. MMM");
+                  }}
                   formatter={(value, name, item, index, payload) =>
                     formatTooltipValue(
                       value as number,

@@ -1,4 +1,5 @@
 import { logger } from "./logger";
+import { platform } from "./platform";
 import { tryCatch } from "./try-catch";
 import { db } from "@/server/db";
 import type {
@@ -411,7 +412,7 @@ export async function createPlaybacks(
           track: { connect: { id: track.data.id } },
           duration: playback.track.duration_ms,
           device: state.device?.name ?? "Unknown",
-          platform: state.device?.type ?? "Unknown",
+          platform: platform(state.device?.type ?? "Unknown"),
           playedAt: new Date(playback.played_at),
         },
       }),
@@ -482,7 +483,7 @@ export async function createHistory(
           userId,
           duration: item.ms_played ?? 0,
           device: "Unknown",
-          platform: item.platform,
+          platform: platform(item.platform),
           trackId,
           playedAt: item.ts,
         },

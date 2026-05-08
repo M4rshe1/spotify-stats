@@ -1,5 +1,6 @@
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
+import { formatNumber } from "./number";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -28,20 +29,32 @@ class Duration {
     return `${this.toHours().toLocaleString()}h ${this.toMinutes().toLocaleString()}m ${this.toSeconds().toLocaleString()}s`.trim();
   }
 
-  toFormattedString(format: string) {
+  private formatNumber(number: number, short: boolean, level: 1 | 2 | 3 = 1) {
+    return short ? formatNumber(number, level) : number.toLocaleString();
+  }
+
+  toFormattedString(format: string, short: boolean = true, level: 1 | 2 | 3 = 1) {
     const hours = Math.floor(this.durationMs / 3_600_000);
     const minutes = Math.floor((this.durationMs % 3_600_000) / 60_000);
     const seconds = Math.floor((this.durationMs % 60_000) / 1_000);
     const milliseconds = this.durationMs % 1_000;
-    return format
-      .replace("{H}", this.toHours().toLocaleString())
-      .replace("{M}", this.toMinutes().toLocaleString())
-      .replace("{S}", this.toSeconds().toLocaleString())
-      .replace("{MS}", this.durationMs.toLocaleString())
-      .replace("{h}", hours.toLocaleString())
-      .replace("{m}", minutes.toLocaleString())
-      .replace("{s}", seconds.toLocaleString())
-      .replace("{ms}", milliseconds.toLocaleString());
+
+    const formatMap: Record<string, string> = {
+      "{H}": this.formatNumber(this.toHours(), short, level),
+      "{M}": this.formatNumber(this.toMinutes(), short, level),
+      "{S}": this.formatNumber(this.toSeconds(), short, level),
+      "{MS}": this.formatNumber(this.durationMs, short, level),
+      "{h}": this.formatNumber(hours, short, level),
+      "{m}": this.formatNumber(minutes, short, level  ),
+      "{s}": this.formatNumber(seconds, short, level),
+      "{ms}": this.formatNumber(milliseconds, short, level),
+    };
+
+    let formatted = format;
+    for (const [key, value] of Object.entries(formatMap)) {
+      formatted = formatted.replace(key, value);
+    }
+    return formatted;
   }
 }
 

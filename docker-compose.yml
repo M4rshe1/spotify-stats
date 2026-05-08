@@ -46,9 +46,9 @@ services:
       - postgres
       - redis
 
-  worker-crucher:
+  worker-cruncher:
     <<: *app-base
-    command: bun run worker:crusher
+    command: bun run worker:cruncher
     environment:
       - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/spotify
       - REDIS_URL=redis://redis:6379

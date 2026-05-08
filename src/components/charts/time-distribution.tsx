@@ -64,7 +64,7 @@ export function TimeDistribution({ period }: { period: ProviderPeriod }) {
   const maxPercentage = Math.max(
     ...(result?.data?.map((d) => d.percentage) ?? []),
   );
-
+  const yAxisMax = maxPercentage > 0 ? Math.ceil(maxPercentage * 1.1) : 1;
   return (
     <Card className="h-full min-h-0">
       <CardHeader>
@@ -75,7 +75,7 @@ export function TimeDistribution({ period }: { period: ProviderPeriod }) {
       </CardHeader>
       <CardContent className="flex min-h-0 flex-1 flex-col">
         <ChartContainer
-          className="aspect-auto h-full min-h-0 w-full flex-1"
+          className="aspect-auto h-[clamp(13rem,38dvh,28rem)] max-h-[min(28rem,55dvh)] min-h-52 w-full"
           config={{
             percentage: {
               label: "Time Listened Distribution",
@@ -110,7 +110,7 @@ export function TimeDistribution({ period }: { period: ProviderPeriod }) {
               tickLine={false}
               tickMargin={8}
               stroke="#a9adc1"
-              domain={[0, maxPercentage]}
+              domain={[0, yAxisMax]}
               tickFormatter={(value) =>
                 typeof value === "number" ? formatPercent(value) : value
               }

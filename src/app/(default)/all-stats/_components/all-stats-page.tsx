@@ -22,6 +22,8 @@ import { providerPeriodToQueryInput } from "@/lib/provider-period-query-input";
 import { duration as formatDuration, formatPercent } from "@/lib/utils";
 import { usePeriod } from "@/providers/period-provider";
 import { api } from "@/trpc/react";
+import { TimeDistribution } from "@/components/charts/time-distribution";
+import { TimeListened } from "@/components/charts/time-listened";
 
 const PIE_COLORS = [
   "var(--chart-1)",
@@ -153,6 +155,9 @@ export default function AllStatsPage() {
 
   return (
     <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+      <div className="lg:col-span-2">
+        <TimeListened period={selectedPeriod} />
+      </div>
       <div className="lg:col-span-1">
         <DistributionPieCard
           title="Platform split"
@@ -168,6 +173,9 @@ export default function AllStatsPage() {
           data={deviceData}
           chartConfig={toChartConfig("Plays", deviceData)}
         />
+      </div>
+      <div className="lg:col-span-2">
+        <TimeDistribution period={selectedPeriod} />
       </div>
     </div>
   );
