@@ -5,6 +5,18 @@ import { periodSchema } from "@/server/api/lib";
 import { tryCatch } from "@/lib/try-catch";
 import { TRPCError } from "@trpc/server";
 import { Prisma } from "generated/prisma";
+import {
+  addDays,
+  addMonths,
+  addYears,
+  format,
+  differenceInDays,
+  startOfDay,
+  startOfMonth,
+  startOfYear,
+  differenceInMonths,
+  differenceInYears,
+} from "date-fns";
 
 function getSQLPlayedAt(timezone: string) {
   return `("playedAt" AT TIME ZONE 'UTC' AT TIME ZONE '${timezone}')`;
@@ -31,6 +43,86 @@ function getSQLGroupingString(grouping: PeriodGrouping, timezone: string) {
       break;
   }
   return Prisma.raw(sql);
+}
+
+function fillUpGrouping(
+  grouping: PeriodGrouping,
+  data: { date: string; duration: number }[],
+) {
+  if (grouping === "hour") {
+    const lowestHour = Math.min(...data.map((r) => parseInt(r.date, 10)));
+    const highestHour = Math.max(...data.map((r) => parseInt(r.date, 10)));
+    const hours = Array.from({ length: highestHour - lowestHour + 1 }, (_, i) =>
+      String(lowestHour + i).padStart(2, "0"),
+    );
+    return hours.map((hour) => {
+      const result = data.find((r) => r.date === hour);
+      return {
+        date: hour.padStart(2, "0"),
+        duration: result?.duration ?? 0,
+      };
+    });
+  } else if (grouping === "day") {
+    const lowestDay = Math.min(...data.map((r) => new Date(r.date).getTime()));
+    const highestDay = Math.max(...data.map((r) => new Date(r.date).getTime()));
+    const days = Array.from(
+      {
+        length:
+          differenceInDays(
+            startOfDay(new Date(highestDay)),
+            startOfDay(new Date(lowestDay)),
+          ) + 1,
+      },
+      (_, i) =>
+        format(addDays(startOfDay(new Date(lowestDay)), i), "yyyy-MM-dd"),
+    );
+    return days.map((day) => {
+      const result = data.find((r) => r.date === day);
+      return { date: day, duration: result?.duration ?? 0 };
+    });
+  } else if (grouping === "month") {
+    const lowestMonth = Math.min(
+      ...data.map((r) => new Date(r.date).getTime()),
+    );
+    const highestMonth = Math.max(
+      ...data.map((r) => new Date(r.date).getTime()),
+    );
+    const months = Array.from(
+      {
+        length:
+          differenceInMonths(
+            startOfMonth(new Date(highestMonth)),
+            startOfMonth(new Date(lowestMonth)),
+          ) + 1,
+      },
+      (_, i) =>
+        format(addMonths(startOfMonth(new Date(lowestMonth)), i), "yyyy-MM"),
+    );
+    return months.map((month) => {
+      const result = data.find((r) => r.date === month);
+      return { date: month, duration: result?.duration ?? 0 };
+    });
+  } else if (grouping === "year") {
+    const lowestYear = Math.min(...data.map((r) => new Date(r.date).getTime()));
+    const highestYear = Math.max(
+      ...data.map((r) => new Date(r.date).getTime()),
+    );
+    const years = Array.from(
+      {
+        length:
+          differenceInYears(
+            startOfYear(new Date(highestYear)),
+            startOfYear(new Date(lowestYear)),
+          ) + 1,
+      },
+      (_, i) => format(addYears(startOfYear(new Date(lowestYear)), i), "yyyy"),
+    );
+    return years.map((year) => {
+      const result = data.find((r) => r.date === year);
+      return { date: year, duration: result?.duration ?? 0 };
+    });
+  }
+  return data;
 }
 
 export const chartRouter = createTRPCRouter({
@@ -69,27 +161,10 @@ export const chartRouter = createTRPCRouter({
         });
       }
 
-      let filledData: { date: string; duration: number }[] = playbacks.data;
-
-      if (grouping === "hour") {
-        const lowestHour = Math.min(
-          ...playbacks.data.map((r) => parseInt(r.date, 10)),
-        );
-        const highestHour = Math.max(
-          ...playbacks.data.map((r) => parseInt(r.date, 10)),
-        );
-        const hours = Array.from(
-          { length: highestHour - lowestHour + 1 },
-          (_, i) => String(lowestHour + i).padStart(2, "0"),
-        );
-        filledData = hours.map((hour) => {
-          const result = playbacks.data.find((r) => r.date === hour);
-          return {
-            date: hour.padStart(2, "0"),
-            duration: result?.duration ?? 0,
-          };
-        });
-      }
+      const filledData: { date: string; duration: number }[] = fillUpGrouping(
+        grouping,
+        playbacks.data,
+      );
 
       return {
         data: filledData,

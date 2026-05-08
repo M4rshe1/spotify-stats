@@ -8,7 +8,13 @@ import type {
   SpotifyApi,
 } from "@spotify/web-api-ts-sdk";
 
-type HistoryItem = {
+export function getTrackIdFromUri(uri: string): string | null {
+  if (typeof uri !== "string" || uri.length === 0) return null;
+  const idPart = uri.split(":")[2];
+  return idPart && idPart.length > 0 ? idPart : null;
+}
+
+export type HistoryItem = {
   ts: string;
   platform: string;
   ms_played: number;
@@ -40,14 +46,22 @@ export class Batches {
     this.batchSize = size;
     return this;
   }
+  public batch<T>(array: T[], batchSize: number): T[][] {
+    const result: T[][] = [];
+    for (let i = 0; i < array.length; i += batchSize) {
+      result.push(array.slice(i, i + batchSize));
+    }
+    return result;
+  }
+
   public fromQueue(queue: keyof typeof creationQueues): string[][] {
-    return batch(Array.from(creationQueues[queue]), this.batchSize);
+    return this.batch(Array.from(creationQueues[queue]), this.batchSize);
   }
   public fromSet(set: Set<string>): string[][] {
-    return batch(Array.from(set), this.batchSize);
+    return this.batch(Array.from(set), this.batchSize);
   }
   public fromArray<T>(array: T[]): T[][] {
-    return batch(array, this.batchSize);
+    return this.batch(array, this.batchSize);
   }
 }
 
@@ -60,7 +74,6 @@ const creationQueues = {
   albums: new Set<string>(),
   tracks: new Set<string>(),
 };
-
 const createdEntities = {
   genres: new Set<string>(),
   artists: new Set<string>(),
@@ -83,27 +96,23 @@ export function addToCreationQueues(
     creationQueues[entity].add(id);
   }
 }
+
 export function createEntity(entity: keyof typeof createdEntities, id: string) {
   creationQueues[entity].delete(id);
   createdEntities[entity].add(id);
 }
-export function cleanQueues() {
-  creationQueues.genres.clear();
-  creationQueues.artists.clear();
-  creationQueues.albums.clear();
-  creationQueues.tracks.clear();
-  createdEntities.genres.clear();
-  createdEntities.artists.clear();
-  createdEntities.albums.clear();
-  createdEntities.tracks.clear();
-}
 
-export function batch<T>(array: T[], batchSize: number): T[][] {
-  const result = [];
-  for (let i = 0; i < array.length; i += batchSize) {
-    result.push(array.slice(i, i + batchSize) as T[]);
+export function cleanQueues() {
+  for (const key of Object.keys(creationQueues) as Array<
+    keyof typeof creationQueues
+  >) {
+    creationQueues[key].clear();
   }
-  return result as T[][];
+  for (const key of Object.keys(createdEntities) as Array<
+    keyof typeof createdEntities
+  >) {
+    createdEntities[key].clear();
+  }
 }
 
 export async function retrySpotifyCall<T>(
@@ -146,59 +155,67 @@ export async function retrySpotifyCall<T>(
 }
 
 export async function createGenres() {
+  const genreNames = Array.from(creationQueues.genres);
+  if (genreNames.length === 0) return;
+
   const existingGenres = await tryCatch(
     db.genre.findMany({
-      where: { name: { in: Array.from(creationQueues.genres) } },
+      where: { name: { in: genreNames } },
     }),
   );
   if (existingGenres.error) {
     logger.error(existingGenres.error);
     return;
   }
-  if (existingGenres.data.length === creationQueues.genres.size) {
-    return;
+  for (const genre of existingGenres.data) {
+    createEntity("genres", genre.name);
   }
 
-  existingGenres.data.forEach((genre) => {
-    createEntity("genres", genre.name);
-  });
+  const uncreatedGenres = genreNames.filter(
+    (name) => !createdEntities.genres.has(name),
+  );
+  if (uncreatedGenres.length === 0) return;
 
-  const newGenres = Array.from(creationQueues.genres);
   const createdGenres = await tryCatch(
     db.genre.createManyAndReturn({
-      data: newGenres.map((genre) => ({ name: genre })),
+      data: uncreatedGenres.map((genre) => ({ name: genre })),
     }),
   );
   if (createdGenres.error) {
     logger.error(createdGenres.error);
     return;
   }
-  createdGenres.data.forEach((genre) => {
+  for (const genre of createdGenres.data) {
     createEntity("genres", genre.name);
-  });
+  }
 }
 
 export async function createArtists(spotify: SpotifyApi) {
+  const artistIds = Array.from(creationQueues.artists);
+  if (artistIds.length === 0) return;
+
   const existingArtist = await tryCatch(
     db.artist.findMany({
-      where: { spotifyId: { in: Array.from(creationQueues.artists) } },
+      where: { spotifyId: { in: artistIds } },
     }),
   );
   if (existingArtist.error) {
     logger.error(existingArtist.error);
     return;
   }
-  if (existingArtist.data.length === creationQueues.artists.size) {
-    return;
-  }
-  existingArtist.data.forEach((artist) => {
+  for (const artist of existingArtist.data) {
     createEntity("artists", artist.spotifyId);
-  });
-  const batches = new Batches().fromQueue("artists");
+  }
+  const remainingIds = artistIds.filter(
+    (id) => !createdEntities.artists.has(id),
+  );
+  if (remainingIds.length === 0) return;
+
+  const batches = new Batches().withSize(20).fromArray(remainingIds);
   const newArtists: Artist[] = [];
   for (const batchIds of batches) {
     const { error, data: artistsData } = await retrySpotifyCall(
-      () => spotify.artists.get(Array.from(batchIds) as string[]),
+      () => spotify.artists.get(batchIds),
       "artists.get",
     );
     if (error || !artistsData) {
@@ -206,13 +223,14 @@ export async function createArtists(spotify: SpotifyApi) {
       return;
     }
     artistsData.forEach((artist: Artist) => {
-      artist.genres?.forEach((genre) => {
+      (artist.genres || []).forEach((genre) => {
         addToCreationQueues("genres", genre);
       });
       newArtists.push(artist);
     });
   }
   await createGenres();
+
   const results = await Promise.all(
     newArtists.map((artist) => {
       return tryCatch(
@@ -222,7 +240,7 @@ export async function createArtists(spotify: SpotifyApi) {
             name: artist.name,
             image: artist.images[0]?.url,
             genres: {
-              create: artist.genres.map((genre) => ({
+              create: (artist.genres || []).map((genre) => ({
                 genre: { connect: { name: genre } },
               })),
             },
@@ -241,25 +259,28 @@ export async function createArtists(spotify: SpotifyApi) {
 }
 
 export async function createAlbums(spotify: SpotifyApi) {
+  const albumIds = Array.from(creationQueues.albums);
+  if (albumIds.length === 0) return;
+
   const existingAlbums = await tryCatch(
     db.album.findMany({
-      where: { spotifyId: { in: Array.from(creationQueues.albums) } },
+      where: { spotifyId: { in: albumIds } },
     }),
   );
   if (existingAlbums.error) {
     logger.error(existingAlbums.error);
     return;
   }
-  if (existingAlbums.data.length === creationQueues.albums.size) {
-    return;
-  }
-  existingAlbums.data.forEach((album) => {
+  for (const album of existingAlbums.data) {
     createEntity("albums", album.spotifyId);
-  });
-  const batches = new Batches().fromQueue("albums");
+  }
+  const remainingIds = albumIds.filter((id) => !createdEntities.albums.has(id));
+  if (remainingIds.length === 0) return;
+
+  const batches = new Batches().withSize(20).fromArray(remainingIds);
   for (const batchIds of batches) {
     const { error, data: albumsData } = await retrySpotifyCall(
-      () => spotify.albums.get(Array.from(batchIds) as string[]),
+      () => spotify.albums.get(batchIds),
       "albums.get",
     );
     if (error) {
@@ -292,25 +313,28 @@ export async function createAlbums(spotify: SpotifyApi) {
 }
 
 export async function createTracks(spotify: SpotifyApi) {
+  const trackIds = Array.from(creationQueues.tracks);
+  if (trackIds.length === 0) return;
+
   const existingTracks = await tryCatch(
     db.track.findMany({
-      where: { spotifyId: { in: Array.from(creationQueues.tracks) } },
+      where: { spotifyId: { in: trackIds } },
     }),
   );
   if (existingTracks.error) {
     logger.error(existingTracks.error);
     return;
   }
-  if (existingTracks.data.length === creationQueues.tracks.size) {
-    return;
-  }
-  existingTracks.data.forEach((track) => {
+  for (const track of existingTracks.data) {
     createEntity("tracks", track.spotifyId);
-  });
-  const batches = new Batches().fromQueue("tracks");
+  }
+  const remainingIds = trackIds.filter((id) => !createdEntities.tracks.has(id));
+  if (remainingIds.length === 0) return;
+
+  const batches = new Batches().withSize(20).fromArray(remainingIds);
   for (const batchIds of batches) {
     const { error, data: tracksData } = await retrySpotifyCall(
-      () => spotify.tracks.get(Array.from(batchIds) as string[]),
+      () => spotify.tracks.get(batchIds),
       "tracks.get",
     );
     if (error) {
@@ -357,13 +381,34 @@ export async function createPlaybacks(
   state: PlaybackState,
 ) {
   for (const playback of playbacks) {
+    const track = await tryCatch(
+      db.track.findUnique({
+        where: { spotifyId: playback.track.id },
+        select: { id: true },
+      }),
+    );
+    if (track.error) {
+      logger.error(track.error);
+      return;
+    }
+    if (!track.data) continue;
+
     const createdPlayback = await tryCatch(
-      db.playback.create({
-        data: {
+      db.playback.upsert({
+        where: {
+          userId_playedAt: {
+            userId,
+            playedAt: new Date(playback.played_at),
+          },
+        },
+        update: {
+          duration: playback.track.duration_ms,
+        },
+        create: {
           user: {
             connect: { id: userId },
           },
-          track: { connect: { spotifyId: playback.track.id } },
+          track: { connect: { id: track.data.id } },
           duration: playback.track.duration_ms,
           device: state.device?.name ?? "Unknown",
           platform: state.device?.type ?? "Unknown",
@@ -379,49 +424,103 @@ export async function createPlaybacks(
 }
 
 export async function createHistory(
-  spotify: SpotifyApi,
   userId: string,
   importId: number,
   history: HistoryItem[],
 ) {
   const length = history.length;
-  const batchSize = Math.ceil(length / 100);
+  if (length === 0) {
+    const updatedImport = await tryCatch(
+      db.import.update({
+        where: { id: importId },
+        data: { progress: 1, entriesAdded: 0 },
+      }),
+    );
+    if (updatedImport.error) {
+      logger.error(updatedImport.error);
+    }
+    return;
+  }
+  const batchSize = Math.max(1, Math.ceil(length / 100));
   const batches = new Batches()
     .withSize(batchSize)
     .fromArray<HistoryItem>(history);
-  const totalBatches = batches.length;
+
   let completedBatches = 0;
+  let totalEntriesAdded = 0;
+  const totalBatches = batches.length;
+
   for (const batch of batches) {
-    completedBatches++;
-    batch.forEach(async (item) => {
-      const createdPlayback = await tryCatch(
-        db.playback.create({
-          data: {
-            user: { connect: { id: userId } },
-            track: {
-              connect: {
-                spotifyId: item.spotify_track_uri.split(":")[2] ?? "",
+    const trackSpotifyIds = [
+      ...new Set(
+        batch
+          .map((item) => getTrackIdFromUri(item.spotify_track_uri))
+          .filter((trackId): trackId is string => !!trackId),
+      ),
+    ];
+    const tracks = await tryCatch(
+      db.track.findMany({
+        where: { spotifyId: { in: trackSpotifyIds } },
+        select: { id: true, spotifyId: true },
+      }),
+    );
+    if (tracks.error) {
+      logger.error("Error finding tracks");
+      logger.debug(tracks.error);
+      return;
+    }
+    const trackIdBySpotifyId = new Map(
+      tracks.data.map((track) => [track.spotifyId, track.id]),
+    );
+    const playbackRows = batch.flatMap((item) => {
+      const spotifyId = getTrackIdFromUri(item.spotify_track_uri);
+      if (!spotifyId) return [];
+      const trackId = trackIdBySpotifyId.get(spotifyId);
+      if (!trackId) return [];
+      return [
+        {
+          userId,
+          duration: item.ms_played ?? 0,
+          device: "Unknown",
+          platform: item.platform,
+          trackId,
+          playedAt: item.ts,
+        },
+      ];
+    });
+    if (playbackRows.length > 0) {
+      for (const playback of playbackRows) {
+        const createdPlayback = await tryCatch(
+          db.playback.upsert({
+            where: {
+              userId_playedAt: {
+                userId,
+                playedAt: playback.playedAt,
               },
             },
-            duration: item.ms_played ?? 0,
-            device: "Unknown",
-            platform: item.platform,
-            playedAt: new Date(item.ts),
-          },
-        }),
-      );
-      if (createdPlayback.error) {
-        logger.error(createdPlayback.error);
-        return;
+            create: playback,
+            update: playback,
+          }),
+        );
+        if (createdPlayback.error) {
+          logger.error(createdPlayback.error);
+        }
       }
-      tryCatch(
-        db.import.update({
-          where: { id: importId },
-          data: {
-            progress: completedBatches / totalBatches,
-          },
-        }),
-      );
-    });
+      totalEntriesAdded += playbackRows.length;
+    }
+    completedBatches++;
+    const updatedImport = await tryCatch(
+      db.import.update({
+        where: { id: importId },
+        data: {
+          progress: completedBatches / totalBatches,
+          entriesAdded: totalEntriesAdded,
+        },
+      }),
+    );
+    if (updatedImport.error) {
+      logger.error(updatedImport.error);
+      return;
+    }
   }
 }

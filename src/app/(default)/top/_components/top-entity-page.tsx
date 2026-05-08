@@ -24,15 +24,15 @@ type SortBy = "count" | "duration";
 type TopType = "tracks" | "artists" | "albums";
 
 type ListItem = {
-  id: string;
+  id: number;
   title: string;
   image: string | null;
   duration: number;
   count: number;
   album?: string;
-  albumId?: string | null;
+  albumId?: number | null;
   artists?: string[];
-  artistIds?: string[];
+  artistIds?: number[];
 };
 
 const meta: Record<TopType, { title: string; empty: string; error: string }> = {
@@ -66,14 +66,14 @@ function TopListItem({
   item: ListItem;
   countPercentage: number;
   durationPercentage: number;
-  onPlay?: (trackId: string) => void;
+  onPlay?: (trackId: number) => void;
 }) {
   const href =
     type === "tracks"
       ? `/track/${item.id}`
       : type === "artists"
         ? `/artist/${item.id}`
-        : item.id === "unknown"
+        : item.id === 0
           ? null
           : `/album/${item.id}`;
   const content = (
@@ -196,7 +196,7 @@ export default function TopEntityPage({ type }: { type: TopType }) {
   const [sortBy, setSortBy] = useState<SortBy>("duration");
   const [items, setItems] = useState<ListItem[]>([]);
   const [cursor, setCursor] = useState<{
-    cursorId: string;
+    cursorId: number;
     cursorValue: number;
   } | null>(null);
   const { selectedPeriod } = usePeriod();

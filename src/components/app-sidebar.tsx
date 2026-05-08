@@ -3,15 +3,12 @@
 import * as React from "react";
 import {
   Command,
-  Frame,
   Home,
   Heart,
-  Map,
-  PieChart,
   MessageSquare,
-  Settings2,
   TrendingUp,
   GitBranch,
+  Upload,
 } from "lucide-react";
 
 import { NavMain } from "@/components/nav-main";
@@ -89,6 +86,12 @@ const data = {
           url: "#",
         },
       ],
+    },
+    {
+      title: "Import",
+      url: "/user/import",
+      icon: Upload,
+      isActive: true,
     },
   ],
   navSecondary: [

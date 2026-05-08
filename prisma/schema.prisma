@@ -41,7 +41,7 @@ model User {
 }
 
 model Session {
-  id        Int      @id @default(autoincrement())
+  id        String   @id @default(uuid())
   expiresAt DateTime
   token     String
   createdAt DateTime @default(now())
@@ -59,8 +59,8 @@ model Session {
 }
 
 model Account {
-  id                    Int       @id @default(autoincrement())
-  accountId             Int //@db.Text
+  id                    String    @id @default(uuid())
+  accountId             String //@db.Text
   providerId            String //@db.Text
   userId                String
   user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -79,7 +79,7 @@ model Account {
 }
 
 model Verification {
-  id         Int      @id @default(autoincrement())
+  id         String   @id @default(uuid())
   identifier String //@db.Text
   value      String //@db.Text
   expiresAt  DateTime
@@ -218,21 +218,23 @@ model Playback {
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now()) @updatedAt
 
+  @@unique([userId, playedAt])
   @@map("playback")
 }
 
 model Import {
-  id          Int       @id @default(autoincrement())
-  userId      String
-  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  type        String
-  status      String
-  startedAt   DateTime
-  progress    Float     @default(0)
-  completedAt DateTime?
-  error       String?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @default(now()) @updatedAt
+  id           Int       @id @default(autoincrement())
+  userId       String
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type         String
+  status       String
+  startedAt    DateTime
+  progress     Float     @default(0)
+  entriesAdded Int       @default(0)
+  completedAt  DateTime?
+  error        String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @default(now()) @updatedAt
 
   @@map("import")
 }

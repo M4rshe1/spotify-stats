@@ -12,7 +12,7 @@ const topItemsSchema = periodSchema.extend({
   limit: z.number().int().min(1).max(50).default(20),
   sortBy: sortSchema.default("duration"),
   cursorValue: z.number().nonnegative().optional(),
-  cursorId: z.string().optional(),
+  cursorId: z.number().optional(),
 });
 
 export const dashboardRouter = createTRPCRouter({
@@ -178,7 +178,7 @@ export const dashboardRouter = createTRPCRouter({
       const userId = ctx.session.user.id;
       const topTrack = await tryCatch(
         ctx.db.$queryRaw<
-          { trackId: string; duration: number; tracks: bigint }[]
+          { trackId: number; duration: number; tracks: bigint }[]
         >(
           Prisma.sql`
             SELECT
@@ -228,7 +228,7 @@ export const dashboardRouter = createTRPCRouter({
       const userId = ctx.session.user.id;
       const groupResult = await tryCatch(
         ctx.db.$queryRaw<
-          { artistId: string; tracks: bigint; duration: number }[]
+          { artistId: number; tracks: bigint; duration: number }[]
         >(
           Prisma.sql`
             SELECT
@@ -343,15 +343,15 @@ export const dashboardRouter = createTRPCRouter({
       const rows = await tryCatch(
         ctx.db.$queryRaw<
           {
-            id: string;
+            id: number;
             name: string;
             image: string | null;
-            albumId: string | null;
+            albumId: number | null;
             albumName: string | null;
             duration: number;
             count: number;
             artistNames: string[] | null;
-            artistIds: string[] | null;
+            artistIds: number[] | null;
           }[]
         >(Prisma.sql`
           SELECT
@@ -368,7 +368,7 @@ export const dashboardRouter = createTRPCRouter({
             ) AS "artistNames",
             COALESCE(
               ARRAY_AGG(DISTINCT artist."id") FILTER (WHERE artist."id" IS NOT NULL),
-              ARRAY[]::text[]
+              ARRAY[]::integer[]
             ) AS "artistIds"
           FROM playback
           JOIN track ON playback."trackId" = track."id"
@@ -469,7 +469,7 @@ export const dashboardRouter = createTRPCRouter({
       const rows = await tryCatch(
         ctx.db.$queryRaw<
           {
-            id: string;
+            id: number;
             name: string;
             image: string | null;
             duration: number;
@@ -576,13 +576,13 @@ export const dashboardRouter = createTRPCRouter({
       const rows = await tryCatch(
         ctx.db.$queryRaw<
           {
-            id: string;
+            id: number;
             name: string;
             image: string | null;
             duration: number;
             count: number;
             artistNames: string[] | null;
-            artistIds: string[] | null;
+            artistIds: number[] | null;
           }[]
         >(Prisma.sql`
           SELECT
@@ -597,7 +597,7 @@ export const dashboardRouter = createTRPCRouter({
             ) AS "artistNames",
             COALESCE(
               ARRAY_AGG(DISTINCT artist."id") FILTER (WHERE artist."id" IS NOT NULL),
-              ARRAY[]::text[]
+              ARRAY[]::integer[]
             ) AS "artistIds"
           FROM playback
           JOIN track ON playback."trackId" = track."id"
@@ -743,11 +743,11 @@ export const dashboardRouter = createTRPCRouter({
             playbackId: string;
             playedAt: Date;
             duration: number;
-            trackId: string;
+            trackId: number;
             trackName: string;
             trackImage: string | null;
             artistNames: string[] | null;
-            artistIds: string[] | null;
+            artistIds: number[] | null;
           }[]
         >(Prisma.sql`
           SELECT
@@ -763,7 +763,7 @@ export const dashboardRouter = createTRPCRouter({
             ) AS "artistNames",
             COALESCE(
               ARRAY_AGG(artist."id" ORDER BY artist."name") FILTER (WHERE artist."id" IS NOT NULL),
-              ARRAY[]::text[]
+              ARRAY[]::integer[]
             ) AS "artistIds"
           FROM playback
           JOIN track ON playback."trackId" = track."id"
@@ -806,7 +806,7 @@ export const dashboardRouter = createTRPCRouter({
       periodSchema.extend({
         limit: z.number().int().min(1).max(50).default(20),
         cursorPlayedAt: z.date().optional(),
-        cursorId: z.string().uuid().optional(),
+        cursorId: z.number().optional(),
       }),
     )
     .query(async ({ ctx, input }) => {
@@ -828,16 +828,16 @@ export const dashboardRouter = createTRPCRouter({
       const rows = await tryCatch(
         ctx.db.$queryRaw<
           {
-            id: string;
-            trackId: string;
+            id: number;
+            trackId: number;
             trackName: string;
             trackImage: string | null;
             trackDuration: number;
             playedAt: Date;
-            albumId: string | null;
+            albumId: number | null;
             albumName: string | null;
             artistNames: string[] | null;
-            artistIds: string[] | null;
+            artistIds: number[] | null;
           }[]
         >(
           Prisma.sql`
@@ -856,7 +856,7 @@ export const dashboardRouter = createTRPCRouter({
               ) AS "artistNames",
               COALESCE(
                 ARRAY_AGG(artist."id" ORDER BY artist."name") FILTER (WHERE artist."id" IS NOT NULL),
-                ARRAY[]::text[]
+                ARRAY[]::integer[]
               ) AS "artistIds"
             FROM playback
             JOIN track ON playback."trackId" = track."id"

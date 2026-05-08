@@ -22,7 +22,7 @@ export default function TopTrack({ period }: { period: ProviderPeriod }) {
 
   function handlePlayTrack() {
     playTrack(
-      { trackId: topTrack?.track?.id ?? "" },
+      { trackId: topTrack?.track?.id ?? 0 },
       {
         onSuccess: () => {
           toast.success("Track played");
@@ -59,7 +59,10 @@ export default function TopTrack({ period }: { period: ProviderPeriod }) {
               )}
             </div>
             <div className="flex h-full min-w-0 flex-1 flex-col justify-between">
-              <Link href={`/track/${topTrack.track?.id}`} className="overflow-hidden text-2xl font-bold hover:underline">
+              <Link
+                href={`/track/${topTrack.track?.id}`}
+                className="overflow-hidden text-2xl font-bold hover:underline"
+              >
                 {trackName}
               </Link>
               <div className="mt-3 space-y-1">

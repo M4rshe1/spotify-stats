@@ -3,16 +3,28 @@ import { tryCatch } from "@/lib/try-catch";
 import { db } from "@/server/db";
 import getSpotifyApi from "@/server/spotify";
 import {
-  createGenres,
   createArtists,
   createAlbums,
   createTracks,
   createPlaybacks,
   addToCreationQueues,
   cleanQueues,
-  getCreatedEntitySize,
   retrySpotifyCall,
 } from "@/lib/spotify";
+
+function enqueueTrackDependencies(track: {
+  id: string;
+  artists: { id: string }[];
+  album: { id: string; artists: { id: string }[]; genres?: string[] };
+}) {
+  track.artists.forEach((artist) => addToCreationQueues("artists", artist.id));
+  track.album.artists.forEach((artist) =>
+    addToCreationQueues("artists", artist.id),
+  );
+  track.album.genres?.forEach((genre) => addToCreationQueues("genres", genre));
+  addToCreationQueues("albums", track.album.id);
+  addToCreationQueues("tracks", track.id);
+}
 
 async function fetchPlaybackStats() {
   logger.info("Fetching playback stats");
@@ -40,6 +52,7 @@ async function fetchPlaybackStats() {
     "Found users",
   );
   for (const user of users.data) {
+    const lastPlayedAtMs = user.playbacks[0]?.playedAt?.getTime() ?? 0;
     const spotify = getSpotifyApi(user.id);
     const recentlyPlayed = await retrySpotifyCall(
       () => spotify.player.getRecentlyPlayedTracks(50),
@@ -51,10 +64,8 @@ async function fetchPlaybackStats() {
       continue;
     }
 
-    const filteredPlaybacks = recentlyPlayed.data?.items.filter(
-      (playback) =>
-        new Date(playback.played_at) >
-        new Date(user.playbacks[0]?.playedAt ?? 0),
+    const filteredPlaybacks = recentlyPlayed.data.items.filter(
+      (playback) => Date.parse(playback.played_at) > lastPlayedAtMs,
     );
     logger.info(
       {
@@ -62,22 +73,9 @@ async function fetchPlaybackStats() {
       },
       "Found filtered playbacks",
     );
-    for (const track of filteredPlaybacks) {
-      track.track.artists.map((artist) =>
-        addToCreationQueues("artists", artist.id),
-      );
-      track.track.album.artists.map((artist) =>
-        addToCreationQueues("artists", artist.id),
-      );
-
-      track.track.album.genres?.map((genre) =>
-        addToCreationQueues("genres", genre),
-      );
-
-      addToCreationQueues("albums", track.track.album.id);
-
-      addToCreationQueues("tracks", track.track.id);
-    }
+    filteredPlaybacks.forEach((playback) =>
+      enqueueTrackDependencies(playback.track),
+    );
     const state = await retrySpotifyCall(
       () => spotify.player.getPlaybackState(),
       "player.getPlaybackState",
@@ -87,42 +85,10 @@ async function fetchPlaybackStats() {
       continue;
     }
 
-    await createGenres();
     await createArtists(spotify);
-    logger.info(
-      {
-        count: getCreatedEntitySize("genres"),
-      },
-      "Created genres",
-    );
-
-    logger.info(
-      {
-        count: getCreatedEntitySize("artists"),
-      },
-      "Created artists",
-    );
     await createAlbums(spotify);
-    logger.info(
-      {
-        count: getCreatedEntitySize("albums"),
-      },
-      "Created albums",
-    );
     await createTracks(spotify);
-    logger.info(
-      {
-        count: getCreatedEntitySize("tracks"),
-      },
-      "Created tracks",
-    );
     await createPlaybacks(user.id, filteredPlaybacks, state.data);
-    logger.info(
-      {
-        count: filteredPlaybacks.length,
-      },
-      "Created playbacks",
-    );
   }
   logger.info("Playback stats fetched");
 }

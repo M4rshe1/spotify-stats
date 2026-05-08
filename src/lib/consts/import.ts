@@ -17,5 +17,5 @@ export const importStatus = {
   },
 } as const;
 
-export type ImportStatusLabel = (typeof importStatus)[keyof typeof importStatus]["label"];
+export type ImportStatusLabel = keyof typeof importStatus;
 export type ImportStatusColor = (typeof importStatus)[keyof typeof importStatus]["color"];

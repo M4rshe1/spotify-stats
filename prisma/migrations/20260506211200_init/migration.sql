@@ -12,6 +12,10 @@ CREATE TABLE "user" (
     "timezone" TEXT NOT NULL DEFAULT 'Etc/UTC',
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "role" TEXT NOT NULL,
+    "banned" BOOLEAN DEFAULT false,
+    "banReason" TEXT,
+    "banExpires" TIMESTAMP(3),
 
     CONSTRAINT "user_pkey" PRIMARY KEY ("id")
 );
@@ -26,6 +30,7 @@ CREATE TABLE "session" (
     "ipAddress" TEXT,
     "userAgent" TEXT,
     "userId" TEXT NOT NULL,
+    "impersonatedBy" TEXT,
 
     CONSTRAINT "session_pkey" PRIMARY KEY ("id")
 );
@@ -63,7 +68,7 @@ CREATE TABLE "verification" (
 
 -- CreateTable
 CREATE TABLE "settings" (
-    "id" TEXT NOT NULL,
+    "id" SERIAL NOT NULL,
     "key" TEXT NOT NULL,
     "value" TEXT NOT NULL,
     "userId" TEXT,
@@ -75,7 +80,7 @@ CREATE TABLE "settings" (
 
 -- CreateTable
 CREATE TABLE "artist" (
-    "id" TEXT NOT NULL,
+    "id" SERIAL NOT NULL,
     "spotifyId" TEXT NOT NULL,
     "name" TEXT NOT NULL,
     "image" TEXT,
@@ -87,16 +92,16 @@ CREATE TABLE "artist" (
 
 -- CreateTable
 CREATE TABLE "artist_genres" (
-    "id" TEXT NOT NULL,
-    "artistId" TEXT NOT NULL,
-    "genreId" TEXT NOT NULL,
+    "id" SERIAL NOT NULL,
+    "artistId" INTEGER NOT NULL,
+    "genreId" INTEGER NOT NULL,
 
     CONSTRAINT "artist_genres_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "genre" (
-    "id" TEXT NOT NULL,
+    "id" SERIAL NOT NULL,
     "name" TEXT NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -106,17 +111,17 @@ CREATE TABLE "genre" (
 
 -- CreateTable
 CREATE TABLE "album_artists" (
-    "id" TEXT NOT NULL,
-    "albumId" TEXT NOT NULL,
+    "id" SERIAL NOT NULL,
+    "albumId" INTEGER NOT NULL,
     "role" TEXT NOT NULL DEFAULT 'primary',
-    "artistId" TEXT NOT NULL,
+    "artistId" INTEGER NOT NULL,
 
     CONSTRAINT "album_artists_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "album" (
-    "id" TEXT NOT NULL,
+    "id" SERIAL NOT NULL,
     "spotifyId" TEXT NOT NULL,
     "name" TEXT NOT NULL,
     "image" TEXT,
@@ -128,7 +133,7 @@ CREATE TABLE "album" (
 
 -- CreateTable
 CREATE TABLE "track" (
-    "id" TEXT NOT NULL,
+    "id" SERIAL NOT NULL,
     "spotifyId" TEXT NOT NULL,
     "name" TEXT NOT NULL,
     "image" TEXT,
@@ -142,16 +147,16 @@ CREATE TABLE "track" (
     "href" TEXT NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "albumId" TEXT,
+    "albumId" INTEGER,
 
     CONSTRAINT "track_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "artist_track" (
-    "id" TEXT NOT NULL,
-    "artistId" TEXT NOT NULL,
-    "trackId" TEXT NOT NULL,
+    "id" SERIAL NOT NULL,
+    "artistId" INTEGER NOT NULL,
+    "trackId" INTEGER NOT NULL,
     "role" TEXT NOT NULL DEFAULT 'primary',
 
     CONSTRAINT "artist_track_pkey" PRIMARY KEY ("id")
@@ -159,7 +164,7 @@ CREATE TABLE "artist_track" (
 
 -- CreateTable
 CREATE TABLE "playlist" (
-    "id" TEXT NOT NULL,
+    "id" SERIAL NOT NULL,
     "spotifyId" TEXT NOT NULL,
     "name" TEXT NOT NULL,
     "image" TEXT,
@@ -171,12 +176,12 @@ CREATE TABLE "playlist" (
 
 -- CreateTable
 CREATE TABLE "playback" (
-    "id" TEXT NOT NULL,
+    "id" SERIAL NOT NULL,
     "userId" TEXT NOT NULL,
     "duration" INTEGER NOT NULL,
     "device" TEXT NOT NULL,
     "platform" TEXT NOT NULL,
-    "trackId" TEXT NOT NULL,
+    "trackId" INTEGER NOT NULL,
     "playedAt" TIMESTAMP(3) NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -185,25 +190,36 @@ CREATE TABLE "playback" (
 );
 
 -- CreateTable
-CREATE TABLE "imports" (
-    "id" TEXT NOT NULL,
+CREATE TABLE "import" (
+    "id" SERIAL NOT NULL,
     "userId" TEXT NOT NULL,
     "type" TEXT NOT NULL,
     "status" TEXT NOT NULL,
     "startedAt" TIMESTAMP(3) NOT NULL,
+    "progress" DOUBLE PRECISION NOT NULL DEFAULT 0,
+    "entriesAdded" INTEGER NOT NULL DEFAULT 0,
     "completedAt" TIMESTAMP(3),
     "error" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
-    CONSTRAINT "imports_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "import_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateIndex
 CREATE UNIQUE INDEX "user_email_key" ON "user"("email");
 
 -- CreateIndex
+CREATE INDEX "session_userId_idx" ON "session"("userId");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "session_token_key" ON "session"("token");
+
+-- CreateIndex
+CREATE INDEX "account_userId_idx" ON "account"("userId");
+
+-- CreateIndex
+CREATE INDEX "verification_identifier_idx" ON "verification"("identifier");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "artist_spotifyId_key" ON "artist"("spotifyId");
@@ -219,6 +235,9 @@ CREATE UNIQUE INDEX "track_spotifyId_key" ON "track"("spotifyId");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "playlist_spotifyId_key" ON "playlist"("spotifyId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "playback_userId_playedAt_key" ON "playback"("userId", "playedAt");
 
 -- AddForeignKey
 ALTER TABLE "session" ADD CONSTRAINT "session_userId_fkey" FOREIGN KEY ("userId") REFERENCES "user"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -257,5 +276,5 @@ ALTER TABLE "playback" ADD CONSTRAINT "playback_userId_fkey" FOREIGN KEY ("userI
 ALTER TABLE "playback" ADD CONSTRAINT "playback_trackId_fkey" FOREIGN KEY ("trackId") REFERENCES "track"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "imports" ADD CONSTRAINT "imports_userId_fkey" FOREIGN KEY ("userId") REFERENCES "user"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "import" ADD CONSTRAINT "import_userId_fkey" FOREIGN KEY ("userId") REFERENCES "user"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 

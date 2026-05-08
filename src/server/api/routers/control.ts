@@ -8,7 +8,7 @@ export const controlRouter = createTRPCRouter({
   play: protectedProcedure
     .input(
       z.object({
-        trackId: z.string(),
+        trackId: z.number(),
       }),
     )
     .mutation(async ({ ctx, input }) => {

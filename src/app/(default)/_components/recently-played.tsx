@@ -31,21 +31,21 @@ export default function RecentlyPlayed({ period }: { period: ProviderPeriod }) {
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
   const [items, setItems] = useState<
     {
-      id: string;
-      trackId: string;
+      id: number;
+      trackId: number;
       image: string | null;
       title: string;
       artists: string[];
-      artistIds: string[];
+      artistIds: number[];
       duration: number;
       playedAt: Date;
-      albumId: string | null;
+      albumId: number | null;
       album: string;
     }[]
   >([]);
   const [cursor, setCursor] = useState<{
     cursorPlayedAt: Date;
-    cursorId: string;
+    cursorId: number;
   } | null>(null);
 
   const { data, isLoading, isFetching, isError } =
@@ -53,7 +53,7 @@ export default function RecentlyPlayed({ period }: { period: ProviderPeriod }) {
       ...providerPeriodToQueryInput(period),
       limit: 20,
       cursorPlayedAt: cursor?.cursorPlayedAt,
-      cursorId: cursor?.cursorId,
+      cursorId: cursor?.cursorId ,
     });
   const { mutate: playTrack } = api.control.play.useMutation();
 

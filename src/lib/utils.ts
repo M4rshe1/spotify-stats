@@ -13,34 +13,35 @@ class Duration {
   }
 
   toHours() {
-    return Math.floor(this.durationMs / 3600_000);
+    return Math.floor(this.durationMs / 3_600_000);
   }
 
   toMinutes() {
-    return Math.floor(this.durationMs / 60000);
+    return Math.floor(this.durationMs / 60_000);
   }
 
   toSeconds() {
-    return Math.floor(this.durationMs / 1000);
+    return Math.floor(this.durationMs / 1_000);
   }
 
   toString() {
-    return `${this.toHours()}h ${this.toMinutes()}m ${this.toSeconds()}s`.trim();
+    return `${this.toHours().toLocaleString()}h ${this.toMinutes().toLocaleString()}m ${this.toSeconds().toLocaleString()}s`.trim();
   }
+
   toFormattedString(format: string) {
     const hours = Math.floor(this.durationMs / 3_600_000);
     const minutes = Math.floor((this.durationMs % 3_600_000) / 60_000);
-    const seconds = Math.floor((this.durationMs % 60_000) / 1000);
-    const milliseconds = this.durationMs % 1000;
+    const seconds = Math.floor((this.durationMs % 60_000) / 1_000);
+    const milliseconds = this.durationMs % 1_000;
     return format
-      .replace("{H}", this.toHours().toString())
-      .replace("{M}", this.toMinutes().toString())
-      .replace("{S}", this.toSeconds().toString())
-      .replace("{MS}", this.durationMs.toString())
-      .replace("{h}", hours.toString())
-      .replace("{m}", minutes.toString())
-      .replace("{s}", seconds.toString())
-      .replace("{ms}", milliseconds.toString());
+      .replace("{H}", this.toHours().toLocaleString())
+      .replace("{M}", this.toMinutes().toLocaleString())
+      .replace("{S}", this.toSeconds().toLocaleString())
+      .replace("{MS}", this.durationMs.toLocaleString())
+      .replace("{h}", hours.toLocaleString())
+      .replace("{m}", minutes.toLocaleString())
+      .replace("{s}", seconds.toLocaleString())
+      .replace("{ms}", milliseconds.toLocaleString());
   }
 }
 

@@ -87,7 +87,7 @@ export function TimeListened({ period }: { period: ProviderPeriod }) {
               tickFormatter={(value) => {
                 switch (tracks?.grouping) {
                   case "day":
-                    return format(new Date(value), "MMM d");
+                    return format(new Date(value), "EE, d. MMM");
                   case "month":
                     return format(new Date(value), "MMM yyyy");
                   case "year":
