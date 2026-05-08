@@ -47,7 +47,7 @@ export const periods = {
     start: () => startOfDay(subDays(new Date(), 89)),
     end: () => endOfDay(new Date()),
     previous: () => startOfDay(subDays(new Date(), 90)),
-    grouping: "day",
+    grouping: "month",
   },
   this_week: {
     label: "This Week",
