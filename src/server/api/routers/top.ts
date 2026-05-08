@@ -347,7 +347,7 @@ export const topRouter = createTRPCRouter({
 
       return {
         items: items.map((row) => ({
-          id: row.id,
+          id: row.id ?? 0,
           title: row.name,
           image: row.image,
           artists: row.artistNames ?? [],
@@ -360,7 +360,7 @@ export const topRouter = createTRPCRouter({
         nextCursor:
           hasMore && last
             ? {
-                cursorId: last.id,
+                cursorId: last.id ?? 0,
                 cursorValue:
                   input.sortBy === "count" ? Number(last.count) : last.duration,
               }
