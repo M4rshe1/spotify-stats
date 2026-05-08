@@ -159,25 +159,31 @@ function TopListItem({
         ) : null}
       </div>
       {item.album ? (
-        <div className="hidden w-56 shrink-0 text-right text-xs lg:block">
+        <div className="hidden min-w-0 flex-1 overflow-hidden text-left text-xs lg:block">
           {item.albumId ? (
             <Link
               href={`/album/${item.albumId}`}
-              className="text-muted-foreground truncate underline-offset-2 hover:underline"
+              title={item.album}
+              className="text-muted-foreground block max-w-sm truncate underline-offset-2 hover:underline"
             >
               {item.album}
             </Link>
           ) : (
-            <p className="text-muted-foreground truncate">{item.album}</p>
+            <p
+              title={item.album}
+              className="text-muted-foreground max-w-sm truncate"
+            >
+              {item.album}
+            </p>
           )}
         </div>
       ) : null}
       <div className="space-y-0.5 text-right text-xs">
         <p>
-          {item.count} plays ({formatPercent(countPercentage)})
+          {item.count.toLocaleString()} plays ({formatPercent(countPercentage)})
         </p>
         <p className="text-muted-foreground">
-          {duration(item.duration).toMinutes()} min (
+          {duration(item.duration).toBestDurationString(false)} (
           {formatPercent(durationPercentage)})
         </p>
       </div>

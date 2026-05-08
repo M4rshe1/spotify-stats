@@ -64,7 +64,7 @@ const data = {
       ],
     },
     {
-      title: "Afinity",
+      title: "Affinity",
       url: "/affinity",
       icon: Heart,
       isActive: true,

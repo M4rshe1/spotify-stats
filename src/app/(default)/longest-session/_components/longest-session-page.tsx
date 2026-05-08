@@ -23,10 +23,9 @@ export default function LongestSessionPage() {
     null,
   );
 
-  const { data, isLoading, isError } =
-    api.session.getLongestSessions.useQuery(
-      providerPeriodToQueryInput(selectedPeriod),
-    );
+  const { data, isLoading, isError } = api.session.getLongestSessions.useQuery(
+    providerPeriodToQueryInput(selectedPeriod),
+  );
   const expandedSession = data?.find(
     (session) => session.sessionId === expandedSessionId,
   );
@@ -92,12 +91,11 @@ export default function LongestSessionPage() {
                   </div>
                   <div className="text-right text-xs">
                     <p className="font-medium">
-                      {duration(session.duration).toFormattedString(
-                        "{h}h {m}m",
-                      )}
+                      {duration(session.duration).toBestDurationString(false)}
                     </p>
                     <p className="text-muted-foreground">
-                      {session.plays} plays, {session.uniqueTracks} tracks
+                      {session.plays.toLocaleString()} plays,{" "}
+                      {session.uniqueTracks.toLocaleString()} tracks
                     </p>
                   </div>
                 </div>
