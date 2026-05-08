@@ -3,10 +3,11 @@
 import { api } from "@/trpc/react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loading } from "@/components/ui/loading";
-import { TrendingDownIcon, TrendingUpIcon } from "lucide-react";
+import { MicVocalIcon, TrendingDownIcon, TrendingUpIcon } from "lucide-react";
 import { cn, formatPercent } from "@/lib/utils";
 import type { ProviderPeriod } from "@/lib/consts/periods";
 import { providerPeriodToQueryInput } from "@/lib/provider-period-query-input";
+import { NoDataCard } from "./no-data-card";
 
 export function DiffArtists({ period }: { period: ProviderPeriod }) {
   const { data, isLoading } = api.dashboard.getArtistsMetric.useQuery(
@@ -18,7 +19,14 @@ export function DiffArtists({ period }: { period: ProviderPeriod }) {
   }
 
   if (!data) {
-    return <div>No data</div>;
+    return (
+      <NoDataCard
+        title="Artists"
+        icon={<MicVocalIcon />}
+        emptyTitle="No artist data"
+        description="We couldn't find any artists for this period. Try a different time range."
+      />
+    );
   }
 
   const artistsPercentage =
@@ -27,7 +35,7 @@ export function DiffArtists({ period }: { period: ProviderPeriod }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Artists Listened</CardTitle>
+        <CardTitle>Artists</CardTitle>
       </CardHeader>
       <CardContent className="flex items-end justify-between gap-2">
         <div className="flex items-center gap-2">
@@ -39,7 +47,8 @@ export function DiffArtists({ period }: { period: ProviderPeriod }) {
           )}
         </div>
         <p className="text-muted-foreground text-sm">
-          {Math.abs(data.artists - data.previousArtists)} diff /{" "}
+          {Math.abs(data.artists - data.previousArtists).toLocaleString()} diff
+          /{" "}
           <span
             className={cn(
               artistsPercentage > 0 ? "text-success" : "text-destructive",

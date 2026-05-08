@@ -27,12 +27,12 @@ export function TotalTime({ period }: { period: ProviderPeriod }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Duration Listened</CardTitle>
+        <CardTitle>Duration</CardTitle>
       </CardHeader>
       <CardContent className="flex items-end justify-between gap-2">
         <div className="flex items-center gap-2">
           <p className="text-5xl font-bold">
-            {duration(data.duration).toFormattedString("{M}min")}
+            {duration(data.duration).toFormattedString("{M} min")}
           </p>
           {durationPercentage > 0 ? (
             <TrendingUpIcon size={24} className="text-success" />

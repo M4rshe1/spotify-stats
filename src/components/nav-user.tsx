@@ -1,6 +1,6 @@
 "use client";
 
-import { Bell, ChevronsUpDown, LogOut, Settings, UserIcon } from "lucide-react";
+import { ChevronsUpDown, LogOut, Settings, UserIcon } from "lucide-react";
 import Link from "next/link";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -98,11 +98,6 @@ export function NavUser({ user }: { user: User }) {
                   <Settings />
                   Settings
                 </Link>
-              </DropdownMenuItem>
-
-              <DropdownMenuItem>
-                <Bell />
-                Help
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />

@@ -27,7 +27,7 @@ export function TotalTracks({ period }: { period: ProviderPeriod }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Tracks Listened</CardTitle>
+        <CardTitle>Tracks</CardTitle>
       </CardHeader>
       <CardContent className="flex items-end justify-between gap-2">
         <div className="flex items-center gap-2">
@@ -39,7 +39,7 @@ export function TotalTracks({ period }: { period: ProviderPeriod }) {
           )}
         </div>
         <p className="text-muted-foreground text-sm">
-          {Math.abs(data.tracks - data.previousTracks)} diff /{" "}
+          {Math.abs(data.tracks - data.previousTracks).toLocaleString()} diff /{" "}
           <span
             className={cn(
               tracksPercentage > 0 ? "text-success" : "text-destructive",

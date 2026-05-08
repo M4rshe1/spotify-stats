@@ -153,7 +153,7 @@ const Header = () => {
         <div className="flex items-center gap-2">
           {headerFavoritePeriods.length > 0 ? (
             <>
-              <div className="hidden max-w-[min(80vw,40rem)] items-center gap-2 overflow-x-auto py-1 [-ms-overflow-style:none] [scrollbar-width:none] sm:max-w-lg lg:flex [&::-webkit-scrollbar]:hidden">
+              <div className="hidden items-center gap-2 overflow-x-auto py-1 [-ms-overflow-style:none] [scrollbar-width:none] lg:flex [&::-webkit-scrollbar]:hidden">
                 {headerFavoritePeriods.map((preset) => (
                   <Button
                     key={preset}
@@ -191,9 +191,7 @@ const Header = () => {
                       <DropdownMenuItem
                         key={preset}
                         variant={
-                          selectedPeriod.type === preset
-                            ? "accent"
-                            : "ghost"
+                          selectedPeriod.type === preset ? "accent" : "ghost"
                         }
                         onSelect={() => selectFavoritePreset(preset)}
                       >

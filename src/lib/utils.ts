@@ -73,3 +73,13 @@ export function formatPercent(percentage: number) {
   if (!Number.isFinite(percentage)) return "0%";
   return `${percentage.toFixed(2)}%`;
 }
+
+/** Max Unicode code points (roughly “letters”) before appending an ellipsis. */
+export const TOP_CARD_ENTITY_NAME_MAX = 32;
+
+export function truncateText(text: string, maxLetters: number): string {
+  if (maxLetters < 1) return "";
+  const chars = [...text];
+  if (chars.length <= maxLetters) return text;
+  return `${chars.slice(0, maxLetters).join("")}…`;
+}

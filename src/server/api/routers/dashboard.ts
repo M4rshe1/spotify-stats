@@ -197,6 +197,13 @@ export const dashboardRouter = createTRPCRouter({
           where: {
             id: topTrack.data?.[0]?.trackId,
           },
+          include: {
+            artists: {
+              where: { role: "primary" },
+              take: 1,
+              include: { artist: true },
+            },
+          },
         }),
       );
       if (track.error) {
