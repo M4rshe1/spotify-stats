@@ -4,7 +4,12 @@ import { dashboardRouter } from "@/server/api/routers/dashboard";
 import { controlRouter } from "@/server/api/routers/control";
 import { chartRouter } from "@/server/api/routers/chart";
 import { importRouter } from "@/server/api/routers/import";
-
+import { affinityRouter } from "@/server/api/routers/affinity";
+import { albumRouter } from "@/server/api/routers/album";
+import { artistRouter } from "@/server/api/routers/artist";
+import { trackRouter } from "@/server/api/routers/track";
+import { topRouter } from "@/server/api/routers/top";
+import { sessionRouter } from "@/server/api/routers/session";
 /**
  * This is the primary router for your server.
  *
@@ -16,6 +21,12 @@ export const appRouter = createTRPCRouter({
   control: controlRouter,
   chart: chartRouter,
   import: importRouter,
+  affinity: affinityRouter,
+  album: albumRouter,
+  artist: artistRouter,
+  track: trackRouter,
+  top: topRouter,
+  session: sessionRouter,
 });
 
 // export type definition of API

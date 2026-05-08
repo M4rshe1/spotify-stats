@@ -5,7 +5,7 @@ import TopEntityPage from "../_components/top-entity-page";
 
 export default withAuth(async () => {
   const metricsInput = await getPreferredMetricsInput();
-  await api.dashboard.getTopArtists.prefetch({
+  await api.top.getTopArtists.prefetch({
     ...metricsInput,
     limit: 20,
     sortBy: "duration",

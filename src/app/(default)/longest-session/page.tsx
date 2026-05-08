@@ -5,7 +5,7 @@ import LongestSessionPage from "./_components/longest-session-page";
 
 export default withAuth(async () => {
   const metricsInput = await getPreferredMetricsInput();
-  await api.dashboard.getLongestSessions.prefetch(metricsInput);
+  await api.session.getLongestSessions.prefetch(metricsInput);
 
   return (
     <HydrateClient>

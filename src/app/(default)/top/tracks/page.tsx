@@ -5,7 +5,7 @@ import TopEntityPage from "../_components/top-entity-page";
 
 export default withAuth(async () => {
   const metricsInput = await getPreferredMetricsInput();
-  await api.dashboard.getTopTracks.prefetch({
+  await api.top.getTopTracks.prefetch({
     ...metricsInput,
     limit: 20,
     sortBy: "duration",

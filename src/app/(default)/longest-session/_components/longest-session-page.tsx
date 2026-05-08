@@ -24,13 +24,13 @@ export default function LongestSessionPage() {
   );
 
   const { data, isLoading, isError } =
-    api.dashboard.getLongestSessions.useQuery(
+    api.session.getLongestSessions.useQuery(
       providerPeriodToQueryInput(selectedPeriod),
     );
   const expandedSession = data?.find(
     (session) => session.sessionId === expandedSessionId,
   );
-  const sessionTracksQuery = api.dashboard.getSessionTracks.useQuery(
+  const sessionTracksQuery = api.session.getSessionTracks.useQuery(
     {
       startAt: expandedSession?.startAt ?? new Date(0),
       endAt: expandedSession?.endAt ?? new Date(0),

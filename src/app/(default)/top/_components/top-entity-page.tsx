@@ -203,7 +203,7 @@ export default function TopEntityPage({ type }: { type: TopType }) {
   const periodInput = providerPeriodToQueryInput(selectedPeriod);
   const { mutate: playTrack } = api.control.play.useMutation();
 
-  const songsQuery = api.dashboard.getTopTracks.useQuery(
+  const songsQuery = api.top.getTopTracks.useQuery(
     {
       ...periodInput,
       sortBy,
@@ -213,7 +213,7 @@ export default function TopEntityPage({ type }: { type: TopType }) {
     },
     { enabled: type === "tracks" },
   );
-  const artistsQuery = api.dashboard.getTopArtists.useQuery(
+  const artistsQuery = api.top.getTopArtists.useQuery(
     {
       ...periodInput,
       sortBy,
@@ -223,7 +223,7 @@ export default function TopEntityPage({ type }: { type: TopType }) {
     },
     { enabled: type === "artists" },
   );
-  const albumsQuery = api.dashboard.getTopAlbums.useQuery(
+  const albumsQuery = api.top.getTopAlbums.useQuery(
     {
       ...periodInput,
       sortBy,
