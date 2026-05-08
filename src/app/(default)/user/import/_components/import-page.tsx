@@ -118,7 +118,8 @@ function UploadCard({
   const [isDragging, setIsDragging] = useState(false);
   const inputRef = useRef<HTMLInputElement | null>(null);
   const hasFiles = selectedFiles.length > 0;
-  const areFilesReady = hasFiles && selectedFiles.every((item) => item.status === "ready");
+  const areFilesReady =
+    hasFiles && selectedFiles.every((item) => item.status === "ready");
 
   const mergeFiles = (incomingFiles: File[]) => {
     const jsonFiles = incomingFiles.filter((file) =>
@@ -280,7 +281,9 @@ function UploadCard({
                     variant="ghost"
                     onClick={() => {
                       setSelectedFiles((current) =>
-                        current.filter((currentItem) => currentItem.id !== item.id),
+                        current.filter(
+                          (currentItem) => currentItem.id !== item.id,
+                        ),
                       );
                     }}
                     disabled={isUploading}
@@ -300,6 +303,14 @@ function UploadCard({
 
 function ImportList({ imports }: { imports: ImportRow[] }) {
   const [expandedImportId, setExpandedImportId] = useState<number | null>(null);
+  const [isCompletedOpen, setIsCompletedOpen] = useState(false);
+  const [isFailedOpen, setIsFailedOpen] = useState(false);
+
+  const activeImports = imports.filter((row) =>
+    ["pending", "processing"].includes(row.status),
+  );
+  const completedImports = imports.filter((row) => row.status === "completed");
+  const failedImports = imports.filter((row) => row.status === "failed");
 
   if (imports.length === 0) {
     return (
@@ -316,78 +327,137 @@ function ImportList({ imports }: { imports: ImportRow[] }) {
     );
   }
 
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Imports</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {imports.map((row) => {
-          const status = statusMeta[row.status] ?? {
-            label: row.status,
-            badgeVariant: "secondary" as const,
-          };
-          const progress = normalizeProgress(row.status, row.progress);
-          const eta = estimateFinishedAt(row);
-          const duration = formatDuration(row.startedAt, row.completedAt);
-          const isExpanded = expandedImportId === row.id;
-          return (
-            <div key={row.id} className="space-y-2 border p-3">
-              <button
-                type="button"
-                className="w-full text-left"
-                onClick={() =>
-                  setExpandedImportId((current) =>
-                    current === row.id ? null : row.id,
-                  )
-                }
-              >
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2">
-                      <p className="font-semibold">Import #{row.id}</p>
-                      <Badge variant={status.badgeVariant}>
-                        {status.label}
-                      </Badge>
-                    </div>
-                    <p className="text-muted-foreground text-xs">
-                      {row.type} • Started {formatDateTime(row.startedAt)}
-                    </p>
-                  </div>
-                  <p className="text-muted-foreground text-xs">
-                    {row.completedAt
-                      ? `Finished ${formatDateTime(row.completedAt)}`
-                      : eta
-                        ? `Est. finished ${formatDateTime(eta)}`
-                        : "Est. finished —"}
-                  </p>
+  const renderImportRows = (rows: ImportRow[]) =>
+    rows.map((row) => {
+      const status = statusMeta[row.status] ?? {
+        label: row.status,
+        badgeVariant: "secondary" as const,
+      };
+      const progress = normalizeProgress(row.status, row.progress);
+      const eta = estimateFinishedAt(row);
+      const duration = formatDuration(row.startedAt, row.completedAt);
+      const isExpanded = expandedImportId === row.id;
+      return (
+        <div key={row.id} className="space-y-2 border p-3">
+          <button
+            type="button"
+            className="w-full text-left"
+            onClick={() =>
+              setExpandedImportId((current) =>
+                current === row.id ? null : row.id,
+              )
+            }
+          >
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <p className="font-semibold">Import #{row.id}</p>
+                  <Badge variant={status.badgeVariant}>{status.label}</Badge>
                 </div>
-              </button>
-              <Progress value={progress} />
-              <div className="text-muted-foreground flex items-center justify-between text-xs">
-                <span>{progress}%</span>
-                {row.error ? (
-                  <span className="text-destructive line-clamp-1">
-                    {row.error}
-                  </span>
-                ) : (
-                  <span>Updated {formatDateTime(row.updatedAt)}</span>
-                )}
+                <p className="text-muted-foreground text-xs">
+                  {row.type} • Started {formatDateTime(row.startedAt)}
+                </p>
               </div>
-              {isExpanded ? (
-                <div className="text-muted-foreground border-t pt-2 text-xs">
-                  <span>
-                    Duration {duration} • Added{" "}
-                    {row.entriesAdded.toLocaleString()} playback
-                    {row.entriesAdded === 1 ? "" : "s"}
-                  </span>
-                </div>
-              ) : null}
+              <p className="text-muted-foreground text-xs">
+                {row.completedAt
+                  ? `Finished ${formatDateTime(row.completedAt)}`
+                  : eta
+                    ? `Est. finished ${formatDateTime(eta)}`
+                    : "Est. finished —"}
+              </p>
             </div>
-          );
-        })}
-      </CardContent>
-    </Card>
+          </button>
+          <Progress value={progress} />
+          <div className="text-muted-foreground flex items-center justify-between text-xs">
+            <span>{progress}%</span>
+            {row.error ? (
+              <span className="text-destructive line-clamp-1">{row.error}</span>
+            ) : (
+              <span>Updated {formatDateTime(row.updatedAt)}</span>
+            )}
+          </div>
+          {isExpanded ? (
+            <div className="text-muted-foreground border-t pt-2 text-xs">
+              <span>
+                Duration {duration} • Added {row.entriesAdded.toLocaleString()}{" "}
+                playback
+                {row.entriesAdded === 1 ? "" : "s"}
+              </span>
+            </div>
+          ) : null}
+        </div>
+      );
+    });
+
+  return (
+    <div className="space-y-4">
+      <Card>
+        <CardHeader>
+          <CardTitle>Active imports</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {activeImports.length > 0 ? (
+            renderImportRows(activeImports)
+          ) : (
+            <p className="text-muted-foreground text-sm">
+              No active imports right now.
+            </p>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader className="pb-3">
+          <button
+            type="button"
+            className="flex w-full cursor-pointer items-center justify-between text-left"
+            onClick={() => setIsCompletedOpen((current) => !current)}
+          >
+            <CardTitle>Completed imports ({completedImports.length})</CardTitle>
+            <span className="text-muted-foreground text-xs hover:underline">
+              {isCompletedOpen ? "Hide" : "Show"}
+            </span>
+          </button>
+        </CardHeader>
+        {isCompletedOpen ? (
+          <CardContent className="space-y-4">
+            {completedImports.length > 0 ? (
+              renderImportRows(completedImports)
+            ) : (
+              <p className="text-muted-foreground text-sm">
+                No completed imports yet.
+              </p>
+            )}
+          </CardContent>
+        ) : null}
+      </Card>
+
+      <Card>
+        <CardHeader className="pb-3">
+          <button
+            type="button"
+            className="flex w-full cursor-pointer items-center justify-between text-left"
+            onClick={() => setIsFailedOpen((current) => !current)}
+          >
+            <CardTitle>Failed imports ({failedImports.length})</CardTitle>
+            <span className="text-muted-foreground text-xs hover:underline">
+              {isFailedOpen ? "Hide" : "Show"}
+            </span>
+          </button>
+        </CardHeader>
+        {isFailedOpen ? (
+          <CardContent className="space-y-4">
+            {failedImports.length > 0 ? (
+              renderImportRows(failedImports)
+            ) : (
+              <p className="text-muted-foreground text-sm">
+                No failed imports.
+              </p>
+            )}
+          </CardContent>
+        ) : null}
+      </Card>
+    </div>
   );
 }
 
@@ -461,7 +531,12 @@ export default function ImportPage() {
         try {
           await uploadSingleFile(file);
           queuedCount += 1;
-          onFileUpdate({ fileId, status: "uploaded", progress: 100, error: null });
+          onFileUpdate({
+            fileId,
+            status: "uploaded",
+            progress: 100,
+            error: null,
+          });
         } catch (error: any) {
           failedCount += 1;
           onFileUpdate({
@@ -474,10 +549,14 @@ export default function ImportPage() {
       }
 
       if (queuedCount > 0) {
-        toast.success(`Queued ${queuedCount} import${queuedCount === 1 ? "" : "s"}`);
+        toast.success(
+          `Queued ${queuedCount} import${queuedCount === 1 ? "" : "s"}`,
+        );
       }
       if (failedCount > 0) {
-        toast.error(`${failedCount} file${failedCount === 1 ? "" : "s"} failed to upload`);
+        toast.error(
+          `${failedCount} file${failedCount === 1 ? "" : "s"} failed to upload`,
+        );
       }
       if (queuedCount === 0) {
         throw new Error("Failed to upload files");
