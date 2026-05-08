@@ -123,7 +123,16 @@ export function TimeListened({ period }: { period: ProviderPeriod }) {
               content={
                 <ChartTooltipContent
                   labelFormatter={(label) => {
-                    return format(new Date(label), "EE, d. MMM");
+                    switch (tracks?.grouping) {
+                      case "day":
+                        return format(new Date(label), "EE, d. MMM");
+                      case "month":
+                        return format(new Date(label), "MMM yyyy");
+                      case "year":
+                        return format(new Date(label), "yyyy");
+                      default:
+                        return label;
+                    }
                   }}
                   formatter={(value, name, item, index, payload) =>
                     formatTooltipValue(
