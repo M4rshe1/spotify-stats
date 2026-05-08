@@ -10,14 +10,14 @@ export default function AllStatsPage() {
   const { selectedPeriod } = usePeriod();
 
   return (
-    <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
       <div className="lg:col-span-2">
         <TimeListened period={selectedPeriod} />
       </div>
-      <div className="lg:col-span-1">
+      <div className="lg:col-span-2">
         <PlatformSplitChart period={selectedPeriod} />
       </div>
-      <div className="lg:col-span-1">
+      <div className="lg:col-span-2">
         <DeviceSplitChart period={selectedPeriod} />
       </div>
       <div className="lg:col-span-2">

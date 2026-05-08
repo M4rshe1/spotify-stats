@@ -61,7 +61,15 @@ export function toChartConfig(
 
   rows.forEach((row, index) => {
     config[row.name] = {
-      label: `${row.name} (${formatPercent(row.percentage)})`,
+      label: (
+        <span>
+          {row.name}{" "}
+          <span className="text-muted-foreground">
+            ({formatPercent(row.percentage)})
+          </span>
+        </span>
+      ),
+
       color: PIE_COLORS[index % PIE_COLORS.length] ?? "var(--chart-1)",
     };
   });
@@ -84,7 +92,6 @@ export function DistributionPieCard({
     <Card className="flex h-full min-h-0 flex-col">
       <CardHeader>
         <CardTitle>{title}</CardTitle>
-        <CardDescription>{description}</CardDescription>
       </CardHeader>
       <CardContent className="flex min-h-0 flex-1 flex-col">
         <ChartContainer config={chartConfig} className="h-[260px] w-full">

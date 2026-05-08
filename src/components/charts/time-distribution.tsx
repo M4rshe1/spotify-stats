@@ -75,10 +75,10 @@ export function TimeDistribution({ period }: { period: ProviderPeriod }) {
       </CardHeader>
       <CardContent className="flex min-h-0 flex-1 flex-col">
         <ChartContainer
-          className="aspect-auto h-[clamp(13rem,38dvh,28rem)] max-h-[min(28rem,55dvh)] min-h-52 w-full"
+          className="aspect-auto h-full min-h-0 w-full flex-1"
           config={{
             percentage: {
-              label: "Time Listened Distribution",
+              label: "Listening by hour",
               color: "var(--chart-1)",
             },
           }}
