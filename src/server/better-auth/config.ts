@@ -1,10 +1,34 @@
-import { betterAuth } from "better-auth";
+import { APIError, betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 
 import { env } from "@/env";
 import { DEFAULT_IANA_TIMEZONE } from "@/lib/timezone";
 import { db } from "@/server/db";
 import { admin } from "better-auth/plugins";
+
+function parseAllowedEmails(raw: string | undefined): Set<string> {
+  if (!raw?.trim()) return new Set();
+  return new Set(
+    raw
+      .split(",")
+      .map((e) => e.trim().toLowerCase())
+      .filter(Boolean),
+  );
+}
+
+/** Blocks new-user creation when signup is restricted and email is not whitelisted. */
+function assertRegistrationAllowed(email: unknown) {
+  if (env.ALLOW_REGISTER) return;
+  const normalized =
+    typeof email === "string" ? email.trim().toLowerCase() : "";
+  if (!normalized || !parseAllowedEmails(env.ALLOWED_EMAILS).has(normalized)) {
+    throw new APIError("FORBIDDEN", {
+      message:
+        "Registration is closed. Ask an administrator if you need access.",
+      code: "REGISTRATION_NOT_ALLOWED",
+    });
+  }
+}
 
 const spotifyScopes = [
   // Images
@@ -51,6 +75,9 @@ export const auth = betterAuth({
   databaseHooks: {
     user: {
       create: {
+        before: async (user) => {
+          assertRegistrationAllowed(user.email);
+        },
         after: async (user) => {
           const usersCount = await db.user.count();
           const role = usersCount === 0 ? "admin" : "user";
