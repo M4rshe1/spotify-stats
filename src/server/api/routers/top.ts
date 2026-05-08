@@ -258,14 +258,15 @@ export const topRouter = createTRPCRouter({
           ? Prisma.sql`COUNT(*)::float8`
           : Prisma.sql`SUM(playback."duration")::float8`;
       const cursorCondition =
-        input.cursorValue !== undefined && input.cursorId
+        input.cursorValue !== undefined && input.cursorId !== undefined
           ? Prisma.sql`
               HAVING (
                 ${sortColumn} < ${input.cursorValue}
-                OR (${sortColumn} = ${input.cursorValue} AND COALESCE(album."id", 'unknown') > ${input.cursorId})
+                OR (${sortColumn} = ${input.cursorValue} AND COALESCE(album."id", 9999999999) > ${input.cursorId})
               )
             `
           : Prisma.empty;
+
       const totalsResult = await tryCatch(
         ctx.db.$queryRaw<{ totalCount: number; totalDuration: number }[]>(
           Prisma.sql`
@@ -291,7 +292,7 @@ export const topRouter = createTRPCRouter({
       const rows = await tryCatch(
         ctx.db.$queryRaw<
           {
-            id: number;
+            id: number | null;
             name: string;
             image: string | null;
             duration: number;
@@ -301,7 +302,7 @@ export const topRouter = createTRPCRouter({
           }[]
         >(Prisma.sql`
           SELECT
-            COALESCE(album."id", 'unknown') AS "id",
+            album."id" AS "id",
             COALESCE(album."name", 'Unknown Album') AS "name",
             album."image",
             SUM(playback."duration")::float8 AS "duration",
@@ -324,7 +325,7 @@ export const topRouter = createTRPCRouter({
             AND timezone(${timezone}, playback."playedAt") <= timezone(${timezone}, ${end})
           GROUP BY album."id", album."name", album."image"
           ${cursorCondition}
-          ORDER BY ${sortColumn} DESC, COALESCE(album."id", 'unknown') ASC
+          ORDER BY ${sortColumn} DESC, COALESCE(album."id", 9999999999) ASC
           LIMIT ${limit + 1}
         `),
       );

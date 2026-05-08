@@ -85,8 +85,8 @@ export default function LongestSessionPage() {
                       Session #{index + 1}
                     </p>
                     <p className="text-muted-foreground text-xs">
-                      {format(new Date(session.startAt), "PPp")} -{" "}
-                      {format(new Date(session.endAt), "PPp")}
+                      {format(new Date(session.startAt), "MMM d, yyyy HH:mm")} -{" "}
+                      {format(new Date(session.endAt), "MMM d, yyyy HH:mm")}
                     </p>
                   </div>
                   <div className="text-right text-xs">

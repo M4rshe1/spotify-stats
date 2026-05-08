@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { CoverTintBackdrop } from "@/components/cards/cover-tint-backdrop";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loading } from "@/components/ui/loading";
 import {
@@ -191,8 +192,11 @@ function TopListItem({
   );
 
   return (
-    <div className="bg-muted/30 flex w-full items-center gap-3 rounded-md border p-2">
-      {content}
+    <div className="relative isolate w-full overflow-hidden rounded-md border bg-muted/30">
+      <CoverTintBackdrop coverUrl={item.image} className="rounded-md" />
+      <div className="relative z-10 flex w-full items-center gap-3 p-2">
+        {content}
+      </div>
     </div>
   );
 }
