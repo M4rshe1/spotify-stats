@@ -151,3 +151,55 @@
     @apply font-mono;
   }
 }
+
+/* Sonner — card-like shell (inherits palette from inline toaster vars in sonner.tsx) */
+[data-sonner-toaster] [data-sonner-toast].cn-toast[data-styled="true"] {
+  border-radius: 0;
+  box-shadow: none;
+  font-weight: 500;
+  gap: 0.625rem;
+}
+
+[data-sonner-toaster] [data-sonner-toast] [data-title] {
+  font-family:
+    var(--font-heading), var(--font-mono), ui-monospace, "JetBrains Mono",
+    monospace;
+}
+
+[data-sonner-toaster]
+  [data-sonner-toast][data-rich-colors="true"][data-styled="true"]
+  [data-description] {
+  opacity: 0.92;
+}
+
+[data-sonner-toaster]
+  [data-sonner-toast][data-styled="true"]:not([data-rich-colors="true"])
+  [data-description] {
+  color: var(--muted-foreground) !important;
+}
+
+[data-sonner-toaster]
+  [data-sonner-toast][data-styled="true"]
+  [data-close-button] {
+  border-radius: 0 !important;
+}
+
+[data-sonner-toaster]
+  [data-sonner-toast][data-styled="true"]:not([data-rich-colors="true"])
+  [data-close-button] {
+  border-color: color-mix(in oklch, var(--foreground) 14%, var(--border)) !important;
+  color: var(--muted-foreground) !important;
+}
+
+[data-sonner-toaster]
+  .cn-toast [data-icon] svg {
+  flex-shrink: 0;
+}
+
+[data-sonner-toaster] .sonner-loading-bar {
+  background: color-mix(
+    in oklch,
+    var(--primary) 88%,
+    var(--foreground)
+  );
+}
