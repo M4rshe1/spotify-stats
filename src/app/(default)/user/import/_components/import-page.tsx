@@ -171,7 +171,7 @@ function UploadCard({
         <button
           type="button"
           className={cn(
-            "bg-muted/25 hover:bg-muted/40 flex min-h-40 w-full flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed p-4 text-center transition-colors",
+            "bg-muted/25 hover:bg-muted/40 flex min-h-40 w-full cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed p-4 text-center transition-colors",
             isDragging && "border-primary bg-primary/5",
             hasFiles && "border-primary/70",
           )}
