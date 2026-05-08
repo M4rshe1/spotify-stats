@@ -66,9 +66,12 @@ export default function TopTrack({ period }: { period: ProviderPeriod }) {
                 {trackName}
               </Link>
               <div className="mt-3 space-y-1">
-                <div className="text-sm">{topTrack.tracks} times listened</div>
                 <div className="text-sm">
-                  {duration(topTrack.duration).toMinutes()} minutes listened
+                  {topTrack.tracks.toLocaleString()} times listened
+                </div>
+                <div className="text-sm">
+                  {duration(topTrack.duration).toMinutes().toLocaleString()}{" "}
+                  minutes listened
                 </div>
               </div>
               <div className="flex items-center gap-2">

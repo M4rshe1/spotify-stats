@@ -31,7 +31,7 @@ export function TotalTracks({ period }: { period: ProviderPeriod }) {
       </CardHeader>
       <CardContent className="flex items-end justify-between gap-2">
         <div className="flex items-center gap-2">
-          <p className="text-5xl font-bold">{data.tracks}</p>
+          <p className="text-5xl font-bold">{data.tracks.toLocaleString()}</p>
           {tracksPercentage > 0 ? (
             <TrendingUpIcon size={24} className="text-success" />
           ) : (

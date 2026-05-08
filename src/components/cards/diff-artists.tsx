@@ -31,7 +31,7 @@ export function DiffArtists({ period }: { period: ProviderPeriod }) {
       </CardHeader>
       <CardContent className="flex items-end justify-between gap-2">
         <div className="flex items-center gap-2">
-          <p className="text-5xl font-bold">{data.artists}</p>
+          <p className="text-5xl font-bold">{data.artists.toLocaleString()}</p>
           {artistsPercentage > 0 ? (
             <TrendingUpIcon size={24} className="text-success" />
           ) : (

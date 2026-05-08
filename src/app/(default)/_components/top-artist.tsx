@@ -50,15 +50,18 @@ export default function TopArtist({ period }: { period: ProviderPeriod }) {
               </Link>
               <div className="mt-3 space-y-1">
                 <div className="text-sm">
-                  {topArtist.differentTracks}{" "}
+                  {topArtist.differentTracks.toLocaleString()}{" "}
                   {topArtist.differentTracks === 1
                     ? "track"
                     : "different tracks"}
                 </div>
                 <div className="text-sm">
-                  {duration(topArtist.duration).toMinutes()} minutes
+                  {duration(topArtist.duration).toMinutes().toLocaleString()}{" "}
+                  minutes
                 </div>
-                <div className="text-sm">{topArtist.tracks} tracks</div>
+                <div className="text-sm">
+                  {topArtist.tracks.toLocaleString()} tracks
+                </div>
               </div>
               <div className="flex items-center gap-2"></div>
             </div>
