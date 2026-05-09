@@ -25,10 +25,10 @@ export function platform(platform: string): string {
   //   ];
 
   const platformMatchers: [RegExp, string][] = [
-    [/(google|nest hub|cast|alexa|echo|voice)/i, "Cast Device"],
-    [/(android|linux.*android|ipad|iphone|ios)/i, "Smartphone"],
-    [/(win|windows|mac\s?os|os x|darwin|linux)/i, "Computer"],
     [/(web|chrome|firefox|safari|edge)/i, "Web"],
+    [/(android|linux.*android|ipad|iphone|ios)/i, "Smartphone"],
+    [/(google|nest hub|cast|alexa|echo|voice)/i, "Cast Device"],
+    [/(win|windows|mac\s?os|os x|darwin|linux)/i, "Computer"],
     [/(sonos)/i, "Sonos"],
     [/(tv|chromecast)/i, "TV"],
     [/(playstation|ps4|ps5)/i, "PlayStation"],
