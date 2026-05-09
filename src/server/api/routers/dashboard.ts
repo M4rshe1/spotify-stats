@@ -192,10 +192,14 @@ export const dashboardRouter = createTRPCRouter({
           message: "Failed to get top track",
         });
       }
+      const topRow = topTrack.data?.[0];
+      if (topRow?.trackId == null) {
+        return null;
+      }
       const track = await tryCatch(
         ctx.db.track.findUnique({
           where: {
-            id: topTrack.data?.[0]?.trackId,
+            id: topRow.trackId,
           },
           include: {
             artists: {
@@ -214,8 +218,8 @@ export const dashboardRouter = createTRPCRouter({
       }
       return {
         track: track.data,
-        duration: topTrack.data?.[0]?.duration ?? 0,
-        tracks: Number(topTrack.data?.[0]?.tracks ?? 0n),
+        duration: topRow.duration ?? 0,
+        tracks: Number(topRow.tracks ?? 0n),
       };
     }),
   getTopArtist: protectedProcedure
@@ -251,6 +255,10 @@ export const dashboardRouter = createTRPCRouter({
           message: "Failed to get top artist",
         });
       }
+      const topArtistRow = groupResult.data?.[0];
+      if (topArtistRow?.artistId == null) {
+        return null;
+      }
       const topTrackGroup = await tryCatch(
         ctx.db.$queryRaw<{ differentTracks: bigint }[]>(Prisma.sql`
           SELECT COUNT(DISTINCT playback."trackId")::bigint AS "differentTracks"
@@ -258,7 +266,7 @@ export const dashboardRouter = createTRPCRouter({
           JOIN track ON playback."trackId" = track."id"
           JOIN artist_track ON track."id" = artist_track."trackId" and artist_track."role" = 'primary'
           WHERE playback."userId" = ${userId}
-            AND artist_track."artistId" = ${groupResult.data?.[0]?.artistId ?? ""}
+            AND artist_track."artistId" = ${topArtistRow.artistId}
             AND timezone(${timezone}, "playedAt") >= timezone(${timezone}, ${start})
             AND timezone(${timezone}, "playedAt") <= timezone(${timezone}, ${end})
         `),
@@ -272,7 +280,7 @@ export const dashboardRouter = createTRPCRouter({
       const artist = await tryCatch(
         ctx.db.artist.findFirst({
           where: {
-            id: groupResult.data?.[0]?.artistId,
+            id: topArtistRow.artistId,
           },
         }),
       );
@@ -294,8 +302,8 @@ export const dashboardRouter = createTRPCRouter({
           ...artist.data,
         },
         differentTracks: Number(topTrackGroup.data?.[0]?.differentTracks ?? 0n),
-        tracks: Number(groupResult.data?.[0]?.tracks ?? 0n),
-        duration: groupResult.data?.[0]?.duration ?? 0,
+        tracks: Number(topArtistRow.tracks ?? 0n),
+        duration: topArtistRow.duration ?? 0,
       };
     }),
   getRecentlyPlayed: protectedProcedure
