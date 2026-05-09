@@ -110,10 +110,10 @@ function NavMainSection({ item }: { item: NavMainItem }) {
     >
       <SidebarMenuItem>
         <SidebarMenuButton asChild tooltip={item.title}>
-          <a href={item.url}>
+          <Link href={item.url}>
             <item.icon />
             <span>{item.title}</span>
-          </a>
+          </Link>
         </SidebarMenuButton>
         {hasSubItems ? (
           <>
