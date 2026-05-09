@@ -15,7 +15,6 @@ export const dashboardRouter = createTRPCRouter({
         input.from,
         input.to,
       );
-      const timezone = ctx.session.user.timezone;
       const userId = ctx.session.user.id;
 
       const [period, previousPeriod] = await Promise.all([
@@ -28,8 +27,8 @@ export const dashboardRouter = createTRPCRouter({
                 COUNT(*)::bigint AS tracks
               FROM playback
               WHERE "userId" = ${userId}
-                AND timezone(${timezone}, "playedAt") >= timezone(${timezone}, ${start})
-                AND timezone(${timezone}, "playedAt") <= timezone(${timezone}, ${end})
+                AND "playedAt" >= ${start}
+                AND "playedAt" <= ${end}
           `),
         ),
         tryCatch(
@@ -41,8 +40,8 @@ export const dashboardRouter = createTRPCRouter({
                 COUNT(*)::bigint AS tracks
               FROM playback
               WHERE "userId" = ${userId}
-                AND timezone(${timezone}, "playedAt") >= timezone(${timezone}, ${previousStart})
-                AND timezone(${timezone}, "playedAt") < timezone(${timezone}, ${start})
+                AND "playedAt" >= ${previousStart}
+                AND "playedAt" < ${start}
           `),
         ),
       ]);
@@ -67,7 +66,6 @@ export const dashboardRouter = createTRPCRouter({
         input.from,
         input.to,
       );
-      const timezone = ctx.session.user.timezone;
       const userId = ctx.session.user.id;
 
       const [period, previousPeriod] = await Promise.all([
@@ -80,8 +78,8 @@ export const dashboardRouter = createTRPCRouter({
                 COUNT(*)::bigint AS tracks
               FROM playback
               WHERE "userId" = ${userId}
-                AND timezone(${timezone}, "playedAt") >= timezone(${timezone}, ${start})
-                AND timezone(${timezone}, "playedAt") <= timezone(${timezone}, ${end})
+                AND "playedAt" >= ${start}
+                AND "playedAt" <= ${end}
             `),
         ),
         tryCatch(
@@ -93,8 +91,8 @@ export const dashboardRouter = createTRPCRouter({
                 COUNT(*)::bigint AS tracks
               FROM playback
               WHERE "userId" = ${userId}
-                AND timezone(${timezone}, "playedAt") >= timezone(${timezone}, ${previousStart})
-                AND timezone(${timezone}, "playedAt") < timezone(${timezone}, ${start})
+                AND "playedAt" >= ${previousStart}
+                AND "playedAt" < ${start}
             `),
         ),
       ]);
@@ -119,7 +117,6 @@ export const dashboardRouter = createTRPCRouter({
         input.from,
         input.to,
       );
-      const timezone = ctx.session.user.timezone;
       const userId = ctx.session.user.id;
 
       const [artists, previousArtists] = await Promise.all([
@@ -131,8 +128,8 @@ export const dashboardRouter = createTRPCRouter({
               JOIN artist_track ON track."id" = artist_track."trackId" and artist_track."role" = 'primary'
               JOIN artist ON artist_track."artistId" = artist."id"
               WHERE playback."userId" = ${userId}
-                AND timezone(${timezone}, "playedAt") >= timezone(${timezone}, ${start})
-                AND timezone(${timezone}, "playedAt") <= timezone(${timezone}, ${end})
+                AND playback."playedAt" >= ${start}
+                AND playback."playedAt" <= ${end}
             `),
         ),
         tryCatch(
@@ -143,8 +140,8 @@ export const dashboardRouter = createTRPCRouter({
               JOIN artist_track ON track."id" = artist_track."trackId" and artist_track."role" = 'primary'
               JOIN artist ON artist_track."artistId" = artist."id"
               WHERE playback."userId" = ${userId}
-                AND timezone(${timezone}, "playedAt") >= timezone(${timezone}, ${previousStart})
-                AND timezone(${timezone}, "playedAt") < timezone(${timezone}, ${start})
+                AND playback."playedAt" >= ${previousStart}
+                AND playback."playedAt" < ${start}
             `),
         ),
       ]);
@@ -165,7 +162,6 @@ export const dashboardRouter = createTRPCRouter({
     .input(periodSchema)
     .query(async ({ ctx, input }) => {
       const { start, end } = getPeriods(input.period, input.from, input.to);
-      const timezone = ctx.session.user.timezone;
       const userId = ctx.session.user.id;
       const topTrack = await tryCatch(
         ctx.db.$queryRaw<
@@ -178,8 +174,8 @@ export const dashboardRouter = createTRPCRouter({
               COUNT(*)::bigint AS tracks
             FROM playback
             WHERE "userId" = ${userId}
-              AND timezone(${timezone}, "playedAt") >= timezone(${timezone}, ${start})
-              AND timezone(${timezone}, "playedAt") <= timezone(${timezone}, ${end})
+              AND "playedAt" >= ${start}
+              AND "playedAt" <= ${end}
             GROUP BY "trackId"
             ORDER BY SUM(duration) DESC
             LIMIT 1
@@ -226,7 +222,6 @@ export const dashboardRouter = createTRPCRouter({
     .input(periodSchema)
     .query(async ({ ctx, input }) => {
       const { start, end } = getPeriods(input.period, input.from, input.to);
-      const timezone = ctx.session.user.timezone;
       const userId = ctx.session.user.id;
       const groupResult = await tryCatch(
         ctx.db.$queryRaw<
@@ -241,8 +236,8 @@ export const dashboardRouter = createTRPCRouter({
             JOIN track ON playback."trackId" = track."id"
             JOIN artist_track ON track."id" = artist_track."trackId" and artist_track."role" = 'primary'
             WHERE playback."userId" = ${userId}
-              AND timezone(${timezone}, "playedAt") >= timezone(${timezone}, ${start})
-              AND timezone(${timezone}, "playedAt") <= timezone(${timezone}, ${end})
+              AND playback."playedAt" >= ${start}
+              AND playback."playedAt" <= ${end}
             GROUP BY artist_track."artistId"
             ORDER BY SUM(playback."duration") DESC
             LIMIT 1
@@ -267,8 +262,8 @@ export const dashboardRouter = createTRPCRouter({
           JOIN artist_track ON track."id" = artist_track."trackId" and artist_track."role" = 'primary'
           WHERE playback."userId" = ${userId}
             AND artist_track."artistId" = ${topArtistRow.artistId}
-            AND timezone(${timezone}, "playedAt") >= timezone(${timezone}, ${start})
-            AND timezone(${timezone}, "playedAt") <= timezone(${timezone}, ${end})
+            AND playback."playedAt" >= ${start}
+            AND playback."playedAt" <= ${end}
         `),
       );
       if (topTrackGroup.error) {
@@ -316,7 +311,6 @@ export const dashboardRouter = createTRPCRouter({
     )
     .query(async ({ ctx, input }) => {
       const { start, end } = getPeriods(input.period, input.from, input.to);
-      const timezone = ctx.session.user.timezone;
       const userId = ctx.session.user.id;
       const limit = input.limit;
 
@@ -369,8 +363,8 @@ export const dashboardRouter = createTRPCRouter({
             LEFT JOIN artist_track ON track."id" = artist_track."trackId" AND artist_track."role" = 'primary'
             LEFT JOIN artist ON artist_track."artistId" = artist."id"
             WHERE playback."userId" = ${userId}
-              AND timezone(${timezone}, playback."playedAt") >= timezone(${timezone}, ${start})
-              AND timezone(${timezone}, playback."playedAt") <= timezone(${timezone}, ${end})
+              AND playback."playedAt" >= ${start}
+              AND playback."playedAt" <= ${end}
               ${cursorCondition}
             GROUP BY playback."id", track."id", track."name", track."image", track."duration", playback."playedAt", album."id", album."name"
             ORDER BY playback."playedAt" DESC, playback."id" DESC
