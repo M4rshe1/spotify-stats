@@ -11,6 +11,7 @@ const Page = withAuth(async ({ params }: { params: { id: string } }) => {
   const periodInput = await getPreferredMetricsInput();
 
   void api.artist.firstLastPlayed.prefetch({ id: numericId });
+  void api.artist.recentPlaybacks.prefetch({ id: numericId });
   void api.artist.getTopTracks.prefetch({
     id: numericId,
     sortBy: "duration",

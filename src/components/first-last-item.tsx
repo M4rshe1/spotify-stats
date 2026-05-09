@@ -3,11 +3,14 @@
 import { format, isSameDay } from "date-fns";
 import Link from "next/link";
 import { CoverTintBackdrop } from "@/components/cards/cover-tint-backdrop";
-import { type RouterOutputs } from "@/trpc/react";
 
-type FirstLastPayload = RouterOutputs["artist"]["firstLastPlayed"];
-
-export type FirstLastTrackRowData = NonNullable<FirstLastPayload["firstPlayed"]>;
+/** Shape shared by artist / album / track first-last queries. */
+export type FirstLastTrackPlaybackRow = {
+  playedAt: Date | string | null;
+  trackId: number | null;
+  trackName: string | null;
+  trackImage: string | null;
+};
 
 function formatListenedMeta(kind: "first" | "last", playedAt: Date) {
   const prefix = kind === "first" ? "First listened on" : "Last listened on";
@@ -23,7 +26,7 @@ export function FirstLastTrackRow({
   row,
 }: {
   kind: "first" | "last";
-  row: FirstLastTrackRowData;
+  row: FirstLastTrackPlaybackRow;
 }) {
   const playedAt = row.playedAt ? new Date(row.playedAt) : null;
   const trackId = row.trackId;

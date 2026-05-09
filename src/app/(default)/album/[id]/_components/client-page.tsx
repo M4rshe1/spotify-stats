@@ -1,14 +1,13 @@
 "use client";
 
-import { ArtistTimeDistribution } from "@/components/charts/artist-time-distribution";
-import { ArtistTimeListened } from "@/components/charts/artist-time-listened";
+import { AlbumTimeDistribution } from "@/components/charts/album-time-distribution";
+import { AlbumTimeListened } from "@/components/charts/album-time-listened";
 import { usePeriod } from "@/providers/period-provider";
 
-import { ArtistRecentPlays } from "@/components/recent-plays";
+import { AlbumRecentPlays } from "@/components/recent-plays";
 
-import ArtistCard from "./artist-card";
+import AlbumCard from "./album-card";
 import FirstLastPlayed from "./first-last-played";
-import TopAlbums from "./top-albums";
 import TopTracks from "./top-tracks";
 
 const ClientPage = ({ id }: { id: string }) => {
@@ -17,24 +16,21 @@ const ClientPage = ({ id }: { id: string }) => {
 
   return (
     <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-      <ArtistCard id={numericId} />
+      <AlbumCard id={numericId} />
       <div className="h-fit">
         <FirstLastPlayed id={numericId} />
       </div>
       <div className="h-72">
-        <ArtistTimeListened artistId={numericId} period={selectedPeriod} />
+        <AlbumTimeListened albumId={numericId} period={selectedPeriod} />
       </div>
       <div className="h-72">
-        <ArtistTimeDistribution artistId={numericId} period={selectedPeriod} />
-      </div>
-      <div className="h-fit">
-        <TopTracks id={numericId} />
-      </div>
-      <div className="h-fit">
-        <TopAlbums id={numericId} />
+        <AlbumTimeDistribution albumId={numericId} period={selectedPeriod} />
       </div>
       <div className="h-fit lg:col-span-2">
-        <ArtistRecentPlays id={numericId} />
+        <TopTracks id={numericId} />
+      </div>
+      <div className="h-fit lg:col-span-2">
+        <AlbumRecentPlays id={numericId} />
       </div>
     </div>
   );

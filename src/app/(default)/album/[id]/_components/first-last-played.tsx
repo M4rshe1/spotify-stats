@@ -1,15 +1,15 @@
 "use client";
 
 import { NoDataCard } from "@/components/cards/no-data-card";
+import { FirstLastTrackRow } from "@/components/first-last-item";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loading } from "@/components/ui/loading";
 import { api } from "@/trpc/react";
 import { ClockIcon } from "lucide-react";
-import { FirstLastTrackRow } from "@/components/first-last-item";
 
 const FirstLastPlayed = ({ id }: { id: number }) => {
   const { data: firstLastPlayed, isLoading: isLoadingFirstLastPlayed } =
-    api.artist.firstLastPlayed.useQuery({ id });
+    api.album.firstLastPlayed.useQuery({ id });
 
   if (isLoadingFirstLastPlayed) {
     return <Loading />;
@@ -21,7 +21,7 @@ const FirstLastPlayed = ({ id }: { id: number }) => {
         title="First and last listened"
         icon={<ClockIcon />}
         emptyTitle="No data"
-        description="No playback history for this artist yet."
+        description="No playback history from this album yet."
       />
     );
   }
@@ -35,7 +35,7 @@ const FirstLastPlayed = ({ id }: { id: number }) => {
         title="First and last listened"
         icon={<ClockIcon />}
         emptyTitle="No data"
-        description="No playback history for this artist yet."
+        description="No playback history from this album yet."
       />
     );
   }

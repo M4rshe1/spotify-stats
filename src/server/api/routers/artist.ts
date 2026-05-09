@@ -255,4 +255,56 @@ export const artistRouter = createTRPCRouter({
         lastPlayed,
       };
     }),
+  recentPlaybacks: protectedProcedure
+    .input(z.object({ id: z.number() }))
+    .query(async ({ ctx, input }) => {
+      const rows = await ctx.db.playback.findMany({
+        where: {
+          userId: ctx.session.user.id,
+          track: {
+            artists: {
+              some: {
+                artistId: input.id,
+                role: "primary",
+              },
+            },
+          },
+        },
+        orderBy: { playedAt: "desc" },
+        take: 10,
+        select: {
+          id: true,
+          playedAt: true,
+          track: {
+            select: {
+              id: true,
+              name: true,
+              image: true,
+              duration: true,
+              album: { select: { id: true, name: true } },
+              artists: {
+                where: { role: "primary" },
+                orderBy: { artist: { name: "asc" } },
+                select: {
+                  artist: { select: { id: true, name: true } },
+                },
+              },
+            },
+          },
+        },
+      });
+
+      return rows.map((p) => ({
+        id: p.id,
+        trackId: p.track.id,
+        image: p.track.image,
+        title: p.track.name,
+        artists: p.track.artists.map((a) => a.artist.name),
+        artistIds: p.track.artists.map((a) => a.artist.id),
+        duration: p.track.duration,
+        playedAt: p.playedAt,
+        albumId: p.track.album?.id ?? null,
+        album: p.track.album?.name ?? "Unknown Album",
+      }));
+    }),
 });
