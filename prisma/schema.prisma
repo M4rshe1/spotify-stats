@@ -206,17 +206,18 @@ model Playlist {
 }
 
 model Playback {
-  id        Int      @id @default(autoincrement())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  duration  Int
-  device    String
-  platform  String
-  trackId   Int
-  track     Track    @relation(fields: [trackId], references: [id], onDelete: Cascade)
-  playedAt  DateTime
-  createdAt DateTime @default(now())
-  updatedAt DateTime @default(now()) @updatedAt
+  id               Int      @id @default(autoincrement())
+  userId           String
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  duration         Int
+  device           String
+  platform         String
+  originalPlatform String   @default("Unknown")
+  trackId          Int
+  track            Track    @relation(fields: [trackId], references: [id], onDelete: Cascade)
+  playedAt         DateTime
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @default(now()) @updatedAt
 
   @@unique([userId, playedAt])
   @@map("playback")

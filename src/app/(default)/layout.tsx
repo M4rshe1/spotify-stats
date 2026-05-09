@@ -1,5 +1,6 @@
 import { AppSidebar } from "@/components/app-sidebar";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
+import { BreadcrumbProvider } from "@/providers/breadcrumb-provider";
 import { PeriodProvider } from "@/providers/period-provider";
 import Header from "@/components/header";
 import { getSession } from "@/server/better-auth/server";
@@ -17,8 +18,10 @@ export default async function Layout({
       <PeriodProvider initialPreferredSnapshot={initialPreferredPeriod}>
         <AppSidebar user={session?.user ?? null} />
         <SidebarInset>
-          <Header />
-          <div className="flex flex-1 flex-col gap-4 p-4 pt-0">{children}</div>
+          <BreadcrumbProvider>
+            <Header />
+            <div className="flex flex-1 flex-col gap-4 p-4 pt-0">{children}</div>
+          </BreadcrumbProvider>
         </SidebarInset>
       </PeriodProvider>
     </SidebarProvider>

@@ -50,7 +50,8 @@ export function TimeDistribution({ period }: { period: ProviderPeriod }) {
           </div>
           <div>{formatPercent(value)} of total time listened</div>
           <div>
-            {payload?.count} of {result?.totalCount} tracks
+            {payload?.count.toLocaleString()} of{" "}
+            {result?.totalCount?.toLocaleString()} tracks
           </div>
         </div>
       );

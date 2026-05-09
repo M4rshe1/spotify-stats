@@ -29,6 +29,7 @@ import {
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
 import { api } from "@/trpc/react";
+import { useBreadcrumbOverride } from "@/providers/breadcrumb-provider";
 import { usePathname } from "next/navigation";
 
 const AUTO_REFRESH_LS_KEY = "header-auto-refresh-enabled";
@@ -49,6 +50,7 @@ const segmentToLabel = (segment: string) =>
 
 const Header = () => {
   const pathname = usePathname();
+  const breadcrumbOverride = useBreadcrumbOverride();
   const {
     selectedPeriod,
     openPeriodSelectDialog,
@@ -60,6 +62,9 @@ const Header = () => {
   const [autoRefresh, setAutoRefresh] = useState<boolean>(false);
   const utils = api.useUtils();
   const breadcrumbs = useMemo(() => {
+    if (breadcrumbOverride?.length) {
+      return breadcrumbOverride;
+    }
     const segments = pathname.split("/").filter(Boolean);
     if (segments.length === 0) {
       return [{ href: "/", label: "Dashboard" }];
@@ -69,7 +74,7 @@ const Header = () => {
       href: `/${segments.slice(0, index + 1).join("/")}`,
       label: segmentToLabel(segment),
     }));
-  }, [pathname]);
+  }, [breadcrumbOverride, pathname]);
 
   useEffect(() => {
     if (typeof window !== "undefined") {

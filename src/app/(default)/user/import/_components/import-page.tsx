@@ -2,7 +2,7 @@
 
 import { useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
-import { UploadIcon, XIcon } from "lucide-react";
+import { RefreshCcwIcon, UploadIcon, XIcon } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -305,6 +305,12 @@ function ImportList({ imports }: { imports: ImportRow[] }) {
   const [expandedImportId, setExpandedImportId] = useState<number | null>(null);
   const [isCompletedOpen, setIsCompletedOpen] = useState(false);
   const [isFailedOpen, setIsFailedOpen] = useState(false);
+  const reporcessMutation = api.import.reporcess.useMutation();
+  const utils = api.useUtils();
+  const onReprocess = async (id: number) => {
+    await reporcessMutation.mutate({ id });
+    await utils.import.list.invalidate();
+  };
 
   const activeImports = imports.filter((row) =>
     ["pending", "processing"].includes(row.status),
@@ -327,7 +333,10 @@ function ImportList({ imports }: { imports: ImportRow[] }) {
     );
   }
 
-  const renderImportRows = (rows: ImportRow[]) =>
+  const renderImportRows = (
+    rows: ImportRow[],
+    onReprocess?: (id: number) => void,
+  ) =>
     rows.map((row) => {
       const status = statusMeta[row.status] ?? {
         label: row.status,
@@ -352,7 +361,18 @@ function ImportList({ imports }: { imports: ImportRow[] }) {
               <div className="space-y-1">
                 <div className="flex items-center gap-2">
                   <p className="font-semibold">Import #{row.id}</p>
-                  <Badge variant={status.badgeVariant}>{status.label}</Badge>
+                  <Badge variant={status.badgeVariant}>
+                    {status.label}
+                  </Badge>{" "}
+                  {onReprocess ? (
+                    <Button
+                      size="icon-xs"
+                      variant="ghost"
+                      onClick={() => onReprocess(row.id)}
+                    >
+                      <RefreshCcwIcon className="size-3" />
+                    </Button>
+                  ) : null}
                 </div>
                 <p className="text-muted-foreground text-xs">
                   {row.type} • Started {formatDateTime(row.startedAt)}
@@ -422,7 +442,7 @@ function ImportList({ imports }: { imports: ImportRow[] }) {
         {isCompletedOpen ? (
           <CardContent className="space-y-4">
             {completedImports.length > 0 ? (
-              renderImportRows(completedImports)
+              renderImportRows(completedImports, onReprocess)
             ) : (
               <p className="text-muted-foreground text-sm">
                 No completed imports yet.
@@ -448,7 +468,7 @@ function ImportList({ imports }: { imports: ImportRow[] }) {
         {isFailedOpen ? (
           <CardContent className="space-y-4">
             {failedImports.length > 0 ? (
-              renderImportRows(failedImports)
+              renderImportRows(failedImports, onReprocess)
             ) : (
               <p className="text-muted-foreground text-sm">
                 No failed imports.

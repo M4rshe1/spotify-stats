@@ -19,7 +19,7 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar";
-import type { User } from "better-auth";
+import type { User } from "@/server/better-auth/config";
 import { authClient } from "@/server/better-auth/client";
 import { api } from "@/trpc/react";
 import { useRouter } from "next/navigation";

@@ -413,6 +413,7 @@ export async function createPlaybacks(
           duration: playback.track.duration_ms,
           device: state.device?.name ?? "Unknown",
           platform: platform(state.device?.type ?? "Unknown"),
+          originalPlatform: state.device?.type ?? "Unknown",
           playedAt: new Date(playback.played_at),
         },
       }),
@@ -473,42 +474,40 @@ export async function createHistory(
     const trackIdBySpotifyId = new Map(
       tracks.data.map((track) => [track.spotifyId, track.id]),
     );
-    const playbackRows = batch.flatMap((item) => {
+    let errorsInBatch = 0;
+    for (const item of batch) {
       const spotifyId = getTrackIdFromUri(item.spotify_track_uri);
-      if (!spotifyId) return [];
+      if (!spotifyId) continue;
       const trackId = trackIdBySpotifyId.get(spotifyId);
-      if (!trackId) return [];
-      return [
-        {
-          userId,
-          duration: item.ms_played ?? 0,
-          device: "Unknown",
-          platform: platform(item.platform),
-          trackId,
-          playedAt: item.ts,
-        },
-      ];
-    });
-    if (playbackRows.length > 0) {
-      for (const playback of playbackRows) {
-        const createdPlayback = await tryCatch(
-          db.playback.upsert({
-            where: {
-              userId_playedAt: {
-                userId,
-                playedAt: playback.playedAt,
-              },
+      if (!trackId) continue;
+      const playback = {
+        userId,
+        duration: item.ms_played ?? 0,
+        device: "Unknown",
+        platform: platform(item.platform),
+        originalPlatform: item.platform,
+        trackId: trackId,
+        playedAt: item.ts,
+      };
+
+      const createdPlayback = await tryCatch(
+        db.playback.upsert({
+          where: {
+            userId_playedAt: {
+              userId,
+              playedAt: playback.playedAt,
             },
-            create: playback,
-            update: playback,
-          }),
-        );
-        if (createdPlayback.error) {
-          logger.error(createdPlayback.error);
-        }
+          },
+          create: playback,
+          update: playback,
+        }),
+      );
+      if (createdPlayback.error) {
+        logger.error(createdPlayback.error);
+        errorsInBatch++;
       }
-      totalEntriesAdded += playbackRows.length;
     }
+    totalEntriesAdded += batch.length - errorsInBatch;
     completedBatches++;
     const updatedImport = await tryCatch(
       db.import.update({
