@@ -8,7 +8,6 @@ import { cn } from "@/lib/utils";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "@/components/ui/sonner";
 import { ThemeProvider } from "@/providers/theme-provider";
-import { FaviconSwitcher } from "@/components/favicon-switcher";
 
 const jetbrainsMono = JetBrains_Mono({
   subsets: ["latin"],
