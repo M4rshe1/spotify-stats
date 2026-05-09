@@ -63,12 +63,12 @@ export async function handleStudioBff(
       options,
     );
     if (secondError) {
-      return studioJson([
-        [null, firstResult],
-        [serializeError(secondError)],
-      ]);
+      return studioJson([[null, firstResult], [serializeError(secondError)]]);
     }
-    return studioJson([[null, firstResult], [null, secondResult]]);
+    return studioJson([
+      [null, firstResult],
+      [null, secondResult],
+    ]);
   }
 
   if (payload.procedure === "transaction") {

@@ -24,7 +24,6 @@ import {
   Users,
 } from "lucide-react";
 import Image from "next/image";
-import { useTheme } from "next-themes";
 
 import { NavMain } from "@/components/nav-main";
 import { NavSecondary } from "@/components/nav-secondary";
@@ -195,12 +194,6 @@ export function AppSidebar({
   user,
   ...props
 }: React.ComponentProps<typeof Sidebar> & { user: User | null }) {
-  const { resolvedTheme } = useTheme();
-  const [mounted, setMounted] = React.useState(false);
-  React.useEffect(() => setMounted(true), []);
-
-  const waveSrc =
-    mounted && resolvedTheme === "dark" ? "/wave-dark.png" : "/wave-light.png";
   return (
     <Sidebar variant="inset" {...props}>
       <SidebarHeader>
@@ -209,7 +202,20 @@ export function AppSidebar({
             <SidebarMenuButton size="lg" asChild>
               <a href="/">
                 <div className="bg-accent text-muted-foreground flex aspect-square size-8 items-center justify-center rounded-sm">
-                  <Image src={waveSrc} alt="Spotify" width={32} height={32} />
+                  <Image
+                    src={"/wave-light.png"}
+                    alt="Spotify"
+                    width={32}
+                    height={32}
+                    className="block dark:hidden"
+                  />
+                  <Image
+                    src={"/wave-dark.png"}
+                    alt="Spotify"
+                    width={32}
+                    height={32}
+                    className="hidden dark:block"
+                  />
                 </div>
                 <div className="grid flex-1 text-left text-sm leading-tight">
                   <span className="truncate font-medium">Spotify</span>

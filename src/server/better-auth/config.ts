@@ -16,7 +16,6 @@ function parseAllowedEmails(raw: string | undefined): Set<string> {
   );
 }
 
-/** Blocks new-user creation when signup is restricted and email is not whitelisted. */
 function assertRegistrationAllowed(email: unknown) {
   if (env.ALLOW_REGISTER) return;
   const normalized =
@@ -99,8 +98,8 @@ export const auth = betterAuth({
           assertRegistrationAllowed(user.email);
         },
         after: async (user) => {
-          const usersCount = await db.user.count();
-          const role = usersCount === 0 ? "admin" : "user";
+          const adminCount = await db.user.count({ where: { role: "admin" } });
+          const role = adminCount === 0 ? "admin" : "user";
           await db.user.update({
             where: { id: user.id },
             data: { role },
@@ -135,6 +134,7 @@ export const auth = betterAuth({
       clientId: env.BETTER_AUTH_SPOTIFY_CLIENT_ID,
       clientSecret: env.BETTER_AUTH_SPOTIFY_CLIENT_SECRET,
       redirectURI: `${env.BETTER_AUTH_URL}/api/auth/callback/spotify`,
+      disableImplicitSignUp: !env.ALLOW_REGISTER,
     },
     ...(googleCreds
       ? {
