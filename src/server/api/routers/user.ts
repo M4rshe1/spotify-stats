@@ -15,6 +15,9 @@ import {
   isValidIanaTimezone,
   normalizeIanaTimezone,
 } from "@/lib/timezone";
+import { retrySpotifyCall } from "@/lib/spotify";
+import { spotifyProductLabel } from "@/lib/spotify-product";
+import getSpotifyApi from "@/server/spotify";
 
 const periodKeys = Object.keys(periods) as Period[];
 const periodSet = new Set<string>(periodKeys);
@@ -35,6 +38,58 @@ function parseFavoritePeriodsJson(raw: string | undefined): Period[] {
 }
 
 export const userRouter = createTRPCRouter({
+  getSpotifyPlan: protectedProcedure.query(async ({ ctx }) => {
+    const dbUser = await ctx.db.user.findUnique({
+      where: { id: ctx.session.user.id },
+      select: { product: true },
+    });
+    const cachedProduct = dbUser?.product ?? null;
+
+    const spotify = getSpotifyApi(ctx.session.user.id);
+    const profileResult = await retrySpotifyCall(
+      () => spotify.currentUser.profile(),
+      "currentUser.profile",
+    );
+
+    if (profileResult.error || !profileResult.data) {
+      return {
+        source: "cached" as const,
+        product: cachedProduct,
+        label: spotifyProductLabel(cachedProduct),
+      };
+    }
+
+    const product = profileResult.data.product;
+    await ctx.db.user.update({
+      where: { id: ctx.session.user.id },
+      data: { product },
+    });
+
+    return {
+      source: "live" as const,
+      product,
+      label: spotifyProductLabel(product),
+    };
+  }),
+
+  revokeSessionById: protectedProcedure
+    .input(z.object({ sessionId: z.string().min(1) }))
+    .mutation(async ({ ctx, input }) => {
+      const result = await ctx.db.session.deleteMany({
+        where: {
+          id: input.sessionId,
+          userId: ctx.session.user.id,
+        },
+      });
+      if (result.count === 0) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Session not found.",
+        });
+      }
+      return { ok: true as const };
+    }),
+
   getTimezone: protectedProcedure.query(async ({ ctx }) => {
     return { timezone: ctx.session.user.timezone ?? DEFAULT_IANA_TIMEZONE };
   }),

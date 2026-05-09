@@ -64,8 +64,6 @@ async function fetchPlaybackStats() {
       continue;
     }
 
-    console.log(JSON.stringify(recentlyPlayed.data.items, null, 2));
-
     const filteredPlaybacks = recentlyPlayed.data.items.filter(
       (playback) => Date.parse(playback.played_at) > lastPlayedAtMs,
     );
@@ -86,7 +84,6 @@ async function fetchPlaybackStats() {
       logger.error(state.error);
       continue;
     }
-    console.log(JSON.stringify(state.data.device, null, 2));
 
     await createArtists(spotify);
     await createAlbums(spotify);

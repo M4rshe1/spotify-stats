@@ -30,6 +30,18 @@ function assertRegistrationAllowed(email: unknown) {
   }
 }
 
+function googleOAuthCredentials(): {
+  clientId: string;
+  clientSecret: string;
+} | null {
+  const clientId = env.BETTER_AUTH_GOOGLE_CLIENT_ID?.trim();
+  const clientSecret = env.BETTER_AUTH_GOOGLE_CLIENT_SECRET?.trim();
+  if (!clientId || !clientSecret) return null;
+  return { clientId, clientSecret };
+}
+
+const googleCreds = googleOAuthCredentials();
+
 const spotifyScopes = [
   // Images
   "ugc-image-upload",
@@ -71,6 +83,14 @@ export const auth = betterAuth({
   database: prismaAdapter(db, {
     provider: "postgresql",
   }),
+  account: {
+    accountLinking: {
+      enabled: true,
+      trustedProviders: ["spotify", "google"],
+      /** Google sign-in on the login page only works if this provider is already linked (via Account → Link Google). */
+      disableImplicitLinking: true,
+    },
+  },
   plugins: [admin()],
   databaseHooks: {
     user: {
@@ -116,6 +136,16 @@ export const auth = betterAuth({
       clientSecret: env.BETTER_AUTH_SPOTIFY_CLIENT_SECRET,
       redirectURI: `${env.BETTER_AUTH_URL}/api/auth/callback/spotify`,
     },
+    ...(googleCreds
+      ? {
+          google: {
+            ...googleCreds,
+            redirectURI: `${env.BETTER_AUTH_URL}/api/auth/callback/google`,
+            /** No new users via Google OAuth on the login screen. */
+            disableImplicitSignUp: true,
+          },
+        }
+      : {}),
   },
 });
 

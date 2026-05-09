@@ -2,18 +2,32 @@
 
 import * as React from "react";
 import {
-  Command,
-  Home,
-  Heart,
-  MessageSquare,
-  TrendingUp,
+  BarChart3,
+  BookOpen,
+  CircleUser,
+  Clock,
+  Disc3,
   GitBranch,
+  GraduationCap,
+  Heart,
+  Home,
+  MessageSquare,
+  Music2,
+  Rocket,
+  ScrollText,
+  Settings,
+  TrendingUp,
   Upload,
+  UserRound,
+  Users,
 } from "lucide-react";
+import Image from "next/image";
+import { useTheme } from "next-themes";
 
 import { NavMain } from "@/components/nav-main";
 import { NavSecondary } from "@/components/nav-secondary";
 import { NavUser } from "@/components/nav-user";
+import { ThemeSwitcher } from "@/components/theme-switcher";
 import {
   Sidebar,
   SidebarContent,
@@ -36,10 +50,12 @@ const data = {
         {
           title: "Longest Session",
           url: "/longest-session",
+          icon: Clock,
         },
         {
           title: "All Stats",
           url: "/all-stats",
+          icon: BarChart3,
         },
       ],
     },
@@ -52,14 +68,17 @@ const data = {
         {
           title: "Top Artists",
           url: "/top/artists",
+          icon: Users,
         },
         {
           title: "Top Tracks",
           url: "/top/tracks",
+          icon: Music2,
         },
         {
           title: "Top Albums",
           url: "/top/albums",
+          icon: Disc3,
         },
       ],
     },
@@ -72,26 +91,48 @@ const data = {
         {
           title: "Introduction",
           url: "#",
+          icon: BookOpen,
         },
         {
           title: "Get Started",
           url: "#",
+          icon: Rocket,
         },
         {
           title: "Tutorials",
           url: "#",
+          icon: GraduationCap,
         },
         {
           title: "Changelog",
           url: "#",
+          icon: ScrollText,
         },
       ],
     },
+
     {
-      title: "Import",
-      url: "/user/import",
-      icon: Upload,
+      title: "User",
+      url: "/user/account",
+      icon: UserRound,
       isActive: true,
+      items: [
+        {
+          title: "Account",
+          url: "/user/account",
+          icon: CircleUser,
+        },
+        {
+          title: "Settings",
+          url: "/user/settings",
+          icon: Settings,
+        },
+        {
+          title: "Import",
+          url: "/user/import",
+          icon: Upload,
+        },
+      ],
     },
   ],
   navSecondary: [
@@ -112,6 +153,11 @@ export function AppSidebar({
   user,
   ...props
 }: React.ComponentProps<typeof Sidebar> & { user: User | null }) {
+  const { resolvedTheme } = useTheme();
+  const [mounted, setMounted] = React.useState(false);
+  React.useEffect(() => setMounted(true), []);
+  const waveSrc =
+    mounted && resolvedTheme === "dark" ? "/wave-dark.png" : "/wave-light.png";
   return (
     <Sidebar variant="inset" {...props}>
       <SidebarHeader>
@@ -119,8 +165,8 @@ export function AppSidebar({
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" asChild>
               <a href="/">
-                <div className="bg-accent text-accent-foreground flex aspect-square size-8 items-center justify-center rounded-lg">
-                  <Command className="size-4" />
+                <div className="bg-accent text-muted-foreground flex aspect-square size-8 items-center justify-center rounded-sm">
+                  <Image src={waveSrc} alt="Spotify" width={32} height={32} />
                 </div>
                 <div className="grid flex-1 text-left text-sm leading-tight">
                   <span className="truncate font-medium">Spotify</span>
@@ -135,7 +181,10 @@ export function AppSidebar({
         <NavMain items={data.navMain} />
         <NavSecondary items={data.navSecondary} className="mt-auto" />
       </SidebarContent>
-      <SidebarFooter>{user && <NavUser user={user} />}</SidebarFooter>
+      <SidebarFooter className="gap-2">
+        <ThemeSwitcher />
+        {user ? <NavUser user={user} /> : null}
+      </SidebarFooter>
     </Sidebar>
   );
 }
