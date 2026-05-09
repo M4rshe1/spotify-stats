@@ -16,10 +16,27 @@ type HourDatum = {
   percentage: number;
 };
 
-export function TimeDistribution({ period }: { period: ProviderPeriod }) {
-  const { data: result, isLoading } = api.chart.getTimeDistribution.useQuery(
-    providerPeriodToQueryInput(period),
-  );
+export function ArtistTimeDistribution({
+  artistId,
+  period,
+}: {
+  artistId: number;
+  period: ProviderPeriod;
+}) {
+  const queryEnabled = Number.isFinite(artistId) && artistId > 0;
+
+  const { data: result, isLoading } =
+    api.chart.getArtistTimeDistribution.useQuery(
+      {
+        ...providerPeriodToQueryInput(period),
+        artistId,
+      },
+      { enabled: queryEnabled },
+    );
+
+  if (!queryEnabled) {
+    return null;
+  }
 
   if (isLoading) {
     return <Loading />;
@@ -38,11 +55,11 @@ export function TimeDistribution({ period }: { period: ProviderPeriod }) {
 
   return (
     <SeriesChartCard
-      title="Listening by hour"
-      description="Total time played in each hour of the day"
+      title="This artist by hour"
+      description="When you played this artist's tracks during the day"
       chartConfig={{
-        percentage: {
-          label: "Listening by hour",
+        artistHourPercent: {
+          label: "Share by hour",
           color: "var(--chart-1)",
         },
       }}
@@ -66,10 +83,10 @@ export function TimeDistribution({ period }: { period: ProviderPeriod }) {
                 "{M} min",
               )}
             </div>
-            <div>{formatPercent(value)} of total time listened</div>
+            <div>{formatPercent(value)} of this artist in the period</div>
             <div>
               {(payload?.count ?? 0).toLocaleString()} of{" "}
-              {result?.totalCount?.toLocaleString() ?? "0"} tracks
+              {result?.totalCount?.toLocaleString() ?? "0"} plays
             </div>
           </div>
         )}

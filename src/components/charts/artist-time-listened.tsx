@@ -12,9 +12,27 @@ import { api } from "@/trpc/react";
 import { CategoryAreaChart } from "./category-area-chart";
 import { SeriesChartCard } from "./series-chart-card";
 
-export function TimeListened({ period }: { period: ProviderPeriod }) {
+export function ArtistTimeListened({
+  artistId,
+  period,
+}: {
+  artistId: number;
+  period: ProviderPeriod;
+}) {
+  const queryEnabled = Number.isFinite(artistId) && artistId > 0;
+
   const { data: tracks, isLoading: isLoadingTracks } =
-    api.chart.getTimeListened.useQuery(providerPeriodToQueryInput(period));
+    api.chart.getArtistTimeListened.useQuery(
+      {
+        ...providerPeriodToQueryInput(period),
+        artistId,
+      },
+      { enabled: queryEnabled },
+    );
+
+  if (!queryEnabled) {
+    return null;
+  }
 
   if (isLoadingTracks) {
     return <Loading />;
@@ -59,14 +77,14 @@ export function TimeListened({ period }: { period: ProviderPeriod }) {
     <SeriesChartCard
       title={
         <>
-          Time Listened{" "}
-          <span className="text-muted-foreground text-sm">(minutes)</span>
+          Time listened{" "}
+          <span className="text-muted-foreground text-sm">(this artist)</span>
         </>
       }
       description={periods[period.type]?.label}
       chartConfig={{
-        timeListened: {
-          label: "Time Listened",
+        artistTimeListened: {
+          label: "Time listened",
           color: "var(--chart-1)",
         },
       }}

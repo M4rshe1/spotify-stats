@@ -4,11 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Loading } from "@/components/ui/loading";
 import type { ProviderPeriod } from "@/lib/consts/periods";
 import { providerPeriodToQueryInput } from "@/lib/provider-period-query-input";
-import {
-  TOP_CARD_ENTITY_NAME_MAX,
-  duration,
-  truncateText,
-} from "@/lib/utils";
+import { TOP_CARD_ENTITY_NAME_MAX, duration, truncateText } from "@/lib/utils";
 import { api } from "@/trpc/react";
 import { MicVocalIcon } from "lucide-react";
 import Link from "next/link";
@@ -74,7 +70,7 @@ export default function TopArtist({ period }: { period: ProviderPeriod }) {
                 </div>
                 <div className="flex flex-wrap items-baseline gap-x-1.5 gap-y-0">
                   <span className="text-lg font-semibold tracking-tight tabular-nums">
-                    {duration(topArtist.duration).toMinutes().toLocaleString()}
+                    {duration(topArtist.duration).toBestDurationString()}
                   </span>
                   <span className="text-muted-foreground text-sm">minutes</span>
                 </div>

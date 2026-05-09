@@ -5,6 +5,7 @@ import { periodSchema } from "@/server/api/lib";
 import { tryCatch } from "@/lib/try-catch";
 import { TRPCError } from "@trpc/server";
 import { Prisma } from "generated/prisma";
+import { z } from "zod";
 import {
   addDays,
   addMonths,
@@ -125,6 +126,10 @@ function fillUpGrouping(
   return data;
 }
 
+const artistPeriodSchema = periodSchema.extend({
+  artistId: z.number(),
+});
+
 export const chartRouter = createTRPCRouter({
   getTimeListened: protectedProcedure
     .input(periodSchema)
@@ -158,6 +163,56 @@ export const chartRouter = createTRPCRouter({
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
           message: "Failed to get playbacks",
+        });
+      }
+
+      const filledData: { date: string; duration: number }[] = fillUpGrouping(
+        grouping,
+        playbacks.data,
+      );
+
+      return {
+        data: filledData,
+        grouping,
+      };
+    }),
+  getArtistTimeListened: protectedProcedure
+    .input(artistPeriodSchema)
+    .query(async ({ ctx, input }) => {
+      const { start, end, grouping } = getPeriods(
+        input.period,
+        input.from,
+        input.to,
+      );
+
+      const groupSql = getSQLGroupingString(
+        grouping,
+        ctx.session.user.timezone,
+      );
+      const playbacks = await tryCatch(
+        ctx.db.$queryRaw<{ duration: number; date: string }[]>(
+          Prisma.sql`
+            SELECT 
+              COALESCE(SUM(playback.duration), 0)::float8 AS duration, 
+              ${groupSql} AS "date"
+            FROM playback
+            JOIN track ON playback."trackId" = track."id"
+            JOIN artist_track ON track."id" = artist_track."trackId"
+              AND artist_track."role" = 'primary'
+            WHERE playback."playedAt" >= ${start}
+              AND playback."playedAt" <= ${end}
+              AND playback."userId" = ${ctx.session.user.id}
+              AND artist_track."artistId" = ${input.artistId}
+            GROUP BY ${groupSql}
+            ORDER BY "date" ASC
+          `,
+        ),
+      );
+      if (playbacks.error) {
+        console.error(playbacks.error);
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to get artist playbacks",
         });
       }
 
@@ -215,6 +270,58 @@ export const chartRouter = createTRPCRouter({
           duration: byHour.get(key) ?? 0,
           count: byCount.get(key) ?? 0,
           percentage: ((byHour.get(key) ?? 0) / totalDuration) * 100,
+        };
+      });
+
+      return { data, totalDuration, totalCount };
+    }),
+  getArtistTimeDistribution: protectedProcedure
+    .input(artistPeriodSchema)
+    .query(async ({ ctx, input }) => {
+      const { start, end } = getPeriods(input.period, input.from, input.to);
+      const groupSql = getSQLGroupingString("hour", ctx.session.user.timezone);
+      const playbacks = await tryCatch(
+        ctx.db.$queryRaw<{ duration: number; date: string; count: number }[]>(
+          Prisma.sql`
+          SELECT
+            COALESCE(SUM(playback.duration), 0)::float8 AS duration,
+            ${groupSql} AS "date",
+            COUNT(*)::float8 AS count
+          FROM playback
+          JOIN track ON playback."trackId" = track."id"
+          JOIN artist_track ON track."id" = artist_track."trackId"
+            AND artist_track."role" = 'primary'
+          WHERE playback."playedAt" >= ${start}
+            AND playback."playedAt" <= ${end}
+            AND playback."userId" = ${ctx.session.user.id}
+            AND artist_track."artistId" = ${input.artistId}
+          GROUP BY ${groupSql}
+          ORDER BY "date" ASC
+        `,
+        ),
+      );
+      if (playbacks.error) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to get artist playbacks",
+        });
+      }
+
+      const rows = playbacks.data;
+      const totalDuration = rows.reduce((acc, r) => acc + r.duration, 0);
+      const totalCount = rows.reduce((acc, r) => acc + r.count, 0);
+
+      const byHour = new Map(rows.map((r) => [r.date, r.duration]));
+      const byCount = new Map(rows.map((r) => [r.date, r.count]));
+      const data = Array.from({ length: 24 }, (_, h) => {
+        const key = String(h).padStart(2, "0");
+        const duration = byHour.get(key) ?? 0;
+        return {
+          date: key,
+          duration,
+          count: byCount.get(key) ?? 0,
+          percentage:
+            totalDuration > 0 ? (duration / totalDuration) * 100 : 0,
         };
       });
 
