@@ -10,6 +10,7 @@ import { artistRouter } from "@/server/api/routers/artist";
 import { trackRouter } from "@/server/api/routers/track";
 import { topRouter } from "@/server/api/routers/top";
 import { sessionRouter } from "@/server/api/routers/session";
+import { searchRouter } from "@/server/api/routers/search";
 /**
  * This is the primary router for your server.
  *
@@ -27,6 +28,7 @@ export const appRouter = createTRPCRouter({
   track: trackRouter,
   top: topRouter,
   session: sessionRouter,
+  search: searchRouter,
 });
 
 // export type definition of API

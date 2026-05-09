@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 
+import { NavCommandSearch } from "@/components/nav-command-search";
 import { NavMain } from "@/components/nav-main";
 import { NavSecondary } from "@/components/nav-secondary";
 import { NavUser } from "@/components/nav-user";
@@ -150,7 +151,7 @@ const SecondaryNav = [
   },
 ];
 
-function getMainNav(user: User | null) {
+export function getMainNav(user: User | null) {
   const nav = MainNav.map((item) => item);
   if (user?.role === "admin") {
     nav.push({
@@ -190,10 +191,31 @@ function getMainNav(user: User | null) {
   return nav;
 }
 
+export function getFlattenedNavForSearch(user: User | null) {
+  const items = getMainNav(user);
+  const out: { title: string; url: string }[] = [];
+  for (const section of items) {
+    if (section.url && section.url !== "#") {
+      out.push({ title: section.title, url: section.url });
+    }
+    for (const sub of section.items ?? []) {
+      if (sub.url && sub.url !== "#") {
+        out.push({ title: `${section.title} › ${sub.title}`, url: sub.url });
+      }
+    }
+  }
+  return out;
+}
+
 export function AppSidebar({
   user,
   ...props
 }: React.ComponentProps<typeof Sidebar> & { user: User | null }) {
+  const navPagesForSearch = React.useMemo(
+    () => getFlattenedNavForSearch(user),
+    [user],
+  );
+
   return (
     <Sidebar variant="inset" {...props}>
       <SidebarHeader>
@@ -225,6 +247,7 @@ export function AppSidebar({
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
+        <NavCommandSearch user={user} navPages={navPagesForSearch} />
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={getMainNav(user)} />
