@@ -48,11 +48,17 @@ export const albumRouter = createTRPCRouter({
             SELECT
               COUNT(*)::float8 AS "plays",
               COALESCE(SUM(playback."duration"), 0)::float8 AS "duration",
-              COUNT(DISTINCT track."id")::float8 AS "tracks"
+              COUNT(DISTINCT track."id")::float8 AS "tracks",
+              artist."id" AS "artistId",
+              artist."name" AS "artistName",
+              artist."image" AS "artistImage"
             FROM playback
             JOIN track ON playback."trackId" = track."id"
+            JOIN artist_track ON track."id" = artist_track."trackId" AND artist_track."role" = 'primary'
+            LEFT JOIN artist ON artist_track."artistId" = artist."id"
             WHERE track."albumId" = ${input.id}
               AND playback."userId" = ${ctx.session.user.id}
+            GROUP BY artist."id", artist."name", artist."image"
           `),
         ),
       ]);
@@ -74,6 +80,9 @@ export const albumRouter = createTRPCRouter({
           duration: 0,
           tracks: 0,
         },
+        artistId: album.data.artists[0]?.artist.id ?? null,
+        artistName: album.data.artists[0]?.artist.name ?? null,
+        artistImage: album.data.artists[0]?.artist.image ?? null,
       };
     }),
 

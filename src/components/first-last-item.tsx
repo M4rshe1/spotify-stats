@@ -13,12 +13,12 @@ export type FirstLastTrackPlaybackRow = {
 };
 
 function formatListenedMeta(kind: "first" | "last", playedAt: Date) {
-  const prefix = kind === "first" ? "First listened on" : "Last listened on";
+  const prefix = kind === "first" ? "First listened " : "Last listened";
   const today = new Date();
   if (isSameDay(playedAt, today)) {
-    return `${prefix} ${format(playedAt, "HH:mm")}`;
+    return `${prefix} at ${format(playedAt, "HH:mm")}`;
   }
-  return `${prefix} ${format(playedAt, "dd/MM/yyyy, HH:mm")}`;
+  return `${prefix} on ${format(playedAt, "dd/MM/yyyy, HH:mm")}`;
 }
 
 export function FirstLastTrackRow({
@@ -41,7 +41,7 @@ export function FirstLastTrackRow({
   const meta = formatListenedMeta(kind, playedAt);
 
   return (
-    <div className="relative isolate w-full overflow-hidden rounded-md border bg-muted/30">
+    <div className="bg-muted/30 relative isolate w-full overflow-hidden rounded-md border">
       <CoverTintBackdrop coverUrl={image} className="rounded-md" />
       <div className="relative z-10 flex items-center gap-4 p-3">
         <Link href={href} className="block shrink-0">

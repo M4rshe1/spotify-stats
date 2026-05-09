@@ -18,7 +18,14 @@ export const trackRouter = createTRPCRouter({
           ctx.db.track.findUnique({
             where: { id: input.id },
             include: {
-              album: true,
+              album: {
+                include: {
+                  artists: {
+                    where: { role: "primary" },
+                    include: { artist: true },
+                  },
+                },
+              },
               artists: {
                 where: { role: "primary" },
                 include: { artist: true },

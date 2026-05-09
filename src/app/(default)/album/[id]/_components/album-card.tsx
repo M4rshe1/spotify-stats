@@ -1,13 +1,11 @@
 import { NoDataCard } from "@/components/cards/no-data-card";
 import { Disc3Icon } from "lucide-react";
-import {
-  Card,
-  CardContent,
-} from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { CoverTintBackdrop } from "@/components/cards/cover-tint-backdrop";
 import { duration, truncateText, TOP_CARD_ENTITY_NAME_MAX } from "@/lib/utils";
 import { api } from "@/trpc/react";
 import { Loading } from "@/components/ui/loading";
+import Link from "next/link";
 
 const AlbumCard = ({ id }: { id: number }) => {
   const { data: album, isLoading } = api.album.get.useQuery({ id });
@@ -53,9 +51,12 @@ const AlbumCard = ({ id }: { id: number }) => {
               <p className="block text-2xl font-bold">
                 {truncateText(album.name, TOP_CARD_ENTITY_NAME_MAX)}
               </p>
-              <p className="text-muted-foreground mt-1 text-sm">
+              <Link
+                href={`/artist/${album.artistId}`}
+                className="text-muted-foreground mt-1 text-sm hover:underline"
+              >
                 {artistNames || "—"}
-              </p>
+              </Link>
             </div>
             <div className="mt-3 space-y-2">
               <div className="flex flex-wrap items-baseline gap-x-1.5 gap-y-0">

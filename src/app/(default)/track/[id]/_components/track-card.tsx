@@ -1,10 +1,7 @@
 import Link from "next/link";
 import { NoDataCard } from "@/components/cards/no-data-card";
 import { Music2Icon } from "lucide-react";
-import {
-  Card,
-  CardContent,
-} from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { CoverTintBackdrop } from "@/components/cards/cover-tint-backdrop";
 import { duration, truncateText, TOP_CARD_ENTITY_NAME_MAX } from "@/lib/utils";
 import { api } from "@/trpc/react";
@@ -62,7 +59,16 @@ const TrackCard = ({ id }: { id: number }) => {
                   >
                     {track.album.name}
                   </Link>
-                  {artistNames ? ` · ${artistNames}` : ""}
+                  {track.artists.length > 0 ? <span> · </span> : null}
+                  {track.artists.map((artist) => (
+                    <Link
+                      key={artist.artist.id}
+                      href={`/artist/${artist.artist.id}`}
+                      className="underline-offset-2 hover:underline"
+                    >
+                      {artist.artist.name}
+                    </Link>
+                  ))}
                 </p>
               ) : (
                 <p className="text-muted-foreground mt-1 text-sm">
