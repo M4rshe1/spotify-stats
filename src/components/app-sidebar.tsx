@@ -171,9 +171,14 @@ function getMainNav(user: User | null) {
           icon: Upload,
         },
         {
+          title: "Database",
+          url: "/admin/database",
+          icon: Database,
+        },
+        {
           title: "Master Data",
           url: "/admin/master-data",
-          icon: Database,
+          icon: Disc3,
         },
         {
           title: "Settings",
