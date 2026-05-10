@@ -7,7 +7,7 @@ async function AdminUsersPage() {
     <div className="space-y-4">
       <PageBreadcrumbs
         trail={[
-          { label: "Admin", href: "/admin/users" },
+          { label: "Admin", href: "/admin" },
           { label: "Users", href: "/admin/users" },
         ]}
       />

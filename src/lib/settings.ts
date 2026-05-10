@@ -1,12 +1,9 @@
 import { db } from "@/server/db";
-import { tryCatch } from "./try-catch";
+import { tryCatch, tryCatchSync } from "./try-catch";
 import type { Settings } from "generated/prisma";
-import { settings as settingDefs } from "./consts/settings";
+import { settings as settingDefs, type Setting } from "./consts/settings";
 function toRecord(settings: Settings[]) {
-  const record: Record<
-    string,
-    string | boolean | number | string[] | Record<string, unknown>
-  > = {};
+  const record: Record<string, Setting["defaultValue"]> = {};
   settings.forEach((setting) => {
     const settingDef = settingDefs[setting.key as keyof typeof settingDefs];
     if (!settingDef) {
@@ -24,13 +21,20 @@ function toRecord(settings: Settings[]) {
         record[setting.key] = parseInt(setting.value);
         break;
       case "json":
-        record[setting.key] = JSON.parse(setting.value);
+        record[setting.key] = tryCatchSync(() =>
+          JSON.parse(setting.value),
+        ).data;
         break;
       default:
         record[setting.key] = setting.value;
     }
   });
-  return record;
+  for (const [key, value] of Object.entries(settingDefs)) {
+    if (!record[key]) {
+      record[key] = value.defaultValue;
+    }
+  }
+  return record as Record<Setting["key"], Setting["defaultValue"]>;
 }
 
 export async function getSettings() {
@@ -94,26 +98,28 @@ export async function setSettingForUser(
 }
 
 export async function setSetting(key: string, value: string) {
-  const result = await tryCatch(
-    db.settings.upsert({
+  const setting = await tryCatch(
+    db.settings.findFirst({
       where: {
-        userId_key: {
-          userId: null as unknown as string,
-          key,
-        },
-      },
-      create: {
+        userId: null,
         key,
-        value,
-        userId: null,
-      },
-      update: {
-        value,
-        userId: null,
       },
     }),
   );
-  return result.data;
+  if (setting.data) {
+    await tryCatch(
+      db.settings.update({
+        where: { id: setting.data.id },
+        data: { value },
+      }),
+    );
+  } else {
+    await tryCatch(
+      db.settings.create({
+        data: { key, value, userId: null },
+      }),
+    );
+  }
 }
 
 export async function setSettings(settings: Record<string, string>) {

@@ -6,7 +6,6 @@ import {
   BookOpen,
   CircleUser,
   Clock,
-  Database,
   Disc3,
   GitBranch,
   GraduationCap,
@@ -40,6 +39,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
+import { adminSubNavItems } from "@/lib/consts/admin-nav";
 import type { User } from "@/server/better-auth/config";
 import { authClient } from "@/server/better-auth/client";
 
@@ -165,38 +165,11 @@ export function getMainNav(user: User | null) {
       url: "/admin",
       icon: Shield,
       isActive: true,
-      items: [
-        {
-          title: "Users",
-          url: "/admin/users",
-          icon: Users,
-        },
-        {
-          title: "Imports",
-          url: "/admin/imports",
-          icon: Upload,
-        },
-        {
-          title: "Database",
-          url: "/admin/database",
-          icon: Database,
-        },
-        {
-          title: "Master Data",
-          url: "/admin/master-data",
-          icon: Disc3,
-        },
-        {
-          title: "Statistics",
-          url: "/admin/statistics",
-          icon: BarChart3,
-        },
-        {
-          title: "Settings",
-          url: "/admin/settings",
-          icon: Settings,
-        },
-      ],
+      items: adminSubNavItems.map(({ title, url, icon }) => ({
+        title,
+        url,
+        icon,
+      })),
     });
   }
   return nav;

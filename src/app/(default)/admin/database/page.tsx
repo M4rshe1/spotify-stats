@@ -8,7 +8,7 @@ async function AdminDatabasePage() {
     <div className="space-y-4">
       <PageBreadcrumbs
         trail={[
-          { label: "Admin", href: "/admin/database" },
+          { label: "Admin", href: "/admin" },
           { label: "Database", href: "/admin/database" },
         ]}
       />

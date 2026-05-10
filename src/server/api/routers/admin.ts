@@ -14,7 +14,7 @@ export const adminRouter = createTRPCRouter({
         settings: z.record(z.string(), z.string()),
       }),
     )
-    .mutation(async ({ ctx, input }) => {
+    .mutation(async ({ input }) => {
       await setSettings(input.settings);
     }),
 });

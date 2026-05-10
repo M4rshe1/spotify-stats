@@ -21,20 +21,28 @@ import {
   type RegistrationMode,
 } from "@/lib/consts/registration";
 import { api } from "@/trpc/react";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { tryCatchSync } from "@/lib/try-catch";
 
 export function AdminSettingsPageClient() {
   const utils = api.useUtils();
-  const query = api.admin.getSettings.useQuery();
-  const [mode, setMode] = React.useState<RegistrationMode>("closed");
-  const [allowedEmails, setAllowedEmails] = React.useState("");
+  const {
+    data: settings,
+    isLoading,
+    isError,
+    error,
+  } = api.admin.getSettings.useQuery();
+  const [mode, setMode] = useState<RegistrationMode>("closed");
+  const [allowedEmails, setAllowedEmails] = useState("");
 
   useEffect(() => {
-    if (query.data) {
-      setMode(query.data.REGISTRATION_MODE as RegistrationMode);
-      setAllowedEmails(query.data.ALLOWED_EMAILS as string);
+    if (settings) {
+      setMode(settings.REGISTRATION_MODE as RegistrationMode);
+      setAllowedEmails(
+        (settings.ALLOWED_EMAILS as unknown as string[])?.join(","),
+      );
     }
-  }, [query.data]);
+  }, [settings]);
 
   const mutation = api.admin.setSettings.useMutation({
     onSuccess: () => {
@@ -48,9 +56,26 @@ export function AdminSettingsPageClient() {
     },
   });
 
+  async function saveSettings() {
+    const emails = allowedEmails.split(",").map((email) => email.trim());
+    const allowedEmailsJson = tryCatchSync(() => JSON.stringify(emails));
+
+    if (allowedEmailsJson.error) {
+      toast.error("Could not parse allowed emails");
+      return;
+    }
+
+    await mutation.mutateAsync({
+      settings: {
+        REGISTRATION_MODE: mode,
+        ALLOWED_EMAILS: allowedEmailsJson.data,
+      },
+    });
+  }
+
   const dirty =
-    query.data != null &&
-    (mode !== query.data.mode || allowedEmails !== query.data.allowedEmails);
+    settings != null &&
+    (mode !== settings.mode || allowedEmails !== settings.allowedEmails);
 
   return (
     <div className="mx-auto flex w-full max-w-2xl flex-col gap-6">
@@ -62,14 +87,14 @@ export function AdminSettingsPageClient() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          {query.isLoading ? (
+          {isLoading ? (
             <div className="text-muted-foreground flex items-center gap-2 text-sm">
               <Loader2Icon className="size-4 animate-spin" />
               Loading…
             </div>
-          ) : query.isError ? (
+          ) : isError ? (
             <p className="text-destructive text-sm">
-              {query.error.message ?? "Could not load settings"}
+              {error.message ?? "Could not load settings"}
             </p>
           ) : (
             <>
@@ -91,6 +116,7 @@ export function AdminSettingsPageClient() {
                         value={value}
                         id={`registration-mode-${value}`}
                         aria-label={label}
+                        defaultChecked={value === mode}
                       />
                       <div className="grid gap-1 leading-none">
                         {label}
@@ -126,14 +152,7 @@ export function AdminSettingsPageClient() {
                 type="button"
                 disabled={!dirty || mutation.isPending}
                 onClick={() => {
-                  mutation.mutate({
-                    settings: {
-                      REGISTRATION_MODE: mode,
-                      ALLOWED_EMAILS: JSON.stringify(
-                        allowedEmails.split(",").map((email) => email.trim()),
-                      ),
-                    },
-                  });
+                  void saveSettings();
                 }}
               >
                 {mutation.isPending ? (
