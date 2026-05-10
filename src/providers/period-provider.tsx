@@ -105,7 +105,7 @@ export function PeriodProvider({
         await utils.user.getPreferredPeriod.cancel();
         const prev = utils.user.getPreferredPeriod.getData();
         const base = preferredSnapshotBase(prev, initialPreferredSnapshot);
-        const fav = base.favoritePeriods ?? [];
+        const fav = (base.favoritePeriods as Period[]) ?? [];
         const isRemoving = fav.includes(period);
         const next = isRemoving
           ? fav.filter((p) => p !== period)
@@ -130,7 +130,7 @@ export function PeriodProvider({
     });
 
   const favoritePeriodsOrdered = useMemo(() => {
-    const fav = preferredPeriodQuery.data?.favoritePeriods ?? [];
+    const fav = (preferredPeriodQuery.data?.favoritePeriods as Period[]) ?? [];
     return [...fav].sort(
       (a, b) => (periodRank.get(a) ?? 0) - (periodRank.get(b) ?? 0),
     );
