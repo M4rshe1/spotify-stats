@@ -5,6 +5,7 @@ import {
   settings as settingDefs,
   type Setting,
   userSettings,
+  type SettingsRecord,
 } from "./consts/settings";
 
 function toRecord(settings: Settings[], defs: Record<string, Setting>) {
@@ -55,7 +56,7 @@ export async function getSettings() {
       },
     }),
   );
-  return toRecord(result.data ?? [], settingDefs);
+  return toRecord(result.data ?? [], settingDefs as SettingsRecord);
 }
 
 export async function getSetting(key: string) {
@@ -78,7 +79,7 @@ export async function getSettingsForUser(userId: string) {
       },
     }),
   );
-  return toRecord(result.data ?? [], userSettings);
+  return toRecord(result.data ?? [], userSettings as SettingsRecord);
 }
 
 export async function getSettingForUser(userId: string, key: string) {

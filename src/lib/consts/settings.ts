@@ -11,7 +11,10 @@ export type Setting = {
   description: string;
 };
 
-export const settings: Record<string, Setting> = {
+export type Settings = typeof settings;
+export type SettingsRecord = Record<string, Setting>;
+
+export const settings = {
   ALLOW_REGISTER: {
     key: "ALLOW_REGISTER",
     defaultValue: true,
@@ -32,9 +35,9 @@ export const settings: Record<string, Setting> = {
     description:
       "Comma-separated emails allowed to register while open registration is off (normalized to lowercase when matching).",
   },
-};
+} satisfies Record<string, Setting>;
 
-export const userSettings: Record<string, Setting> = {
+export const userSettings = {
   PREFERRED_PERIOD: {
     key: "PREFERRED_PERIOD",
     defaultValue: "today",
@@ -60,4 +63,4 @@ export const userSettings: Record<string, Setting> = {
     description:
       "JSON array of up to 5 period keys the user marked as favorites",
   },
-};
+} satisfies Record<string, Setting>;

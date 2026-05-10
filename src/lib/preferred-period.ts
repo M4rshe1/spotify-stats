@@ -35,7 +35,11 @@ export function snapshotToProviderPeriod(
 
   if (nextPeriod === "custom") {
     if (customStart && customEnd) {
-      return { type: "custom", from: customStart, end: customEnd };
+      return {
+        type: "custom",
+        from: new Date(customStart as string),
+        end: new Date(customEnd as string),
+      };
     }
     return null;
   }
