@@ -10,7 +10,7 @@ export const searchRouter = createTRPCRouter({
       const term = input.q.trim();
       const nameMatch = { contains: term, mode: "insensitive" as const };
 
-      const [tracks, albums, artists] = await Promise.all([
+      const [tracks, albums, artists, genres] = await Promise.all([
         ctx.db.track.findMany({
           where: {
             playbacks: { some: { userId } },
@@ -49,8 +49,30 @@ export const searchRouter = createTRPCRouter({
           orderBy: { name: "asc" },
           select: { id: true, name: true, image: true },
         }),
+        ctx.db.genre.findMany({
+          where: {
+            artists: {
+              some: {
+                artist: {
+                  tracks: {
+                    some: {
+                      role: "primary",
+                      track: {
+                        playbacks: { some: { userId } },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+            name: nameMatch,
+          },
+          take: 10,
+          orderBy: { name: "asc" },
+          select: { id: true, name: true },
+        }),
       ]);
 
-      return { tracks, albums, artists };
+      return { tracks, albums, artists, genres };
     }),
 });

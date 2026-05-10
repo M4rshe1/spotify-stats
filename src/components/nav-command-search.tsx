@@ -2,7 +2,14 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { Disc3, LayoutDashboard, Music2, Search, Users } from "lucide-react";
+import {
+  Disc3,
+  LayoutDashboard,
+  Music2,
+  Search,
+  TagIcon,
+  Users,
+} from "lucide-react";
 
 import {
   Command,
@@ -92,9 +99,7 @@ export function NavCommandSearch({
   }, []);
 
   const debouncingLibrary =
-    Boolean(user) &&
-    search.trim().length >= 1 &&
-    search.trim() !== debounced;
+    Boolean(user) && search.trim().length >= 1 && search.trim() !== debounced;
   const showLibraryPlaceholder =
     Boolean(user) &&
     search.trim().length >= 1 &&
@@ -106,9 +111,13 @@ export function NavCommandSearch({
   const trackItems = libraryReady ? data.tracks : [];
   const albumItems = libraryReady ? data.albums : [];
   const artistItems = libraryReady ? data.artists : [];
+  const genreItems = libraryReady ? data.genres : [];
 
   const hasLibraryHits =
-    trackItems.length > 0 || albumItems.length > 0 || artistItems.length > 0;
+    trackItems.length > 0 ||
+    albumItems.length > 0 ||
+    artistItems.length > 0 ||
+    genreItems.length > 0;
   const hasPageHits = filteredPages.length > 0;
 
   const showEmpty =
@@ -253,6 +262,20 @@ export function NavCommandSearch({
               </CommandGroup>
             ) : null}
 
+            {genreItems.length > 0 ? (
+              <CommandGroup heading="Genres">
+                {genreItems.map((g) => (
+                  <CommandItem
+                    key={`genre-${g.id}`}
+                    value={`genre-${g.id}-${g.name}`}
+                    onSelect={() => go(`/genre/${g.id}`)}
+                  >
+                    <TagIcon />
+                    <span className="truncate">{g.name}</span>
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            ) : null}
             {showEmpty ? (
               <div className="text-muted-foreground px-2 py-6 text-center text-xs">
                 <p>No results found.</p>
