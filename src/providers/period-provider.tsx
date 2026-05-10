@@ -61,20 +61,16 @@ export function PeriodProvider({
 
   const snapshotPeriodKey = preferredSnapshot?.period;
   const snapshotCustomStartMs =
-    preferredSnapshot?.customStart?.getTime() ?? null;
+    (preferredSnapshot?.customStart as Date)?.getTime() ?? null;
   const snapshotCustomEndMs =
-    preferredSnapshot?.customEnd?.getTime() ?? null;
+    (preferredSnapshot?.customEnd as Date)?.getTime() ?? null;
 
   const selectedPeriod = useMemo(() => {
     const snapshot =
       preferredPeriodQuery.data ?? initialPreferredSnapshot ?? null;
     if (!snapshot) return defaultProviderPeriod();
     return snapshotToProviderPeriod(snapshot) ?? defaultProviderPeriod();
-  }, [
-    snapshotPeriodKey,
-    snapshotCustomStartMs,
-    snapshotCustomEndMs,
-  ]);
+  }, [snapshotPeriodKey, snapshotCustomStartMs, snapshotCustomEndMs]);
 
   const setPreferredPeriodMutation = api.user.setPreferredPeriod.useMutation({
     onMutate: async (input) => {
@@ -83,8 +79,12 @@ export function PeriodProvider({
       utils.user.getPreferredPeriod.setData(undefined, {
         ...preferredSnapshotBase(prev, initialPreferredSnapshot),
         period: input.period,
-        ...(input.customStart !== undefined ? { customStart: input.customStart } : {}),
-        ...(input.customEnd !== undefined ? { customEnd: input.customEnd } : {}),
+        ...(input.customStart !== undefined
+          ? { customStart: input.customStart }
+          : {}),
+        ...(input.customEnd !== undefined
+          ? { customEnd: input.customEnd }
+          : {}),
       });
       return { prev };
     },
@@ -107,7 +107,9 @@ export function PeriodProvider({
         const base = preferredSnapshotBase(prev, initialPreferredSnapshot);
         const fav = base.favoritePeriods ?? [];
         const isRemoving = fav.includes(period);
-        const next = isRemoving ? fav.filter((p) => p !== period) : [...fav, period];
+        const next = isRemoving
+          ? fav.filter((p) => p !== period)
+          : [...fav, period];
 
         utils.user.getPreferredPeriod.setData(undefined, {
           ...base,
@@ -140,7 +142,8 @@ export function PeriodProvider({
   );
 
   const favoriteSet = useMemo(
-    () => new Set(preferredPeriodQuery.data?.favoritePeriods ?? []),
+    () =>
+      new Set((preferredPeriodQuery.data?.favoritePeriods as Period[]) ?? []),
     [preferredPeriodQuery.data?.favoritePeriods],
   );
 
@@ -205,10 +208,10 @@ export function PeriodProvider({
       e.stopPropagation();
 
       const fav =
-        preferredSnapshotBase(
+        (preferredSnapshotBase(
           utils.user.getPreferredPeriod.getData(),
           initialPreferredSnapshot,
-        ).favoritePeriods ?? [];
+        ).favoritePeriods as Period[]) ?? [];
       const isRemoving = fav.includes(period);
       if (!isRemoving && fav.length >= MAX_PINNED_PERIODS) {
         toast.error(`You can pin at most ${MAX_PINNED_PERIODS} periods`);
@@ -281,8 +284,8 @@ export function PeriodProvider({
           isSignedIn={isSignedIn}
           favoritePeriodsOrdered={favoritePeriodsOrdered}
           favoriteSet={favoriteSet}
-          customStart={preferredPeriodQuery.data?.customStart ?? null}
-          customEnd={preferredPeriodQuery.data?.customEnd ?? null}
+          customStart={(preferredPeriodQuery.data?.customStart as Date) ?? null}
+          customEnd={(preferredPeriodQuery.data?.customEnd as Date) ?? null}
           onPresetSelect={onPresetSelectStable}
           onToggleFavorite={onToggleFavoriteStable}
           onApplyCustomRange={onApplyCustomRange}
