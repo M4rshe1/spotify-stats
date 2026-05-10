@@ -18,6 +18,11 @@ import {
 import { retrySpotifyCall } from "@/lib/spotify";
 import { spotifyProductLabel } from "@/lib/spotify-product";
 import getSpotifyApi from "@/server/spotify";
+import {
+  getSettingForUser,
+  getSettingsForUser,
+  setSettingForUser,
+} from "@/lib/settings";
 
 const periodKeys = Object.keys(periods) as Period[];
 const periodSet = new Set<string>(periodKeys);
@@ -120,79 +125,34 @@ export const userRouter = createTRPCRouter({
       return { timezone };
     }),
 
-  getPreferredPeriod: publicProcedure.query(async ({ ctx }) => {
-    const settingResult = await tryCatch(
-      ctx.db.settings.findMany({
-        where: {
-          userId: ctx.session?.user.id,
-          key: {
-            in: [
-              "PREFERRED_PERIOD",
-              "CUSTOM_PREFERRED_PERIOD_START",
-              "CUSTOM_PREFERRED_PERIOD_END",
-              "FAVORITE_PERIODS",
-            ],
-          },
-        },
-      })
-    );
-    if (settingResult.error) {
-      throw new TRPCError({
-        code: "INTERNAL_SERVER_ERROR",
-        message: "Failed to get preferred period",
-      });
-    }
-
-    const settingsData = settingResult.data ?? [];
-    const settingsObj: Record<string, string | undefined> = {};
-    settingsData.forEach(({ key, value }) => {
-      settingsObj[key] = value;
-    });
-
-    const period = settingsObj["PREFERRED_PERIOD"] as Period | undefined;
-    const customStartValue = settingsObj["CUSTOM_PREFERRED_PERIOD_START"];
-    const customEndValue = settingsObj["CUSTOM_PREFERRED_PERIOD_END"];
-    const favoriteRaw = settingsObj["FAVORITE_PERIODS"];
-
-    const customStart =
-      customStartValue && !Number.isNaN(new Date(customStartValue).getTime())
-        ? new Date(customStartValue)
-        : null;
-    const customEnd =
-      customEndValue && !Number.isNaN(new Date(customEndValue).getTime())
-        ? new Date(customEndValue)
-        : null;
-
-    const favoritePeriods =
-      parseFavoritePeriodsJson(favoriteRaw).slice(0, MAX_PINNED_PERIODS);
-
+  getPreferredPeriod: protectedProcedure.query(async ({ ctx }) => {
+    const settings = await getSettingsForUser(ctx.session.user.id);
     return {
-      period: period ?? userSettings.PREFERRED_PERIOD.defaultValue,
-      customStart,
-      customEnd,
-      favoritePeriods,
+      period:
+        settings.PREFERRED_PERIOD ??
+        (userSettings.PREFERRED_PERIOD?.defaultValue as Period),
+      customStart: settings.CUSTOM_PREFERRED_PERIOD_START,
+      customEnd: settings.CUSTOM_PREFERRED_PERIOD_END,
+      favoritePeriods: settings.FAVORITE_PERIODS,
     };
   }),
 
   toggleFavoritePeriod: protectedProcedure
     .input(z.object({ period: periodEnum }))
     .mutation(async ({ ctx, input }) => {
-      const { data: rows, error } = await tryCatch(
-        ctx.db.settings.findMany({
-          where: {
-            userId: ctx.session.user.id,
-            key: "FAVORITE_PERIODS",
-          },
-        })
+      const favoritePeriods = await getSettingForUser(
+        ctx.session.user.id,
+        "FAVORITE_PERIODS",
       );
-      if (error) {
+      console.log(favoritePeriods);
+      if (!favoritePeriods) {
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
           message: "Failed to read favorite periods",
         });
       }
 
-      const currValue = rows?.[0]?.value;
+      const currValue = favoritePeriods.value;
       const current = parseFavoritePeriodsJson(currValue).slice(
         0,
         MAX_PINNED_PERIODS,
@@ -208,26 +168,11 @@ export const userRouter = createTRPCRouter({
         ? current.filter((p) => p !== input.period)
         : [...current, input.period];
 
-      const value = JSON.stringify(next);
-
-      if (rows?.[0]) {
-        await tryCatch(
-          ctx.db.settings.update({
-            where: { id: rows[0].id },
-            data: { value, userId: ctx.session.user.id },
-          })
-        );
-      } else {
-        await tryCatch(
-          ctx.db.settings.create({
-            data: {
-              key: "FAVORITE_PERIODS",
-              value,
-              userId: ctx.session.user.id,
-            },
-          })
-        );
-      }
+      await setSettingForUser(
+        ctx.session.user.id,
+        "FAVORITE_PERIODS",
+        JSON.stringify(next),
+      );
 
       return next;
     }),
@@ -238,7 +183,7 @@ export const userRouter = createTRPCRouter({
         period: periodEnum,
         customStart: z.date().nullable().optional(),
         customEnd: z.date().nullable().optional(),
-      })
+      }),
     )
     .mutation(async ({ ctx, input }) => {
       if (
@@ -258,7 +203,7 @@ export const userRouter = createTRPCRouter({
               userId: ctx.session?.user.id,
               key,
             },
-          })
+          }),
         );
 
         if (setting) {
@@ -266,7 +211,7 @@ export const userRouter = createTRPCRouter({
             ctx.db.settings.update({
               where: { id: setting.id },
               data: { value, userId: ctx.session?.user.id },
-            })
+            }),
           );
         } else {
           await tryCatch(
@@ -276,7 +221,7 @@ export const userRouter = createTRPCRouter({
                 value,
                 userId: ctx.session?.user.id,
               },
-            })
+            }),
           );
         }
       };

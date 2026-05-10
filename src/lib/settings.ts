@@ -1,11 +1,16 @@
 import { db } from "@/server/db";
 import { tryCatch, tryCatchSync } from "./try-catch";
 import type { Settings } from "generated/prisma";
-import { settings as settingDefs, type Setting } from "./consts/settings";
-function toRecord(settings: Settings[]) {
+import {
+  settings as settingDefs,
+  type Setting,
+  userSettings,
+} from "./consts/settings";
+
+function toRecord(settings: Settings[], defs: Record<string, Setting>) {
   const record: Record<string, Setting["defaultValue"]> = {};
   settings.forEach((setting) => {
-    const settingDef = settingDefs[setting.key as keyof typeof settingDefs];
+    const settingDef = defs[setting.key as keyof typeof settingDefs];
     if (!settingDef) {
       record[setting.key] = setting.value;
       return;
@@ -21,9 +26,12 @@ function toRecord(settings: Settings[]) {
         record[setting.key] = parseInt(setting.value);
         break;
       case "json":
-        record[setting.key] = tryCatchSync(() =>
-          JSON.parse(setting.value),
-        ).data;
+        const result = tryCatchSync(() => JSON.parse(setting.value));
+        if (result.error) {
+          record[setting.key] = setting.value;
+        } else {
+          record[setting.key] = result.data;
+        }
         break;
       default:
         record[setting.key] = setting.value;
@@ -41,11 +49,13 @@ export async function getSettings() {
   const result = await tryCatch(
     db.settings.findMany({
       where: {
-        userId: null,
+        userId: {
+          equals: null,
+        },
       },
     }),
   );
-  return toRecord(result.data ?? []);
+  return toRecord(result.data ?? [], settingDefs);
 }
 
 export async function getSetting(key: string) {
@@ -68,7 +78,16 @@ export async function getSettingsForUser(userId: string) {
       },
     }),
   );
-  return toRecord(result.data ?? []);
+  return toRecord(result.data ?? [], userSettings);
+}
+
+export async function getSettingForUser(userId: string, key: string) {
+  const result = await tryCatch(
+    db.settings.findFirst({
+      where: { userId, key },
+    }),
+  );
+  return result.data;
 }
 
 export async function setSettingForUser(
