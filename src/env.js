@@ -33,8 +33,6 @@ export const env = createEnv({
     DATABASE_URL: z.string().url(),
     BETTER_AUTH_URL: z.string().url(),
     REDIS_URL: z.string().url(),
-    ALLOW_REGISTER: boolean.default("false"),
-    ALLOWED_EMAILS: z.string().optional(),
     TZ: z
       .string()
       .refine(
@@ -72,8 +70,6 @@ export const env = createEnv({
     TZ: process.env.TZ,
     NODE_ENV: process.env.NODE_ENV,
     REDIS_URL: process.env.REDIS_URL,
-    ALLOW_REGISTER: process.env.ALLOW_REGISTER,
-    ALLOWED_EMAILS: process.env.ALLOWED_EMAILS,
   },
   /**
    * Run `build` or `dev` with `SKIP_ENV_VALIDATION` to skip env validation. This is especially

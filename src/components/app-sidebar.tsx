@@ -187,6 +187,11 @@ export function getMainNav(user: User | null) {
           icon: Disc3,
         },
         {
+          title: "Statistics",
+          url: "/admin/statistics",
+          icon: BarChart3,
+        },
+        {
           title: "Settings",
           url: "/admin/settings",
           icon: Settings,

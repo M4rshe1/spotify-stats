@@ -100,6 +100,7 @@ model Settings {
   updatedAt DateTime @default(now()) @updatedAt
 
   @@map("settings")
+  @@unique([userId, key])
 }
 
 model Artist {

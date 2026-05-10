@@ -5,28 +5,23 @@ import { env } from "@/env";
 import { DEFAULT_IANA_TIMEZONE } from "@/lib/timezone";
 import { db } from "@/server/db";
 import { admin } from "better-auth/plugins";
+import { getSettings } from "@/lib/settings";
 
-function parseAllowedEmails(raw: string | undefined): Set<string> {
-  if (!raw?.trim()) return new Set();
-  return new Set(
-    raw
-      .split(",")
-      .map((e) => e.trim().toLowerCase())
-      .filter(Boolean),
-  );
+function parseAllowedEmails(emails: string[]): Set<string> {
+  return new Set(emails.map((e) => e.trim().toLowerCase()).filter(Boolean));
 }
 
-function assertRegistrationAllowed(email: unknown) {
-  if (env.ALLOW_REGISTER) return;
-  const normalized =
-    typeof email === "string" ? email.trim().toLowerCase() : "";
-  if (!normalized || !parseAllowedEmails(env.ALLOWED_EMAILS).has(normalized)) {
-    throw new APIError("FORBIDDEN", {
-      message:
-        "Registration is closed. Ask an administrator if you need access.",
-      code: "REGISTRATION_NOT_ALLOWED",
-    });
+async function registrationAllowed(email: string | null): Promise<boolean> {
+  const settings = await getSettings();
+  if (settings.REGISTRATION_MODE === "closed") {
+    return false;
   }
+  if (settings.REGISTRATION_MODE === "restricted") {
+    if (!email || !new Set(settings.ALLOWED_EMAILS as string[]).has(email)) {
+      return false;
+    }
+  }
+  return true;
 }
 
 function googleOAuthCredentials(): {
@@ -86,7 +81,6 @@ export const auth = betterAuth({
     accountLinking: {
       enabled: true,
       trustedProviders: ["spotify", "google"],
-      /** Google sign-in on the login page only works if this provider is already linked (via Account → Link Google). */
       disableImplicitLinking: true,
     },
   },
@@ -95,7 +89,13 @@ export const auth = betterAuth({
     user: {
       create: {
         before: async (user) => {
-          assertRegistrationAllowed(user.email);
+          if (!(await registrationAllowed(user.email))) {
+            throw new APIError("FORBIDDEN", {
+              message:
+                "Registration is closed. Ask an administrator if you need access.",
+              code: "REGISTRATION_NOT_ALLOWED",
+            });
+          }
         },
         after: async (user) => {
           const adminCount = await db.user.count({ where: { role: "admin" } });
@@ -134,14 +134,13 @@ export const auth = betterAuth({
       clientId: env.BETTER_AUTH_SPOTIFY_CLIENT_ID,
       clientSecret: env.BETTER_AUTH_SPOTIFY_CLIENT_SECRET,
       redirectURI: `${env.BETTER_AUTH_URL}/api/auth/callback/spotify`,
-      disableImplicitSignUp: !env.ALLOW_REGISTER,
+      disableImplicitSignUp: !(await registrationAllowed(null)),
     },
     ...(googleCreds
       ? {
           google: {
             ...googleCreds,
             redirectURI: `${env.BETTER_AUTH_URL}/api/auth/callback/google`,
-            /** No new users via Google OAuth on the login screen. */
             disableImplicitSignUp: true,
           },
         }

@@ -12,6 +12,7 @@ import { trackRouter } from "@/server/api/routers/track";
 import { topRouter } from "@/server/api/routers/top";
 import { sessionRouter } from "@/server/api/routers/session";
 import { searchRouter } from "@/server/api/routers/search";
+import { adminRouter } from "@/server/api/routers/admin";
 /**
  * This is the primary router for your server.
  *
@@ -31,6 +32,7 @@ export const appRouter = createTRPCRouter({
   top: topRouter,
   session: sessionRouter,
   search: searchRouter,
+  admin: adminRouter,
 });
 
 // export type definition of API
