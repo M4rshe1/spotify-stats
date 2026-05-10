@@ -9,6 +9,7 @@ import { usePeriod } from "@/providers/period-provider";
 import { duration } from "@/lib/utils";
 import { api } from "@/trpc/react";
 import Link from "next/link";
+import { CoverTintBackdrop } from "@/components/cards/cover-tint-backdrop";
 
 function formatTrackDuration(durationMs: number) {
   const totalSeconds = Math.floor(durationMs / 1000);
@@ -118,8 +119,9 @@ export default function LongestSessionPage() {
                         {sessionTracksQuery.data.map((track, trackIndex) => (
                           <div
                             key={track.playbackId}
-                            className="bg-muted/30 flex items-center gap-2 rounded-md px-2 py-1.5"
+                            className="bg-muted/30 riybde relative isolate flex items-center gap-2 overflow-hidden rounded-md px-2 py-1.5"
                           >
+                            <CoverTintBackdrop coverUrl={track.image} />
                             <span className="text-muted-foreground w-5 shrink-0 text-xs">
                               {trackIndex + 1}
                             </span>
