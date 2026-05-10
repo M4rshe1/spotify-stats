@@ -51,7 +51,7 @@ const TrackCard = ({ id }: { id: number }) => {
               <p className="block text-2xl font-bold">
                 {truncateText(track.name, TOP_CARD_ENTITY_NAME_MAX)}
               </p>
-              {track.album ? (
+              {track.album && (
                 <p className="text-muted-foreground mt-1 truncate text-sm">
                   <Link
                     href={`/album/${track.album.id}`}
@@ -60,21 +60,19 @@ const TrackCard = ({ id }: { id: number }) => {
                     {track.album.name}
                   </Link>
                   {track.artists.length > 0 ? <span> · </span> : null}
-                  {track.artists.map((artist) => (
-                    <Link
-                      key={artist.artist.id}
-                      href={`/artist/${artist.artist.id}`}
-                      className="underline-offset-2 hover:underline"
-                    >
-                      {artist.artist.name}
-                    </Link>
-                  ))}
-                </p>
-              ) : (
-                <p className="text-muted-foreground mt-1 text-sm">
-                  {artistNames || "—"}
                 </p>
               )}
+              <p>
+                {track.artists.map((artist, index) => (
+                  <Link
+                    key={artist.artist.id}
+                    href={`/artist/${artist.artist.id}`}
+                    className="underline-offset-2 hover:underline"
+                  >
+                    {artist.artist.name}
+                  </Link>
+                ))}
+              </p>
             </div>
             <div className="mt-3 space-y-2">
               <div className="flex flex-wrap items-baseline gap-x-1.5 gap-y-0">
