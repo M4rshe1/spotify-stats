@@ -1,7 +1,15 @@
 "use client";
 
-import { ChevronsUpDown, LogOut, Settings, UserIcon } from "lucide-react";
+import * as React from "react";
+import {
+  ChevronsUpDown,
+  LogOut,
+  Settings,
+  UserIcon,
+  UserMinus,
+} from "lucide-react";
 import Link from "next/link";
+import { toast } from "sonner";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -28,6 +36,30 @@ export function NavUser({ user }: { user: User }) {
   const { isMobile } = useSidebar();
   const router = useRouter();
   const utils = api.useUtils();
+  const { data: sessionData } = authClient.useSession();
+  const sessionRecord = sessionData?.session as
+    | { impersonatedBy?: string | null }
+    | undefined;
+  const impersonatedBy = Boolean(sessionRecord?.impersonatedBy);
+  const [stopImpersonatingPending, setStopImpersonatingPending] =
+    React.useState(false);
+
+  async function stopImpersonating() {
+    setStopImpersonatingPending(true);
+    try {
+      const res = await authClient.admin.stopImpersonating();
+      if (res.error) {
+        toast.error(res.error.message ?? "Could not stop impersonating.");
+        return;
+      }
+      toast.success("Returned to your account.");
+      await utils.invalidate();
+      router.refresh();
+      window.location.assign("/admin/users");
+    } finally {
+      setStopImpersonatingPending(false);
+    }
+  }
 
   return (
     <SidebarMenu>
@@ -100,6 +132,21 @@ export function NavUser({ user }: { user: User }) {
                 </Link>
               </DropdownMenuItem>
             </DropdownMenuGroup>
+            {impersonatedBy ? (
+              <>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  disabled={stopImpersonatingPending}
+                  onSelect={(e) => {
+                    e.preventDefault();
+                    void stopImpersonating();
+                  }}
+                >
+                  <UserMinus />
+                  Stop impersonating
+                </DropdownMenuItem>
+              </>
+            ) : null}
             <DropdownMenuSeparator />
             <DropdownMenuItem
               variant="ghostDestructive"
