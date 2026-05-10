@@ -1,22 +1,25 @@
-import type { RouterOutputs } from "@/trpc/react";
 import { NoDataCard } from "@/components/cards/no-data-card";
 import { MicVocalIcon } from "lucide-react";
-import {
-  Card,
-  CardDescription,
-  CardHeader,
-  CardContent,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { CoverTintBackdrop } from "@/components/cards/cover-tint-backdrop";
 import { duration, truncateText, TOP_CARD_ENTITY_NAME_MAX } from "@/lib/utils";
 import { api } from "@/trpc/react";
 import { Loading } from "@/components/ui/loading";
 import Link from "next/link";
 import React from "react";
+import { authClient } from "@/server/better-auth/client";
+import { Button } from "@/components/ui/button";
 
 const ArtistCard = ({ id }: { id: number }) => {
   const { data: artist, isLoading } = api.artist.get.useQuery({ id });
+  const { mutate: refreshArtist } = api.admin.refreshMasterData.useMutation();
+  const { data: session } = authClient.useSession();
+  const utils = api.useUtils();
+  function handleRefreshArtist() {
+    refreshArtist({ type: "artist", id });
+    utils.invalidate();
+  }
+
   if (isLoading) {
     return <Loading />;
   }
@@ -92,6 +95,16 @@ const ArtistCard = ({ id }: { id: number }) => {
               </div>
             </div>
             <div className="flex items-center gap-2"></div>
+            {session?.user.role === "admin" && (
+              <Button
+                variant="outline"
+                className="ml-auto"
+                size="sm"
+                onClick={handleRefreshArtist}
+              >
+                Refresh
+              </Button>
+            )}
           </div>
         </div>
       </CardContent>

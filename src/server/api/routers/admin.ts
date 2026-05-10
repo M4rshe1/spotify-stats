@@ -4,6 +4,16 @@ import { z } from "zod";
 import { getMasterDataQueue } from "@/server/queues/master-data";
 import { getSettings, setSettings } from "@/lib/settings";
 import { createTRPCRouter, adminProcedure } from "../trpc";
+import { rebuildMasterDataQueuesFromExistingTracks } from "@/lib/spotify-master-data";
+import getSpotifyApi from "@/server/spotify";
+import {
+  addToCreationQueues,
+  cleanQueues,
+  createTracks,
+  createArtists,
+  createAlbums,
+  createPlaylists,
+} from "@/lib/spotify";
 
 export const adminRouter = createTRPCRouter({
   getSettings: adminProcedure.query(async () => {
@@ -77,4 +87,30 @@ export const adminRouter = createTRPCRouter({
 
     return { jobId: job.id! };
   }),
+  refreshMasterData: adminProcedure
+    .input(
+      z.object({
+        id: z.number(),
+        type: z.enum(["artist", "album", "track", "playlist"]),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const { id, type } = input;
+      const spotify = getSpotifyApi(ctx.session.user.id);
+      cleanQueues();
+      if (type === "artist") {
+        addToCreationQueues("artists", id.toString());
+      } else if (type === "album") {
+        addToCreationQueues("albums", id.toString());
+      } else if (type === "track") {
+        addToCreationQueues("tracks", id.toString());
+      } else if (type === "playlist") {
+        addToCreationQueues("playlists", id.toString());
+      }
+      await createArtists(spotify);
+      await createAlbums(spotify);
+      await createTracks(spotify);
+      await createPlaylists(spotify);
+      return { success: true };
+    }),
 });

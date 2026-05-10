@@ -7,10 +7,19 @@ import { duration, truncateText, TOP_CARD_ENTITY_NAME_MAX } from "@/lib/utils";
 import { api } from "@/trpc/react";
 import { Loading } from "@/components/ui/loading";
 import { Button } from "@/components/ui/button";
+import { authClient } from "@/server/better-auth/client";
 
 const TrackCard = ({ id }: { id: number }) => {
   const { data: track, isLoading } = api.track.get.useQuery({ id });
   const { mutate: playTrack } = api.control.play.useMutation();
+  const { mutate: refreshTrack } = api.admin.refreshMasterData.useMutation();
+  const { data: session } = authClient.useSession();
+  const utils = api.useUtils();
+
+  function handleRefreshTrack() {
+    refreshTrack({ type: "track", id });
+    utils.invalidate();
+  }
 
   function handlePlayTrack() {
     playTrack({ trackId: track?.id ?? 0 });
@@ -97,12 +106,20 @@ const TrackCard = ({ id }: { id: number }) => {
               </div>
             </div>
             <div className="flex items-center gap-2"></div>
-          <div className="flex items-center gap-2">
-            <Button variant="outline" onClick={handlePlayTrack}>
-              <PlayIcon size={16} />
-              Play
-            </Button>
-          </div>
+            <div className="flex items-center justify-between gap-2">
+              <Button variant="outline" onClick={handlePlayTrack}>
+                <PlayIcon size={16} />
+                Play
+              </Button>
+              {session?.user.role === "admin" && (
+                <Button
+                  variant="outline"
+                  onClick={handleRefreshTrack}
+                >
+                  Refresh
+                </Button>
+              )}
+            </div>
           </div>
         </div>
       </CardContent>

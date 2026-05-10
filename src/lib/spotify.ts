@@ -9,7 +9,7 @@ import type {
   SpotifyApi,
 } from "@spotify/web-api-ts-sdk";
 
-export function getTrackIdFromUri(uri: string): string | null {
+export function getIdFromUri(uri: string): string | null {
   if (typeof uri !== "string" || uri.length === 0) return null;
   const idPart = uri.split(":")[2];
   return idPart && idPart.length > 0 ? idPart : null;
@@ -74,12 +74,14 @@ const creationQueues = {
   artists: new Set<string>(),
   albums: new Set<string>(),
   tracks: new Set<string>(),
+  playlists: new Set<string>(),
 };
 const createdEntities = {
   genres: new Set<string>(),
   artists: new Set<string>(),
   albums: new Set<string>(),
   tracks: new Set<string>(),
+  playlists: new Set<string>(),
 };
 
 export function getQueueSize(entity: keyof typeof creationQueues) {
@@ -93,6 +95,7 @@ export function addToCreationQueues(
   entity: keyof typeof creationQueues,
   id: string,
 ) {
+  if (!id) return;
   if (!createdEntities[entity].has(id)) {
     creationQueues[entity].add(id);
   }
@@ -376,6 +379,53 @@ export async function createTracks(spotify: SpotifyApi) {
   }
 }
 
+export async function createPlaylists(spotify: SpotifyApi) {
+  const playlistIds = Array.from(creationQueues.playlists);
+  if (playlistIds.length === 0) return;
+
+  const existingPlaylists = await tryCatch(
+    db.playlist.findMany({
+      where: { spotifyId: { in: playlistIds }, type: "playlist" },
+    }),
+  );
+  if (existingPlaylists.error) {
+    logger.error(existingPlaylists.error);
+    return;
+  }
+  for (const playlist of existingPlaylists.data) {
+    createEntity("playlists", playlist.spotifyId);
+  }
+  for (const playlistId of Array.from(creationQueues.playlists)) {
+    const { error, data: playlistData } = await retrySpotifyCall(
+      () => spotify.playlists.getPlaylist(playlistId),
+      "playlists.getPlaylist",
+    );
+    if (error) {
+      logger.error(error);
+      continue;
+    }
+    if (!playlistData) {
+      logger.error("Playlist not found");
+      continue;
+    }
+    const createdPlaylist = await tryCatch(
+      db.playlist.create({
+        data: {
+          spotifyId: playlistData.id,
+          name: playlistData.name,
+          type: "playlist",
+          image: playlistData.images[0]?.url,
+        },
+      }),
+    );
+    if (createdPlaylist.error) {
+      logger.error(createdPlaylist.error);
+      continue;
+    }
+    createEntity("playlists", playlistId);
+  }
+}
+
 export async function createPlaybacks(
   userId: string,
   playbacks: PlayHistory[],
@@ -458,7 +508,7 @@ export async function createHistory(
     const trackSpotifyIds = [
       ...new Set(
         batch
-          .map((item) => getTrackIdFromUri(item.spotify_track_uri))
+          .map((item) => getIdFromUri(item.spotify_track_uri))
           .filter((trackId): trackId is string => !!trackId),
       ),
     ];
@@ -478,7 +528,7 @@ export async function createHistory(
     );
     let errorsInBatch = 0;
     for (const item of batch) {
-      const spotifyId = getTrackIdFromUri(item.spotify_track_uri);
+      const spotifyId = getIdFromUri(item.spotify_track_uri);
       if (!spotifyId) continue;
       const trackId = trackIdBySpotifyId.get(spotifyId);
       if (!trackId) continue;

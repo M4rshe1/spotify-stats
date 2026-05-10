@@ -104,6 +104,14 @@ export const auth = betterAuth({
             where: { id: user.id },
             data: { role },
           });
+          await db.playlist.create({
+            data: {
+              spotifyId: user.id,
+              name: "Favorites",
+              image: user.image ?? null,
+              type: "favorite",
+            },
+          });
         },
       },
     },

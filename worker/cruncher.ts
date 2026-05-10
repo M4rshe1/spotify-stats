@@ -9,7 +9,7 @@ import {
   createGenres,
   createHistory,
   createTracks,
-  getTrackIdFromUri,
+  getIdFromUri,
   type HistoryItem,
   cleanQueues,
 } from "@/lib/spotify";
@@ -85,23 +85,17 @@ const importWorker = new Worker<ImportJobData>(
       cleanQueues();
       logger.info(`Collecting track ids`);
       for (const item of history.data) {
-        const trackId = getTrackIdFromUri(item.spotify_track_uri);
+        const trackId = getIdFromUri(item.spotify_track_uri);
         if (!trackId) {
           continue;
         }
         addToCreationQueues("tracks", trackId);
       }
-      logger.info(`Building queues`);
       await hydrateCreationQueuesFromSpotifyTrackCatalog(spotify);
-      logger.info(`Creating genres`);
       await createGenres();
-      logger.info(`Creating artists`);
       await createArtists(spotify);
-      logger.info(`Creating albums`);
       await createAlbums(spotify);
-      logger.info(`Creating tracks`);
       await createTracks(spotify);
-      logger.info(`Creating history`);
       await createHistory(importRecord.userId, importRecord.id, history.data);
       logger.info(`Import ${importRecord.id} completed`);
     });

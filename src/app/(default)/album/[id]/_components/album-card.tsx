@@ -6,9 +6,19 @@ import { duration, truncateText, TOP_CARD_ENTITY_NAME_MAX } from "@/lib/utils";
 import { api } from "@/trpc/react";
 import { Loading } from "@/components/ui/loading";
 import Link from "next/link";
+import { authClient } from "@/server/better-auth/client";
+import { Button } from "@/components/ui/button";
 
 const AlbumCard = ({ id }: { id: number }) => {
   const { data: album, isLoading } = api.album.get.useQuery({ id });
+  const { mutate: refreshAlbum } = api.admin.refreshMasterData.useMutation();
+  const { data: session } = authClient.useSession();
+  const utils = api.useUtils();
+
+  function handleRefreshAlbum() {
+    refreshAlbum({ type: "album", id });
+    utils.invalidate();
+  }
   if (isLoading) {
     return <Loading />;
   }
@@ -83,6 +93,16 @@ const AlbumCard = ({ id }: { id: number }) => {
               </div>
             </div>
             <div className="flex items-center gap-2"></div>
+            {session?.user.role === "admin" && (
+              <Button
+                variant="outline"
+                className="ml-auto"
+                size="sm"
+                onClick={handleRefreshAlbum}
+              >
+                Refresh
+              </Button>
+            )}
           </div>
         </div>
       </CardContent>

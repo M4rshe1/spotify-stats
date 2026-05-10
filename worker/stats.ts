@@ -10,6 +10,8 @@ import {
   addToCreationQueues,
   cleanQueues,
   retrySpotifyCall,
+  createPlaylists,
+  getIdFromUri,
 } from "@/lib/spotify";
 
 function enqueueTrackDependencies(track: {
@@ -87,10 +89,16 @@ async function fetchPlaybackStats() {
       logger.error(state.error);
       continue;
     }
-
+    if (state.data.context?.uri.startsWith("spotify:playlist:")) {
+      addToCreationQueues(
+        "playlists",
+        getIdFromUri(state.data.context.uri) ?? "",
+      );
+    }
     await createArtists(spotify);
     await createAlbums(spotify);
     await createTracks(spotify);
+    await createPlaylists(spotify);
     await createPlaybacks(user.id, filteredPlaybacks, state.data);
   }
   logger.info("Playback stats fetched");
