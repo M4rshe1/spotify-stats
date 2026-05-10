@@ -1,6 +1,7 @@
 import { AdminDatabaseStudio } from "@/components/admin-database-studio";
 import { PageBreadcrumbs } from "@/components/page-breadcrumbs";
 import { withAdmin } from "@/lib/hoc-pages";
+import { WarningCard } from "./_components/wraning-card";
 
 async function AdminDatabasePage() {
   return (
@@ -11,6 +12,7 @@ async function AdminDatabasePage() {
           { label: "Database", href: "/admin/database" },
         ]}
       />
+      <WarningCard />
       <AdminDatabaseStudio />
     </div>
   );
