@@ -1,3 +1,5 @@
+import { endOfDay, startOfDay } from "date-fns";
+
 export type Setting = {
   key: string;
   defaultValue:
@@ -6,8 +8,9 @@ export type Setting = {
     | number
     | string[]
     | Record<string, unknown>
-    | null;
-  type: "boolean" | "string" | "number" | "json";
+    | null
+    | Date;
+  type: "boolean" | "string" | "number" | "json" | "date";
   description: string;
 };
 
@@ -46,14 +49,14 @@ export const userSettings = {
   },
   CUSTOM_PREFERRED_PERIOD_START: {
     key: "CUSTOM_PREFERRED_PERIOD_START",
-    defaultValue: null,
-    type: "string",
+    defaultValue: startOfDay(new Date()),
+    type: "date",
     description: "The start date for the custom preferred period",
   },
   CUSTOM_PREFERRED_PERIOD_END: {
     key: "CUSTOM_PREFERRED_PERIOD_END",
-    defaultValue: null,
-    type: "string",
+    defaultValue: endOfDay(new Date()),
+    type: "date",
     description: "The end date for the custom preferred period",
   },
   FAVORITE_PERIODS: {

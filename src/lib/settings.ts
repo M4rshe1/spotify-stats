@@ -26,6 +26,9 @@ function toRecord(settings: Settings[], defs: Record<string, Setting>) {
       case "number":
         record[setting.key] = parseInt(setting.value);
         break;
+      case "date":
+        record[setting.key] = new Date(setting.value as string);
+        break;
       case "json":
         const result = tryCatchSync(() => JSON.parse(setting.value));
         if (result.error) {
