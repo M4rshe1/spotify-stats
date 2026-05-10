@@ -99,8 +99,8 @@ model Settings {
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now()) @updatedAt
 
-  @@map("settings")
   @@unique([userId, key])
+  @@map("settings")
 }
 
 model Artist {
@@ -149,37 +149,41 @@ model AlbumArtists {
 }
 
 model Album {
-  id        Int            @id @default(autoincrement())
-  spotifyId String         @unique
-  name      String
-  image     String?
-  createdAt DateTime       @default(now())
-  updatedAt DateTime       @default(now()) @updatedAt
-  tracks    Track[]
-  artists   AlbumArtists[]
+  id                   Int            @id @default(autoincrement())
+  spotifyId            String         @unique
+  name                 String
+  image                String?
+  releaseDate          String?
+  releaseDatePrecision String?
+  createdAt            DateTime       @default(now())
+  updatedAt            DateTime       @default(now()) @updatedAt
+  tracks               Track[]
+  artists              AlbumArtists[]
 
   @@map("album")
 }
 
 model Track {
-  id           Int           @id @default(autoincrement())
-  spotifyId    String        @unique
-  name         String
-  image        String?
-  uri          String
-  type         String
-  explicit     Boolean
-  duration     Int
-  disc_number  Int
-  track_number Int
-  is_local     Boolean
-  href         String
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @default(now()) @updatedAt
-  playbacks    Playback[]
-  album        Album?        @relation(fields: [albumId], references: [id])
-  albumId      Int?
-  artists      ArtistTrack[]
+  id                   Int           @id @default(autoincrement())
+  spotifyId            String        @unique
+  name                 String
+  image                String?
+  uri                  String
+  type                 String
+  releaseDate          String?
+  releaseDatePrecision String?
+  explicit             Boolean
+  duration             Int
+  disc_number          Int
+  track_number         Int
+  is_local             Boolean
+  href                 String
+  createdAt            DateTime      @default(now())
+  updatedAt            DateTime      @default(now()) @updatedAt
+  playbacks            Playback[]
+  album                Album?        @relation(fields: [albumId], references: [id])
+  albumId              Int?
+  artists              ArtistTrack[]
 
   @@map("track")
 }
@@ -212,6 +216,8 @@ model Playback {
   user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   duration         Int
   device           String
+  context          String?  @default("Unknown")
+  contextUri       String?
   platform         String
   originalPlatform String   @default("Unknown")
   trackId          Int

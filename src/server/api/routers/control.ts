@@ -9,6 +9,7 @@ export const controlRouter = createTRPCRouter({
     .input(
       z.object({
         trackId: z.number(),
+        noSkip: z.boolean().optional().default(false),
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -42,15 +43,17 @@ export const controlRouter = createTRPCRouter({
         });
       }
 
-      const nextTrack = await retrySpotifyCall(
-        () => spotify.player.skipToNext(playbackState.data?.device?.id ?? ""),
-        "player.skipToNext",
-      );
-      if (nextTrack.error) {
-        throw new TRPCError({
-          code: "INTERNAL_SERVER_ERROR",
-          message: "Failed to get next track",
-        });
+      if (!input.noSkip) {
+        const nextTrack = await retrySpotifyCall(
+          () => spotify.player.skipToNext(playbackState.data?.device?.id ?? ""),
+          "player.skipToNext",
+        );
+        if (nextTrack.error) {
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "Failed to get next track",
+          });
+        }
       }
       return { success: true, message: "Track played" };
     }),

@@ -332,8 +332,7 @@ export const chartRouter = createTRPCRouter({
           date: key,
           duration,
           count: byCount.get(key) ?? 0,
-          percentage:
-            totalDuration > 0 ? (duration / totalDuration) * 100 : 0,
+          percentage: totalDuration > 0 ? (duration / totalDuration) * 100 : 0,
         };
       });
 
@@ -430,8 +429,7 @@ export const chartRouter = createTRPCRouter({
           date: key,
           duration,
           count: byCount.get(key) ?? 0,
-          percentage:
-            totalDuration > 0 ? (duration / totalDuration) * 100 : 0,
+          percentage: totalDuration > 0 ? (duration / totalDuration) * 100 : 0,
         };
       });
 
@@ -526,8 +524,7 @@ export const chartRouter = createTRPCRouter({
           date: key,
           duration,
           count: byCount.get(key) ?? 0,
-          percentage:
-            totalDuration > 0 ? (duration / totalDuration) * 100 : 0,
+          percentage: totalDuration > 0 ? (duration / totalDuration) * 100 : 0,
         };
       });
 
@@ -630,8 +627,7 @@ export const chartRouter = createTRPCRouter({
           date: key,
           duration,
           count: byCount.get(key) ?? 0,
-          percentage:
-            totalDuration > 0 ? (duration / totalDuration) * 100 : 0,
+          percentage: totalDuration > 0 ? (duration / totalDuration) * 100 : 0,
         };
       });
 
@@ -705,6 +701,42 @@ export const chartRouter = createTRPCRouter({
 
       return result.data.map((row) => ({
         name: row.device ?? "Unknown",
+        value: row.count,
+        duration: row.duration,
+      }));
+    }),
+  getContextDistribution: protectedProcedure
+    .input(periodSchema)
+    .query(async ({ ctx, input }) => {
+      const { start, end } = getPeriods(input.period, input.from, input.to);
+      const result = await tryCatch(
+        ctx.db.$queryRaw<
+          { context: string | null; count: number; duration: number }[]
+        >(
+          Prisma.sql`
+            SELECT
+              NULLIF(TRIM(playback."context"), '') AS "context",
+              COUNT(*)::float8 AS "count",
+              COALESCE(SUM(playback."duration"), 0)::float8 AS "duration"
+            FROM playback
+            WHERE playback."playedAt" >= ${start}
+              AND playback."playedAt" <= ${end}
+              AND playback."userId" = ${ctx.session.user.id}
+            GROUP BY NULLIF(TRIM(playback."context"), '')
+            ORDER BY "count" DESC
+          `,
+        ),
+      );
+
+      if (result.error) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to get context distribution",
+        });
+      }
+
+      return result.data.map((row) => ({
+        name: row.context ?? "Unknown",
         value: row.count,
         duration: row.duration,
       }));
