@@ -10,6 +10,11 @@ import { ClockIcon } from "lucide-react";
 const FirstLastPlayed = ({ id }: { id: number }) => {
   const { data: firstLastPlayed, isLoading: isLoadingFirstLastPlayed } =
     api.album.firstLastPlayed.useQuery({ id });
+  const { mutate: playTrack } = api.control.play.useMutation();
+
+  function handlePlayTrack(trackId: number) {
+    playTrack({ trackId });
+  }
 
   if (isLoadingFirstLastPlayed) {
     return <Loading />;
@@ -47,10 +52,18 @@ const FirstLastPlayed = ({ id }: { id: number }) => {
       </CardHeader>
       <CardContent className="flex flex-col gap-3">
         {hasFirst && firstLastPlayed.firstPlayed ? (
-          <FirstLastTrackRow kind="first" row={firstLastPlayed.firstPlayed} />
+          <FirstLastTrackRow
+            kind="first"
+            row={firstLastPlayed.firstPlayed}
+            onPlay={handlePlayTrack}
+          />
         ) : null}
         {hasLast && firstLastPlayed.lastPlayed ? (
-          <FirstLastTrackRow kind="last" row={firstLastPlayed.lastPlayed} />
+          <FirstLastTrackRow
+            kind="last"
+            row={firstLastPlayed.lastPlayed}
+            onPlay={handlePlayTrack}
+          />
         ) : null}
       </CardContent>
     </Card>

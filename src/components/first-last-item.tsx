@@ -3,6 +3,8 @@
 import { format, isSameDay } from "date-fns";
 import Link from "next/link";
 import { CoverTintBackdrop } from "@/components/cards/cover-tint-backdrop";
+import { Button } from "./ui/button";
+import { PlayIcon } from "lucide-react";
 
 /** Shape shared by artist / album / track first-last queries. */
 export type FirstLastTrackPlaybackRow = {
@@ -24,9 +26,11 @@ function formatListenedMeta(kind: "first" | "last", playedAt: Date) {
 export function FirstLastTrackRow({
   kind,
   row,
+  onPlay,
 }: {
   kind: "first" | "last";
   row: FirstLastTrackPlaybackRow;
+  onPlay?: (trackId: number) => void;
 }) {
   const playedAt = row.playedAt ? new Date(row.playedAt) : null;
   const trackId = row.trackId;
@@ -43,8 +47,23 @@ export function FirstLastTrackRow({
   return (
     <div className="bg-muted/30 relative isolate w-full overflow-hidden rounded-md border">
       <CoverTintBackdrop coverUrl={image} className="rounded-md" />
-      <div className="relative z-10 flex items-center gap-4 p-3">
-        <Link href={href} className="block shrink-0">
+      <div className="z-10 flex items-center gap-4 p-3">
+        <Link href={href} className="group relative block shrink-0">
+          {onPlay ? (
+            <div className="absolute inset-0 flex items-center justify-center bg-black/45 opacity-0 transition-opacity group-hover:opacity-100">
+              <Button
+                size="icon-sm"
+                variant="secondary"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onPlay(trackId);
+                }}
+              >
+                <PlayIcon className="size-3.5 fill-current" />
+              </Button>
+            </div>
+          ) : null}
           {image ? (
             <img
               src={image}

@@ -1,14 +1,21 @@
 import Link from "next/link";
 import { NoDataCard } from "@/components/cards/no-data-card";
-import { Music2Icon } from "lucide-react";
+import { Music2Icon, PlayIcon } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { CoverTintBackdrop } from "@/components/cards/cover-tint-backdrop";
 import { duration, truncateText, TOP_CARD_ENTITY_NAME_MAX } from "@/lib/utils";
 import { api } from "@/trpc/react";
 import { Loading } from "@/components/ui/loading";
+import { Button } from "@/components/ui/button";
 
 const TrackCard = ({ id }: { id: number }) => {
   const { data: track, isLoading } = api.track.get.useQuery({ id });
+  const { mutate: playTrack } = api.control.play.useMutation();
+
+  function handlePlayTrack() {
+    playTrack({ trackId: track?.id ?? 0 });
+  }
+
   if (isLoading) {
     return <Loading />;
   }
@@ -90,6 +97,12 @@ const TrackCard = ({ id }: { id: number }) => {
               </div>
             </div>
             <div className="flex items-center gap-2"></div>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={handlePlayTrack}>
+              <PlayIcon size={16} />
+              Play
+            </Button>
+          </div>
           </div>
         </div>
       </CardContent>
