@@ -1,6 +1,12 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import {
+  useMemo,
+  useRef,
+  useState,
+  type Dispatch,
+  type SetStateAction,
+} from "react";
 import { toast } from "sonner";
 import { RefreshCcwIcon, UploadIcon, XIcon } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -301,6 +307,102 @@ function UploadCard({
   );
 }
 
+function ImportRow({
+  row,
+  onReprocess,
+  expandedImportId,
+  setExpandedImportId,
+}: {
+  row: ImportRow;
+  onReprocess: (id: number) => void;
+  expandedImportId: number | null;
+  setExpandedImportId: Dispatch<SetStateAction<number | null>>;
+}) {
+  const status = statusMeta[row.status] ?? {
+    label: row.status,
+    badgeVariant: "secondary" as const,
+  };
+  const progress = normalizeProgress(row.status, row.progress);
+  const eta = estimateFinishedAt(row);
+  const duration = formatDuration(row.startedAt, row.completedAt);
+  const isExpanded = expandedImportId === row.id;
+  // Instead of a button wrapping a Button, split into a container with
+  // only one button responsible for expanding/collapsing, and separate out the Button.
+  return (
+    <div key={row.id} className="space-y-2 border p-3">
+      <div className="w-full text-left flex flex-wrap items-center justify-between gap-2">
+        <div
+          className="flex-1 min-w-0 cursor-pointer"
+          tabIndex={0}
+          role="button"
+          aria-pressed={isExpanded}
+          onClick={() =>
+            setExpandedImportId((current: number | null) =>
+              current === row.id ? null : row.id,
+            )
+          }
+          onKeyDown={(e) => {
+            if (
+              e.key === "Enter" ||
+              e.key === " " ||
+              e.key === "Spacebar"
+            ) {
+              setExpandedImportId((current: number | null) =>
+                current === row.id ? null : row.id,
+              );
+            }
+          }}
+        >
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <p className="font-semibold">Import #{row.id}</p>
+              <Badge variant={status.badgeVariant}>{status.label}</Badge>
+            </div>
+            <p className="text-muted-foreground text-xs">
+              {row.type} • Started {formatDateTime(row.startedAt)}
+            </p>
+          </div>
+        </div>
+        <p className="text-muted-foreground text-xs">
+          {row.completedAt
+            ? `Finished ${formatDateTime(row.completedAt)}`
+            : eta
+              ? `Est. finished ${formatDateTime(eta)}`
+              : "Est. finished —"}
+        </p>
+        {onReprocess ? (
+          <Button
+            size="icon-xs"
+            variant="ghost"
+            onClick={() => onReprocess(row.id)}
+            tabIndex={0}
+          >
+            <RefreshCcwIcon className="size-3" />
+          </Button>
+        ) : null}
+      </div>
+      <Progress value={progress} />
+      <div className="text-muted-foreground flex items-center justify-between text-xs">
+        <span>{progress}%</span>
+        {row.error ? (
+          <span className="text-destructive line-clamp-1">{row.error}</span>
+        ) : (
+          <span>Updated {formatDateTime(row.updatedAt)}</span>
+        )}
+      </div>
+      {isExpanded ? (
+        <div className="text-muted-foreground border-t pt-2 text-xs">
+          <span>
+            Duration {duration} • Added {row.entriesAdded.toLocaleString()}{" "}
+            playback
+            {row.entriesAdded === 1 ? "" : "s"}
+          </span>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 function ImportList({ imports }: { imports: ImportRow[] }) {
   const [expandedImportId, setExpandedImportId] = useState<number | null>(null);
   const [isCompletedOpen, setIsCompletedOpen] = useState(false);
@@ -333,82 +435,6 @@ function ImportList({ imports }: { imports: ImportRow[] }) {
     );
   }
 
-  const renderImportRows = (
-    rows: ImportRow[],
-    onReprocess?: (id: number) => void,
-  ) =>
-    rows.map((row) => {
-      const status = statusMeta[row.status] ?? {
-        label: row.status,
-        badgeVariant: "secondary" as const,
-      };
-      const progress = normalizeProgress(row.status, row.progress);
-      const eta = estimateFinishedAt(row);
-      const duration = formatDuration(row.startedAt, row.completedAt);
-      const isExpanded = expandedImportId === row.id;
-      return (
-        <div key={row.id} className="space-y-2 border p-3">
-          <button
-            type="button"
-            className="w-full text-left"
-            onClick={() =>
-              setExpandedImportId((current) =>
-                current === row.id ? null : row.id,
-              )
-            }
-          >
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <div className="space-y-1">
-                <div className="flex items-center gap-2">
-                  <p className="font-semibold">Import #{row.id}</p>
-                  <Badge variant={status.badgeVariant}>
-                    {status.label}
-                  </Badge>{" "}
-                  {onReprocess ? (
-                    <Button
-                      size="icon-xs"
-                      variant="ghost"
-                      onClick={() => onReprocess(row.id)}
-                    >
-                      <RefreshCcwIcon className="size-3" />
-                    </Button>
-                  ) : null}
-                </div>
-                <p className="text-muted-foreground text-xs">
-                  {row.type} • Started {formatDateTime(row.startedAt)}
-                </p>
-              </div>
-              <p className="text-muted-foreground text-xs">
-                {row.completedAt
-                  ? `Finished ${formatDateTime(row.completedAt)}`
-                  : eta
-                    ? `Est. finished ${formatDateTime(eta)}`
-                    : "Est. finished —"}
-              </p>
-            </div>
-          </button>
-          <Progress value={progress} />
-          <div className="text-muted-foreground flex items-center justify-between text-xs">
-            <span>{progress}%</span>
-            {row.error ? (
-              <span className="text-destructive line-clamp-1">{row.error}</span>
-            ) : (
-              <span>Updated {formatDateTime(row.updatedAt)}</span>
-            )}
-          </div>
-          {isExpanded ? (
-            <div className="text-muted-foreground border-t pt-2 text-xs">
-              <span>
-                Duration {duration} • Added {row.entriesAdded.toLocaleString()}{" "}
-                playback
-                {row.entriesAdded === 1 ? "" : "s"}
-              </span>
-            </div>
-          ) : null}
-        </div>
-      );
-    });
-
   return (
     <div className="space-y-4">
       <Card>
@@ -417,7 +443,15 @@ function ImportList({ imports }: { imports: ImportRow[] }) {
         </CardHeader>
         <CardContent className="space-y-4">
           {activeImports.length > 0 ? (
-            renderImportRows(activeImports)
+            activeImports.map((row) => (
+              <ImportRow
+                key={row.id}
+                row={row}
+                onReprocess={onReprocess}
+                expandedImportId={expandedImportId}
+                setExpandedImportId={setExpandedImportId}
+              />
+            ))
           ) : (
             <p className="text-muted-foreground text-sm">
               No active imports right now.
@@ -428,21 +462,41 @@ function ImportList({ imports }: { imports: ImportRow[] }) {
 
       <Card>
         <CardHeader className="pb-3">
-          <button
-            type="button"
+          {/* Prevent <button> nesting by using div as trigger here */}
+          <div
             className="flex w-full cursor-pointer items-center justify-between text-left"
+            tabIndex={0}
+            role="button"
             onClick={() => setIsCompletedOpen((current) => !current)}
+            onKeyDown={(e) => {
+              if (
+                e.key === "Enter" ||
+                e.key === " " ||
+                e.key === "Spacebar"
+              ) {
+                setIsCompletedOpen((current) => !current);
+              }
+            }}
+            aria-pressed={isCompletedOpen}
           >
             <CardTitle>Completed imports ({completedImports.length})</CardTitle>
             <span className="text-muted-foreground text-xs hover:underline">
               {isCompletedOpen ? "Hide" : "Show"}
             </span>
-          </button>
+          </div>
         </CardHeader>
         {isCompletedOpen ? (
           <CardContent className="space-y-4">
             {completedImports.length > 0 ? (
-              renderImportRows(completedImports, onReprocess)
+              completedImports.map((row) => (
+                <ImportRow
+                  key={row.id}
+                  row={row}
+                  onReprocess={onReprocess}
+                  expandedImportId={expandedImportId}
+                  setExpandedImportId={setExpandedImportId}
+                />
+              ))
             ) : (
               <p className="text-muted-foreground text-sm">
                 No completed imports yet.
@@ -454,21 +508,41 @@ function ImportList({ imports }: { imports: ImportRow[] }) {
 
       <Card>
         <CardHeader className="pb-3">
-          <button
-            type="button"
+          {/* Prevent <button> nesting by using div as trigger here */}
+          <div
             className="flex w-full cursor-pointer items-center justify-between text-left"
+            tabIndex={0}
+            role="button"
             onClick={() => setIsFailedOpen((current) => !current)}
+            onKeyDown={(e) => {
+              if (
+                e.key === "Enter" ||
+                e.key === " " ||
+                e.key === "Spacebar"
+              ) {
+                setIsFailedOpen((current) => !current);
+              }
+            }}
+            aria-pressed={isFailedOpen}
           >
             <CardTitle>Failed imports ({failedImports.length})</CardTitle>
             <span className="text-muted-foreground text-xs hover:underline">
               {isFailedOpen ? "Hide" : "Show"}
             </span>
-          </button>
+          </div>
         </CardHeader>
         {isFailedOpen ? (
           <CardContent className="space-y-4">
             {failedImports.length > 0 ? (
-              renderImportRows(failedImports, onReprocess)
+              failedImports.map((row) => (
+                <ImportRow
+                  key={row.id}
+                  row={row}
+                  onReprocess={onReprocess}
+                  expandedImportId={expandedImportId}
+                  setExpandedImportId={setExpandedImportId}
+                />
+              ))
             ) : (
               <p className="text-muted-foreground text-sm">
                 No failed imports.
