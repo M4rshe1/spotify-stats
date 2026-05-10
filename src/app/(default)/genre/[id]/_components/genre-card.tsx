@@ -1,9 +1,15 @@
 import { NoDataCard } from "@/components/cards/no-data-card";
 import { Tags } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
-import { duration, truncateText, TOP_CARD_ENTITY_NAME_MAX } from "@/lib/utils";
+import {
+  duration,
+  truncateText,
+  TOP_CARD_ENTITY_NAME_MAX,
+  cn,
+} from "@/lib/utils";
 import { api } from "@/trpc/react";
 import { Loading } from "@/components/ui/loading";
+import { getGenreColor } from "@/lib/consts/genres";
 
 const GenreCard = ({ id }: { id: number }) => {
   const { data: genre, isLoading } = api.genre.get.useQuery({ id });
@@ -21,12 +27,19 @@ const GenreCard = ({ id }: { id: number }) => {
     );
   }
 
+  const genreColor = getGenreColor(genre.name);
+
   return (
     <Card className="relative isolate">
       <CardContent>
         <div className="grid grid-cols-2 gap-4">
-          <div className="bg-muted relative flex aspect-square w-full max-w-full items-center justify-center overflow-hidden rounded-md">
-            <Tags className="text-muted-foreground size-16 stroke-[1.25]" />
+          <div
+            className={cn(
+              "bg-muted relative flex aspect-square w-full max-w-full items-center justify-center overflow-hidden rounded-md",
+              genreColor?.bg,
+            )}
+          >
+            <Tags className={cn("size-16 stroke-[1.25]", genreColor?.fg)} />
           </div>
           <div className="grid h-full min-w-0 grid-cols-1 grid-rows-[1fr_auto_1fr] justify-between">
             <div>
