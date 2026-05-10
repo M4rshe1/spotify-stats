@@ -13,6 +13,7 @@ import { duration, truncateText, TOP_CARD_ENTITY_NAME_MAX } from "@/lib/utils";
 import { api } from "@/trpc/react";
 import { Loading } from "@/components/ui/loading";
 import Link from "next/link";
+import React from "react";
 
 const ArtistCard = ({ id }: { id: number }) => {
   const { data: artist, isLoading } = api.artist.get.useQuery({ id });
@@ -54,16 +55,15 @@ const ArtistCard = ({ id }: { id: number }) => {
               </p>
               <p className="text-muted-foreground mt-1 text-sm">
                 {artist.genres.map((genre, index) => (
-                  <>
+                  <React.Fragment key={genre.genre?.id}>
                     <Link
-                      key={genre.genre?.id}
                       href={`/genre/${genre.genre?.id}`}
                       className="underline-offset-2 hover:underline"
                     >
                       {genre.genre?.name}
                     </Link>
                     {index < artist.genres.length - 1 ? ", " : ""}
-                  </>
+                  </React.Fragment>
                 ))}
               </p>
             </div>
