@@ -3,6 +3,7 @@ import {
   ChevronRight,
   Disc3,
   Music2,
+  Tags,
   Users,
   type LucideIcon,
 } from "lucide-react";
@@ -34,13 +35,19 @@ const topSections: {
     icon: Disc3,
     iconClassName: "text-amber-600 dark:text-amber-400",
   },
+  {
+    href: "/top/genres",
+    title: "Genres",
+    icon: Tags,
+    iconClassName: "text-emerald-600 dark:text-emerald-400",
+  },
 ];
 
 export default withAuth(async () => {
   return (
     <div className="space-y-6">
       <h1 className="text-lg font-semibold tracking-tight">Top</h1>
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {topSections.map((section) => (
           <Link
             key={section.href}

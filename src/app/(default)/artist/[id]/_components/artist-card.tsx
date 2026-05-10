@@ -12,6 +12,7 @@ import { CoverTintBackdrop } from "@/components/cards/cover-tint-backdrop";
 import { duration, truncateText, TOP_CARD_ENTITY_NAME_MAX } from "@/lib/utils";
 import { api } from "@/trpc/react";
 import { Loading } from "@/components/ui/loading";
+import Link from "next/link";
 
 const ArtistCard = ({ id }: { id: number }) => {
   const { data: artist, isLoading } = api.artist.get.useQuery({ id });
@@ -52,7 +53,18 @@ const ArtistCard = ({ id }: { id: number }) => {
                 {truncateText(artist.name, TOP_CARD_ENTITY_NAME_MAX)}
               </p>
               <p className="text-muted-foreground mt-1 text-sm">
-                {artist.genres.map((genre) => genre.genre?.name).join(", ")}
+                {artist.genres.map((genre, index) => (
+                  <>
+                    <Link
+                      key={genre.genre?.id}
+                      href={`/genre/${genre.genre?.id}`}
+                      className="underline-offset-2 hover:underline"
+                    >
+                      {genre.genre?.name}
+                    </Link>
+                    {index < artist.genres.length - 1 ? ", " : ""}
+                  </>
+                ))}
               </p>
             </div>
             <div className="mt-3 space-y-2">

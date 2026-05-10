@@ -7,6 +7,7 @@ import { importRouter } from "@/server/api/routers/import";
 import { affinityRouter } from "@/server/api/routers/affinity";
 import { albumRouter } from "@/server/api/routers/album";
 import { artistRouter } from "@/server/api/routers/artist";
+import { genreRouter } from "@/server/api/routers/genre";
 import { trackRouter } from "@/server/api/routers/track";
 import { topRouter } from "@/server/api/routers/top";
 import { sessionRouter } from "@/server/api/routers/session";
@@ -25,6 +26,7 @@ export const appRouter = createTRPCRouter({
   affinity: affinityRouter,
   album: albumRouter,
   artist: artistRouter,
+  genre: genreRouter,
   track: trackRouter,
   top: topRouter,
   session: sessionRouter,

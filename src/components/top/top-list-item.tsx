@@ -6,7 +6,22 @@ import { duration, formatPercent } from "@/lib/utils";
 import { PlayIcon } from "lucide-react";
 import Link from "next/link";
 
-export type TopListEntityType = "tracks" | "artists" | "albums";
+export type TopListEntityType = "tracks" | "artists" | "albums" | "genres";
+
+function getHref(type: TopListEntityType, id: number) {
+  switch (type) {
+    case "tracks":
+      return `/track/${id}`;
+    case "artists":
+      return `/artist/${id}`;
+    case "genres":
+      return `/genre/${id}`;
+    case "albums":
+      return `/album/${id}`;
+    default:
+      return null;
+  }
+}
 
 export type TopListItemData = {
   id: number;
@@ -35,61 +50,46 @@ export function TopListItem({
   durationPercentage: number;
   onPlay?: (trackId: number) => void;
 }) {
-  const href =
-    type === "tracks"
-      ? `/track/${item.id}`
-      : type === "artists"
-        ? `/artist/${item.id}`
-        : item.id === 0
-          ? null
-          : `/album/${item.id}`;
+  const href = getHref(type, item.id);
   const content = (
     <>
       <div className="text-muted-foreground w-8 shrink-0 text-right text-xl font-semibold">
         {rank}
       </div>
-      <div className="group relative h-12 w-12 shrink-0 overflow-hidden rounded-sm">
-        {href ? (
-          <Link href={href} className="block">
-            {item.image ? (
+      {item.image ? (
+        <div className="group relative h-12 w-12 shrink-0 overflow-hidden rounded-sm">
+          {href ? (
+            <Link href={href} className="block">
               <img
                 src={item.image}
                 alt={item.title}
                 className="h-12 w-12 object-cover"
               />
-            ) : (
-              <div className="bg-muted text-muted-foreground flex h-12 w-12 items-center justify-center text-xs">
-                No img
-              </div>
-            )}
-          </Link>
-        ) : item.image ? (
-          <img
-            src={item.image}
-            alt={item.title}
-            className="h-12 w-12 object-cover"
-          />
-        ) : (
-          <div className="bg-muted text-muted-foreground flex h-12 w-12 items-center justify-center text-xs">
-            No img
-          </div>
-        )}
-        {onPlay ? (
-          <div className="absolute inset-0 flex items-center justify-center bg-black/45 opacity-0 transition-opacity group-hover:opacity-100">
-            <Button
-              size="icon-sm"
-              variant="secondary"
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                onPlay(item.id);
-              }}
-            >
-              <PlayIcon className="size-3.5 fill-current" />
-            </Button>
-          </div>
-        ) : null}
-      </div>
+            </Link>
+          ) : (
+            <img
+              src={item.image}
+              alt={item.title}
+              className="h-12 w-12 object-cover"
+            />
+          )}
+          {onPlay ? (
+            <div className="absolute inset-0 flex items-center justify-center bg-black/45 opacity-0 transition-opacity group-hover:opacity-100">
+              <Button
+                size="icon-sm"
+                variant="secondary"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onPlay(item.id);
+                }}
+              >
+                <PlayIcon className="size-3.5 fill-current" />
+              </Button>
+            </div>
+          ) : null}
+        </div>
+      ) : null}
       <div className="min-w-0 flex-1">
         {href ? (
           <Link
@@ -158,11 +158,17 @@ export function TopListItem({
   );
 
   return (
-    <div className="relative isolate w-full overflow-hidden rounded-md border bg-muted/30">
+    <div className="bg-muted/30 relative isolate w-full overflow-hidden rounded-md border">
       <CoverTintBackdrop coverUrl={item.image} className="rounded-md" />
       <div className="relative z-10 flex w-full items-center gap-3 p-2">
         {content}
       </div>
     </div>
   );
+}
+function useMemo(
+  arg0: () => string | null,
+  arg1: (number | TopListEntityType)[],
+) {
+  throw new Error("Function not implemented.");
 }

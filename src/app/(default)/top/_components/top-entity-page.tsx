@@ -40,6 +40,11 @@ const meta: Record<TopType, { title: string; empty: string; error: string }> = {
     empty: "No albums found in this time range.",
     error: "Failed to load top albums.",
   },
+  genres: {
+    title: "Top genres",
+    empty: "No genres found in this time range.",
+    error: "Failed to load top genres.",
+  },
 };
 
 export default function TopEntityPage({ type }: { type: TopType }) {
@@ -84,13 +89,25 @@ export default function TopEntityPage({ type }: { type: TopType }) {
     },
     { enabled: type === "albums" },
   );
+  const genresQuery = api.top.getTopGenres.useQuery(
+    {
+      ...periodInput,
+      sortBy,
+      limit: 20,
+      cursorId: cursor?.cursorId,
+      cursorValue: cursor?.cursorValue,
+    },
+    { enabled: type === "genres" },
+  );
 
   const query =
     type === "tracks"
       ? songsQuery
       : type === "artists"
         ? artistsQuery
-        : albumsQuery;
+        : type === "albums"
+          ? albumsQuery
+          : genresQuery;
   const data = query.data;
   const totalCount = data?.totalCount ?? 0;
   const totalDuration = data?.totalDuration ?? 0;
@@ -135,7 +152,7 @@ export default function TopEntityPage({ type }: { type: TopType }) {
 
     observer.observe(node);
     return () => observer.disconnect();
-  }, [data?.nextCursor, query.isFetching]);
+  }, [data?.nextCursor, query.isFetching, items.length]);
 
   return (
     <Card className="h-full min-h-0">

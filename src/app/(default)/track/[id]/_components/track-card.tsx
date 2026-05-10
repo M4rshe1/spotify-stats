@@ -59,7 +59,6 @@ const TrackCard = ({ id }: { id: number }) => {
                   >
                     {track.album.name}
                   </Link>
-                  {track.artists.length > 0 ? <span> · </span> : null}
                 </p>
               )}
               <p>

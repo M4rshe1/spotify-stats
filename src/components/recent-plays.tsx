@@ -102,3 +102,14 @@ export function TrackRecentPlays({ id }: { id: number }) {
     />
   );
 }
+
+export function GenreRecentPlays({ id }: { id: number }) {
+  const { data, isLoading } = api.genre.recentPlaybacks.useQuery({ id });
+  return (
+    <RecentPlaysCard
+      plays={data}
+      isLoading={isLoading}
+      emptyDescription="No recent plays for this genre."
+    />
+  );
+}

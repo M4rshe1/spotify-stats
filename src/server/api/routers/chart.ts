@@ -138,6 +138,10 @@ const trackPeriodSchema = periodSchema.extend({
   trackId: z.number(),
 });
 
+const genrePeriodSchema = periodSchema.extend({
+  genreId: z.number(),
+});
+
 export const chartRouter = createTRPCRouter({
   getTimeListened: protectedProcedure
     .input(periodSchema)
@@ -506,6 +510,110 @@ export const chartRouter = createTRPCRouter({
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
           message: "Failed to get track playbacks",
+        });
+      }
+
+      const rows = playbacks.data;
+      const totalDuration = rows.reduce((acc, r) => acc + r.duration, 0);
+      const totalCount = rows.reduce((acc, r) => acc + r.count, 0);
+
+      const byHour = new Map(rows.map((r) => [r.date, r.duration]));
+      const byCount = new Map(rows.map((r) => [r.date, r.count]));
+      const data = Array.from({ length: 24 }, (_, h) => {
+        const key = String(h).padStart(2, "0");
+        const duration = byHour.get(key) ?? 0;
+        return {
+          date: key,
+          duration,
+          count: byCount.get(key) ?? 0,
+          percentage:
+            totalDuration > 0 ? (duration / totalDuration) * 100 : 0,
+        };
+      });
+
+      return { data, totalDuration, totalCount };
+    }),
+  getGenreTimeListened: protectedProcedure
+    .input(genrePeriodSchema)
+    .query(async ({ ctx, input }) => {
+      const { start, end, grouping } = getPeriods(
+        input.period,
+        input.from,
+        input.to,
+      );
+
+      const groupSql = getSQLGroupingString(
+        grouping,
+        ctx.session.user.timezone,
+      );
+      const playbacks = await tryCatch(
+        ctx.db.$queryRaw<{ duration: number; date: string }[]>(
+          Prisma.sql`
+            SELECT
+              COALESCE(SUM(playback.duration), 0)::float8 AS duration,
+              ${groupSql} AS "date"
+            FROM playback
+            JOIN track ON playback."trackId" = track."id"
+            JOIN artist_track ON track."id" = artist_track."trackId"
+              AND artist_track."role" = 'primary'
+            JOIN artist_genres ON artist_genres."artistId" = artist_track."artistId"
+              AND artist_genres."genreId" = ${input.genreId}
+            WHERE playback."playedAt" >= ${start}
+              AND playback."playedAt" <= ${end}
+              AND playback."userId" = ${ctx.session.user.id}
+            GROUP BY ${groupSql}
+            ORDER BY "date" ASC
+          `,
+        ),
+      );
+      if (playbacks.error) {
+        console.error(playbacks.error);
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to get genre playbacks",
+        });
+      }
+
+      const filledData: { date: string; duration: number }[] = fillUpGrouping(
+        grouping,
+        playbacks.data,
+      );
+
+      return {
+        data: filledData,
+        grouping,
+      };
+    }),
+  getGenreTimeDistribution: protectedProcedure
+    .input(genrePeriodSchema)
+    .query(async ({ ctx, input }) => {
+      const { start, end } = getPeriods(input.period, input.from, input.to);
+      const groupSql = getSQLGroupingString("hour", ctx.session.user.timezone);
+      const playbacks = await tryCatch(
+        ctx.db.$queryRaw<{ duration: number; date: string; count: number }[]>(
+          Prisma.sql`
+          SELECT
+            COALESCE(SUM(playback.duration), 0)::float8 AS duration,
+            ${groupSql} AS "date",
+            COUNT(*)::float8 AS count
+          FROM playback
+          JOIN track ON playback."trackId" = track."id"
+          JOIN artist_track ON track."id" = artist_track."trackId"
+            AND artist_track."role" = 'primary'
+          JOIN artist_genres ON artist_genres."artistId" = artist_track."artistId"
+            AND artist_genres."genreId" = ${input.genreId}
+          WHERE playback."playedAt" >= ${start}
+            AND playback."playedAt" <= ${end}
+            AND playback."userId" = ${ctx.session.user.id}
+          GROUP BY ${groupSql}
+          ORDER BY "date" ASC
+        `,
+        ),
+      );
+      if (playbacks.error) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to get genre playbacks",
         });
       }
 
