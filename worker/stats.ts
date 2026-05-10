@@ -31,6 +31,9 @@ async function fetchPlaybackStats() {
   cleanQueues();
   const users = await tryCatch(
     db.user.findMany({
+      where: {
+        banned: false,
+      },
       include: {
         playbacks: {
           take: 1,
