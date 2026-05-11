@@ -1,0 +1,73 @@
+services:
+  postgres:
+    image: postgres:18
+    # ports:
+    #   - 5432:5432
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: spotify
+    volumes:
+      - ../volumes/postgres:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - backend
+
+  redis:
+    image: redis:latest
+    # ports:
+    #   - 6379:6379
+    restart: unless-stopped
+    networks:
+      - backend
+
+  app: &app-base
+    image: ghcr.io/m4rshe1/spotify-stats:latest
+    # ports:
+    #   - 3000:3000
+    env_file:
+      - .env
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/spotify
+      - REDIS_URL=redis://redis:6379
+    volumes:
+      - ../volumes/uploads:/app/uploads
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - backend
+
+  worker-stats:
+    <<: *app-base
+    command: bun run worker:stats
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - backend
+    labels:
+      - "traefik.enable=false"
+
+  worker-cruncher:
+    <<: *app-base
+    command: bun run worker:cruncher
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/spotify
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - backend
+    labels:
+      - "traefik.enable=false"
+
+networks:
+  backend:
+    driver: bridge
