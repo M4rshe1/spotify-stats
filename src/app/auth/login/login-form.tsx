@@ -68,18 +68,20 @@ export function LoginForm({
   }
 
   return (
-    <Card className={cn("w-full max-w-sm shadow-lg", className)} size="sm">
-      <CardHeader>
-        <CardTitle>Log in</CardTitle>
+    <Card
+      className={cn(
+        "w-full max-w-md border-border bg-card shadow-md",
+        className,
+      )}
+      size="sm"
+    >
+      <CardHeader className="space-y-1.5 pb-2">
+        <CardTitle className="font-heading text-xl">Sign in</CardTitle>
         <CardDescription>
           {googleAuthEnabled ? (
-            <>
-              New accounts use Spotify. Google sign-in only works if you have
-              already linked Google while logged in (Account → Link Google) with
-              the same Google account.
-            </>
+            <>Spotify for new accounts. Google only if you linked it before.</>
           ) : (
-            <>Sign in with your Spotify account.</>
+            <>Spotify opens your dashboard and stats.</>
           )}
         </CardDescription>
       </CardHeader>
@@ -87,6 +89,7 @@ export function LoginForm({
         <Button
           type="button"
           variant="default"
+          className="h-10 font-semibold"
           onClick={handleSpotifySignIn}
           disabled={pending !== null}
         >
