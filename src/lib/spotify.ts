@@ -464,7 +464,7 @@ export async function createPlaybacks(
           context: state.context?.type ?? "Unknown",
           contextUri: state.context?.uri ?? null,
           device: state.device?.name ?? "Unknown",
-          platform: platform(state.device?.type ?? "Unknown"),
+          platform: state.device?.type ?? "Unknown",
           originalPlatform: state.device?.type ?? "Unknown",
           playedAt: new Date(playback.played_at),
         },
