@@ -13,9 +13,17 @@ import { withAuth } from "@/lib/hoc-pages";
 export async function generateMetadata(): Promise<Metadata> {
   const settings = await getSettings();
   if (settings.REGISTRATION_MODE === "closed") {
-    return { title: "Registration closed" };
+    return {
+      title: "Registration closed",
+      description:
+        "New sign-ups are disabled for this Spotify Stats instance. Contact an administrator if you need access.",
+    };
   }
-  return { title: "Log in" };
+  return {
+    title: "Log in",
+    description:
+      "Sign in with Google to connect Spotify and view your personal listening statistics.",
+  };
 }
 
 const Page = withAuth(async () => {

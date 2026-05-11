@@ -1,7 +1,15 @@
+import type { Metadata } from "next";
+
 import { PageBreadcrumbs } from "@/components/page-breadcrumbs";
 import { HydrateClient, api } from "@/trpc/server";
 import { withAuth } from "@/lib/hoc-pages";
 import ImportPage from "./_components/import-page";
+
+export const metadata: Metadata = {
+  title: "Import",
+  description:
+    "Upload your Spotify extended streaming history and track import jobs.",
+};
 
 export default withAuth(async () => {
   await api.import.list.prefetch();

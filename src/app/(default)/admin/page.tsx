@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 
@@ -6,6 +7,12 @@ import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { adminSubNavItems } from "@/lib/consts/admin-nav";
 import { withAdmin } from "@/lib/hoc-pages";
+
+export const metadata: Metadata = {
+  title: "Admin",
+  description:
+    "Administrative tools for users, settings, database access, and master data.",
+};
 
 async function AdminOverviewPage() {
   return (

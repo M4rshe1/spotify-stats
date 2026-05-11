@@ -1,8 +1,16 @@
+import type { Metadata } from "next";
+
 import { PageBreadcrumbs } from "@/components/page-breadcrumbs";
 import { getPreferredMetricsInput } from "@/lib/get-preferred-metrics-input";
 import { withAuth } from "@/lib/hoc-pages";
 import { api, HydrateClient } from "@/trpc/server";
 import TopEntityPage from "../_components/top-entity-page";
+
+export const metadata: Metadata = {
+  title: "Top albums",
+  description:
+    "Albums you spent the most time with, ranked by listening duration for the selected period.",
+};
 
 export default withAuth(async () => {
   const metricsInput = await getPreferredMetricsInput();

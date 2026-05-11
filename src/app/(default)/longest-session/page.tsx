@@ -1,8 +1,16 @@
+import type { Metadata } from "next";
+
 import { PageBreadcrumbs } from "@/components/page-breadcrumbs";
 import { getPreferredMetricsInput } from "@/lib/get-preferred-metrics-input";
 import { withAuth } from "@/lib/hoc-pages";
 import { api, HydrateClient } from "@/trpc/server";
 import LongestSessionPage from "./_components/longest-session-page";
+
+export const metadata: Metadata = {
+  title: "Longest session",
+  description:
+    "See your longest continuous listening sessions and when they occurred.",
+};
 
 export default withAuth(async () => {
   const metricsInput = await getPreferredMetricsInput();

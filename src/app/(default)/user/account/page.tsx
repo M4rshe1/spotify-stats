@@ -8,6 +8,8 @@ import AccountPage from "./_components/account-page";
 
 export const metadata: Metadata = {
   title: "Account",
+  description:
+    "Manage your Spotify connection, plan details, and account sign-out.",
 };
 
 export default withAuth(async () => {

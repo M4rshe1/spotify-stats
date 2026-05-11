@@ -1,8 +1,36 @@
+import type { Metadata } from "next";
+
 import { PageBreadcrumbs } from "@/components/page-breadcrumbs";
 import { getPreferredMetricsInput } from "@/lib/get-preferred-metrics-input";
 import { withAuth } from "@/lib/hoc-pages";
 import { api } from "@/trpc/server";
 import ClientPage from "./_components/client-page";
+
+export async function generateMetadata(props: {
+  params: Promise<{ id: string }>;
+}): Promise<Metadata> {
+  try {
+    const { id } = await props.params;
+    const numericId = parseInt(id, 10);
+    if (Number.isNaN(numericId)) {
+      return {
+        title: "Artist",
+        description: "Artist listening stats and charts in Spotify Stats.",
+      };
+    }
+    const periodInput = await getPreferredMetricsInput();
+    const artist = await api.artist.get({ id: numericId, ...periodInput });
+    return {
+      title: artist.name,
+      description: `Top tracks, albums, and listening stats for ${artist.name}.`,
+    };
+  } catch {
+    return {
+      title: "Artist",
+      description: "Artist listening stats and charts in Spotify Stats.",
+    };
+  }
+}
 
 const Page = withAuth(async ({ params }: { params: { id: string } }) => {
   const { id } = params;

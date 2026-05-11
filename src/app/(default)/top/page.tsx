@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import {
   ChevronRight,
@@ -50,6 +51,12 @@ const topSections: {
     iconClassName: "text-fuchsia-600 dark:text-fuchsia-400",
   },
 ];
+
+export const metadata: Metadata = {
+  title: "Top",
+  description:
+    "Jump to your top tracks, artists, albums, genres, or playlists ranked by listening time.",
+};
 
 export default withAuth(async () => {
   return (

@@ -1,7 +1,15 @@
+import type { Metadata } from "next";
+
 import { AdminDatabaseStudio } from "@/components/admin-database-studio";
 import { PageBreadcrumbs } from "@/components/page-breadcrumbs";
 import { withAdmin } from "@/lib/hoc-pages";
 import { WarningCard } from "./_components/wraning-card";
+
+export const metadata: Metadata = {
+  title: "Database",
+  description:
+    "Open an embedded Prisma Studio view to inspect and query application data.",
+};
 
 async function AdminDatabasePage() {
   return (

@@ -15,7 +15,10 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Spotify Stats",
+  title: {
+    default: "Spotify Stats",
+    template: "%s | Spotify Stats",
+  },
   description: "Your Spotify stats in one place",
   icons: {
     icon: [

@@ -7,6 +7,8 @@ import SettingsPage from "./_components/settings-page";
 
 export const metadata: Metadata = {
   title: "Settings",
+  description:
+    "Set your time zone, default stats period, theme, and other preferences.",
 };
 
 export default withAuth(async () => {
