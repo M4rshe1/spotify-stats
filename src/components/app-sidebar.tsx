@@ -26,6 +26,7 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 
+import { AppCredit } from "@/components/app-credit";
 import { NavCommandSearch } from "@/components/nav-command-search";
 import { NavMain } from "@/components/nav-main";
 import { NavSecondary } from "@/components/nav-secondary";
@@ -41,6 +42,7 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
 import { adminSubNavItems } from "@/lib/consts/admin-nav";
+import type { LatestReleaseInfo } from "@/lib/github-release";
 import type { User } from "@/server/better-auth/config";
 import { authClient } from "@/server/better-auth/client";
 
@@ -199,8 +201,12 @@ export function getFlattenedNavForSearch(user: User | null) {
 
 export function AppSidebar({
   user,
+  latestRelease = null,
   ...props
-}: React.ComponentProps<typeof Sidebar> & { user: User | null }) {
+}: React.ComponentProps<typeof Sidebar> & {
+  user: User | null;
+  latestRelease?: LatestReleaseInfo | null;
+}) {
   const navPagesForSearch = React.useMemo(
     () => getFlattenedNavForSearch(user),
     [user],
@@ -246,6 +252,7 @@ export function AppSidebar({
       <SidebarFooter className="gap-2">
         <ThemeSwitcher />
         {user ? <NavUser user={user} /> : null}
+        <AppCredit variant="sidebar" latestRelease={latestRelease} />
       </SidebarFooter>
     </Sidebar>
   );

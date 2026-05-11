@@ -3,6 +3,7 @@ import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { BreadcrumbProvider } from "@/providers/breadcrumb-provider";
 import { PeriodProvider } from "@/providers/period-provider";
 import Header from "@/components/header";
+import { getLatestRelease } from "@/lib/github-release";
 import { getSession } from "@/server/better-auth/server";
 import { api } from "@/trpc/server";
 
@@ -11,12 +12,18 @@ export default async function Layout({
 }: {
   children: React.ReactNode;
 }) {
-  const session = await getSession();
-  const initialPreferredPeriod = await api.user.getPreferredPeriod();
+  const [session, initialPreferredPeriod, latestRelease] = await Promise.all([
+    getSession(),
+    api.user.getPreferredPeriod(),
+    getLatestRelease(),
+  ]);
   return (
     <SidebarProvider>
       <PeriodProvider initialPreferredSnapshot={initialPreferredPeriod}>
-        <AppSidebar user={session?.user ?? null} />
+        <AppSidebar
+          user={session?.user ?? null}
+          latestRelease={latestRelease}
+        />
         <SidebarInset>
           <BreadcrumbProvider>
             <Header />

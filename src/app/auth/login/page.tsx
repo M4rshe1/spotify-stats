@@ -3,7 +3,9 @@ import { type Metadata } from "next";
 import { LoginForm } from "@/app/auth/login/login-form";
 import { LoginHero } from "@/app/auth/login/login-hero";
 import { RegistrationClosedView } from "@/app/auth/login/registration-closed-view";
+import { AppCredit } from "@/components/app-credit";
 import { ThemeSwitcherRow } from "@/components/theme-switcher";
+import { getLatestRelease } from "@/lib/github-release";
 import { isGoogleAuthConfigured } from "@/lib/google-auth";
 import { getSettings } from "@/lib/settings";
 import { withAuth } from "@/lib/hoc-pages";
@@ -17,7 +19,10 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 const Page = withAuth(async () => {
-  const settings = await getSettings();
+  const [settings, latestRelease] = await Promise.all([
+    getSettings(),
+    getLatestRelease(),
+  ]);
   const googleAuthEnabled = isGoogleAuthConfigured();
   const registrationClosed = settings.REGISTRATION_MODE === "closed";
 
@@ -50,6 +55,10 @@ const Page = withAuth(async () => {
           </div>
         </div>
       )}
+
+      <footer className="relative z-10 px-4 pb-6">
+        <AppCredit latestRelease={latestRelease} />
+      </footer>
     </main>
   );
 }, true);
