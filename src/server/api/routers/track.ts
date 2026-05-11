@@ -3,6 +3,8 @@ import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { tryCatch } from "@/lib/try-catch";
 import { Prisma } from "generated/prisma";
+import { getPeriods } from "@/lib/periods";
+import { periodSchema } from "@/server/api/lib";
 
 type TrackMetrics = {
   plays: number;
@@ -11,8 +13,10 @@ type TrackMetrics = {
 
 export const trackRouter = createTRPCRouter({
   get: protectedProcedure
-    .input(z.object({ id: z.number() }))
+    .input(periodSchema.extend({ id: z.number() }))
     .query(async ({ ctx, input }) => {
+      const { start, end } = getPeriods(input.period, input.from, input.to);
+      const timezone = ctx.session.user.timezone;
       const [track, metrics] = await Promise.all([
         tryCatch(
           ctx.db.track.findUnique({
@@ -41,6 +45,8 @@ export const trackRouter = createTRPCRouter({
             FROM playback
             WHERE playback."trackId" = ${input.id}
               AND playback."userId" = ${ctx.session.user.id}
+              AND timezone(${timezone}, playback."playedAt") >= timezone(${timezone}, ${start})
+              AND timezone(${timezone}, playback."playedAt") <= timezone(${timezone}, ${end})
           `),
         ),
       ]);

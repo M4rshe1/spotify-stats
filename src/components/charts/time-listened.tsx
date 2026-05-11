@@ -72,7 +72,7 @@ export function TimeListened({ period }: { period: ProviderPeriod }) {
       }}
     >
       <CategoryAreaChart
-        data={data}
+        data={data as { date: string; duration: number; count: number }[]}
         categoryKey="date"
         valueKey="duration"
         formatCategoryTick={formatCategoryTick}
@@ -80,11 +80,14 @@ export function TimeListened({ period }: { period: ProviderPeriod }) {
         formatValueTick={(value) =>
           formatDuration(value).toFormattedString("{M}")
         }
-        formatTooltipValue={(value) => (
-          <div className="flex flex-col gap-1">
-            <div>{formatDuration(value).toFormattedString("{M} min")}</div>
-          </div>
-        )}
+        formatTooltipValue={(value, payload) => {
+          return (
+            <div className="flex flex-col gap-1">
+              <div>{formatDuration(value).toFormattedString("{M} min")}</div>
+              <div>{(payload?.count ?? 0).toLocaleString()} plays</div>
+            </div>
+          );
+        }}
       />
     </SeriesChartCard>
   );

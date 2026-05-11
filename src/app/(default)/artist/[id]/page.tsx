@@ -7,8 +7,8 @@ import ClientPage from "./_components/client-page";
 const Page = withAuth(async ({ params }: { params: { id: string } }) => {
   const { id } = params;
   const numericId = parseInt(id, 10);
-  const artist = await api.artist.get({ id: numericId });
   const periodInput = await getPreferredMetricsInput();
+  const artist = await api.artist.get({ id: numericId, ...periodInput });
 
   void api.artist.firstLastPlayed.prefetch({ id: numericId });
   void api.artist.recentPlaybacks.prefetch({ id: numericId });

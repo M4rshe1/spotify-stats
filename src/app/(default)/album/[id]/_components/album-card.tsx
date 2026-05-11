@@ -8,9 +8,12 @@ import { Loading } from "@/components/ui/loading";
 import Link from "next/link";
 import { authClient } from "@/server/better-auth/client";
 import { Button } from "@/components/ui/button";
+import { providerPeriodToQueryInput } from "@/lib/provider-period-query-input";
+import type { ProviderPeriod } from "@/lib/consts/periods";
 
-const AlbumCard = ({ id }: { id: number }) => {
-  const { data: album, isLoading } = api.album.get.useQuery({ id });
+const AlbumCard = ({ id, period }: { id: number; period: ProviderPeriod }) => {
+  const periodInput = providerPeriodToQueryInput(period);
+  const { data: album, isLoading } = api.album.get.useQuery({ id, ...periodInput });
   const { mutate: refreshAlbum } = api.admin.refreshMasterData.useMutation();
   const { data: session } = authClient.useSession();
   const utils = api.useUtils();

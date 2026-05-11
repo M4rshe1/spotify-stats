@@ -29,8 +29,10 @@ type TopTrack = {
 
 export const albumRouter = createTRPCRouter({
   get: protectedProcedure
-    .input(z.object({ id: z.number() }))
+    .input(periodSchema.extend({ id: z.number() }))
     .query(async ({ ctx, input }) => {
+      const { start, end } = getPeriods(input.period, input.from, input.to);
+      const timezone = ctx.session.user.timezone;
       const [album, metrics] = await Promise.all([
         tryCatch(
           ctx.db.album.findUnique({
@@ -58,6 +60,8 @@ export const albumRouter = createTRPCRouter({
             LEFT JOIN artist ON artist_track."artistId" = artist."id"
             WHERE track."albumId" = ${input.id}
               AND playback."userId" = ${ctx.session.user.id}
+              AND timezone(${timezone}, playback."playedAt") >= timezone(${timezone}, ${start})
+              AND timezone(${timezone}, playback."playedAt") <= timezone(${timezone}, ${end})
             GROUP BY artist."id", artist."name", artist."image"
           `),
         ),

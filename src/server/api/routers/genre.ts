@@ -47,8 +47,14 @@ type TopArtist = {
 
 export const genreRouter = createTRPCRouter({
   get: protectedProcedure
-    .input(z.object({ id: z.number() }))
+    .input(z.object({ id: z.number(), period: periodSchema }))
     .query(async ({ ctx, input }) => {
+      const { start, end, grouping } = getPeriods(
+        input.period.period,
+        input.period.from,
+        input.period.to,
+      );
+      const timezone = ctx.session.user.timezone;
       const [genre, metrics] = await Promise.all([
         tryCatch(ctx.db.genre.findUnique({ where: { id: input.id } })),
         tryCatch(
@@ -66,6 +72,8 @@ export const genreRouter = createTRPCRouter({
             JOIN artist_genres ON artist_genres."artistId" = artist."id" AND artist_genres."genreId" = ${input.id}
             LEFT JOIN album ON track."albumId" = album."id"
             WHERE playback."userId" = ${ctx.session.user.id}
+              AND timezone(${timezone}, playback."playedAt") >= timezone(${timezone}, ${start})
+              AND timezone(${timezone}, playback."playedAt") <= timezone(${timezone}, ${end})
           `),
         ),
       ]);

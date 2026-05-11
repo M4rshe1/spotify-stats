@@ -8,9 +8,12 @@ import { api } from "@/trpc/react";
 import { Loading } from "@/components/ui/loading";
 import { Button } from "@/components/ui/button";
 import { authClient } from "@/server/better-auth/client";
+import { providerPeriodToQueryInput } from "@/lib/provider-period-query-input";
+import type { ProviderPeriod } from "@/lib/consts/periods";
 
-const TrackCard = ({ id }: { id: number }) => {
-  const { data: track, isLoading } = api.track.get.useQuery({ id });
+const TrackCard = ({ id, period }: { id: number; period: ProviderPeriod }) => {
+  const periodInput = providerPeriodToQueryInput(period);
+  const { data: track, isLoading } = api.track.get.useQuery({ id, ...periodInput });
   const { mutate: playTrack } = api.control.play.useMutation();
   const { mutate: refreshTrack } = api.admin.refreshMasterData.useMutation();
   const { data: session } = authClient.useSession();

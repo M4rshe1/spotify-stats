@@ -23,6 +23,12 @@ function getSQLPlayedAt(timezone: string) {
   return `("playedAt" AT TIME ZONE 'UTC' AT TIME ZONE '${timezone}')`;
 }
 
+type TimeListenedPrismaRow = {
+  duration: number;
+  date: string;
+  count: number;
+};
+
 function getSQLGroupingString(grouping: PeriodGrouping, timezone: string) {
   const column = getSQLPlayedAt(timezone);
   let sql = "";
@@ -48,7 +54,7 @@ function getSQLGroupingString(grouping: PeriodGrouping, timezone: string) {
 
 function fillUpGrouping(
   grouping: PeriodGrouping,
-  data: { date: string; duration: number }[],
+  data: { date: string; duration: number; count: number }[],
 ) {
   if (grouping === "hour") {
     const lowestHour = Math.min(...data.map((r) => parseInt(r.date, 10)));
@@ -61,6 +67,7 @@ function fillUpGrouping(
       return {
         date: hour.padStart(2, "0"),
         duration: result?.duration ?? 0,
+        count: result?.count ?? 0,
       };
     });
   } else if (grouping === "day") {
@@ -79,7 +86,11 @@ function fillUpGrouping(
     );
     return days.map((day) => {
       const result = data.find((r) => r.date === day);
-      return { date: day, duration: result?.duration ?? 0 };
+      return {
+        date: day,
+        duration: result?.duration ?? 0,
+        count: result?.count ?? 0,
+      };
     });
   } else if (grouping === "month") {
     const lowestMonth = Math.min(
@@ -101,7 +112,11 @@ function fillUpGrouping(
     );
     return months.map((month) => {
       const result = data.find((r) => r.date === month);
-      return { date: month, duration: result?.duration ?? 0 };
+      return {
+        date: month,
+        duration: result?.duration ?? 0,
+        count: result?.count ?? 0,
+      };
     });
   } else if (grouping === "year") {
     const lowestYear = Math.min(...data.map((r) => new Date(r.date).getTime()));
@@ -120,7 +135,11 @@ function fillUpGrouping(
     );
     return years.map((year) => {
       const result = data.find((r) => r.date === year);
-      return { date: year, duration: result?.duration ?? 0 };
+      return {
+        date: year,
+        duration: result?.duration ?? 0,
+        count: result?.count ?? 0,
+      };
     });
   }
   return data;
@@ -157,10 +176,11 @@ export const chartRouter = createTRPCRouter({
         ctx.session.user.timezone,
       );
       const playbacks = await tryCatch(
-        ctx.db.$queryRaw<{ duration: number; date: string }[]>(
+        ctx.db.$queryRaw<TimeListenedPrismaRow[]>(
           Prisma.sql`
             SELECT 
               COALESCE(SUM(duration), 0)::float8 AS duration, 
+              COUNT(*)::float8 AS count,
               ${groupSql} as "date"
             FROM playback
             WHERE "playedAt" >= ${start} AND "playedAt" <= ${end}
@@ -178,7 +198,7 @@ export const chartRouter = createTRPCRouter({
         });
       }
 
-      const filledData: { date: string; duration: number }[] = fillUpGrouping(
+      const filledData: TimeListenedPrismaRow[] = fillUpGrouping(
         grouping,
         playbacks.data,
       );
@@ -202,7 +222,7 @@ export const chartRouter = createTRPCRouter({
         ctx.session.user.timezone,
       );
       const playbacks = await tryCatch(
-        ctx.db.$queryRaw<{ duration: number; date: string }[]>(
+        ctx.db.$queryRaw<TimeListenedPrismaRow[]>(
           Prisma.sql`
             SELECT 
               COALESCE(SUM(playback.duration), 0)::float8 AS duration, 
@@ -228,7 +248,7 @@ export const chartRouter = createTRPCRouter({
         });
       }
 
-      const filledData: { date: string; duration: number }[] = fillUpGrouping(
+      const filledData: TimeListenedPrismaRow[] = fillUpGrouping(
         grouping,
         playbacks.data,
       );
@@ -244,7 +264,7 @@ export const chartRouter = createTRPCRouter({
       const { start, end } = getPeriods(input.period, input.from, input.to);
       const groupSql = getSQLGroupingString("hour", ctx.session.user.timezone);
       const playbacks = await tryCatch(
-        ctx.db.$queryRaw<{ duration: number; date: string }[]>(
+        ctx.db.$queryRaw<TimeListenedPrismaRow[]>(
           Prisma.sql`
           SELECT
             COALESCE(SUM(duration), 0)::float8 AS duration,
@@ -265,11 +285,7 @@ export const chartRouter = createTRPCRouter({
         });
       }
 
-      const rows = playbacks.data as {
-        duration: number;
-        date: string;
-        count: number;
-      }[];
+      const rows = playbacks.data;
       const totalDuration = rows.reduce((acc, r) => acc + r.duration, 0);
       const totalCount = rows.reduce((acc, r) => acc + r.count, 0);
 
@@ -293,7 +309,7 @@ export const chartRouter = createTRPCRouter({
       const { start, end } = getPeriods(input.period, input.from, input.to);
       const groupSql = getSQLGroupingString("hour", ctx.session.user.timezone);
       const playbacks = await tryCatch(
-        ctx.db.$queryRaw<{ duration: number; date: string; count: number }[]>(
+        ctx.db.$queryRaw<TimeListenedPrismaRow[]>(
           Prisma.sql`
           SELECT
             COALESCE(SUM(playback.duration), 0)::float8 AS duration,
@@ -352,10 +368,11 @@ export const chartRouter = createTRPCRouter({
         ctx.session.user.timezone,
       );
       const playbacks = await tryCatch(
-        ctx.db.$queryRaw<{ duration: number; date: string }[]>(
+        ctx.db.$queryRaw<TimeListenedPrismaRow[]>(
           Prisma.sql`
             SELECT
               COALESCE(SUM(playback.duration), 0)::float8 AS duration,
+              COUNT(*)::float8 AS count,
               ${groupSql} AS "date"
             FROM playback
             JOIN track ON playback."trackId" = track."id"
@@ -376,7 +393,7 @@ export const chartRouter = createTRPCRouter({
         });
       }
 
-      const filledData: { date: string; duration: number }[] = fillUpGrouping(
+      const filledData: TimeListenedPrismaRow[] = fillUpGrouping(
         grouping,
         playbacks.data,
       );
@@ -392,7 +409,7 @@ export const chartRouter = createTRPCRouter({
       const { start, end } = getPeriods(input.period, input.from, input.to);
       const groupSql = getSQLGroupingString("hour", ctx.session.user.timezone);
       const playbacks = await tryCatch(
-        ctx.db.$queryRaw<{ duration: number; date: string; count: number }[]>(
+        ctx.db.$queryRaw<TimeListenedPrismaRow[]>(
           Prisma.sql`
           SELECT
             COALESCE(SUM(playback.duration), 0)::float8 AS duration,
@@ -449,10 +466,11 @@ export const chartRouter = createTRPCRouter({
         ctx.session.user.timezone,
       );
       const playbacks = await tryCatch(
-        ctx.db.$queryRaw<{ duration: number; date: string }[]>(
+        ctx.db.$queryRaw<TimeListenedPrismaRow[]>(
           Prisma.sql`
             SELECT
               COALESCE(SUM(playback.duration), 0)::float8 AS duration,
+              COUNT(*)::float8 AS count,
               ${groupSql} AS "date"
             FROM playback
             WHERE playback."playedAt" >= ${start}
@@ -472,7 +490,7 @@ export const chartRouter = createTRPCRouter({
         });
       }
 
-      const filledData: { date: string; duration: number }[] = fillUpGrouping(
+      const filledData: TimeListenedPrismaRow[] = fillUpGrouping(
         grouping,
         playbacks.data,
       );
@@ -488,7 +506,7 @@ export const chartRouter = createTRPCRouter({
       const { start, end } = getPeriods(input.period, input.from, input.to);
       const groupSql = getSQLGroupingString("hour", ctx.session.user.timezone);
       const playbacks = await tryCatch(
-        ctx.db.$queryRaw<{ duration: number; date: string; count: number }[]>(
+        ctx.db.$queryRaw<TimeListenedPrismaRow[]>(
           Prisma.sql`
           SELECT
             COALESCE(SUM(playback.duration), 0)::float8 AS duration,
@@ -544,7 +562,7 @@ export const chartRouter = createTRPCRouter({
         ctx.session.user.timezone,
       );
       const playbacks = await tryCatch(
-        ctx.db.$queryRaw<{ duration: number; date: string }[]>(
+        ctx.db.$queryRaw<TimeListenedPrismaRow[]>(
           Prisma.sql`
             SELECT
               COALESCE(SUM(playback.duration), 0)::float8 AS duration,
@@ -571,7 +589,7 @@ export const chartRouter = createTRPCRouter({
         });
       }
 
-      const filledData: { date: string; duration: number }[] = fillUpGrouping(
+      const filledData: TimeListenedPrismaRow[] = fillUpGrouping(
         grouping,
         playbacks.data,
       );
@@ -587,7 +605,7 @@ export const chartRouter = createTRPCRouter({
       const { start, end } = getPeriods(input.period, input.from, input.to);
       const groupSql = getSQLGroupingString("hour", ctx.session.user.timezone);
       const playbacks = await tryCatch(
-        ctx.db.$queryRaw<{ duration: number; date: string; count: number }[]>(
+        ctx.db.$queryRaw<TimeListenedPrismaRow[]>(
           Prisma.sql`
           SELECT
             COALESCE(SUM(playback.duration), 0)::float8 AS duration,

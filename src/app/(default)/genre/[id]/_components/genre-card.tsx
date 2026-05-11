@@ -10,9 +10,18 @@ import {
 import { api } from "@/trpc/react";
 import { Loading } from "@/components/ui/loading";
 import { getGenreColor } from "@/lib/consts/genres";
+import type { ProviderPeriod } from "@/lib/consts/periods";
+import { usePeriod } from "@/providers/period-provider";
+import { providerPeriodToQueryInput } from "@/lib/provider-period-query-input";
 
-const GenreCard = ({ id }: { id: number }) => {
-  const { data: genre, isLoading } = api.genre.get.useQuery({ id });
+const GenreCard = ({ id, period }: { id: number; period: ProviderPeriod }) => {
+  const { selectedPeriod } = usePeriod();
+  const periodInput = providerPeriodToQueryInput(selectedPeriod);
+
+  const { data: genre, isLoading } = api.genre.get.useQuery({
+    id,
+    period: periodInput,
+  });
   if (isLoading) {
     return <Loading />;
   }

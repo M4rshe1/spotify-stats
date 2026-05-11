@@ -7,12 +7,7 @@ import {
   TopListItem,
   type TopListItemData,
 } from "@/components/top/top-list-item";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loading } from "@/components/ui/loading";
 import {
   Select,

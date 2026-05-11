@@ -15,7 +15,7 @@ const ClientPage = ({ id }: { id: string }) => {
 
   return (
     <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-      <TrackCard id={numericId} />
+      <TrackCard id={numericId} period={selectedPeriod} />
       <div className="h-fit">
         <FirstLastPlayed id={numericId} />
       </div>

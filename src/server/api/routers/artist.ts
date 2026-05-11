@@ -38,8 +38,10 @@ type TopTrack = {
 
 export const artistRouter = createTRPCRouter({
   get: protectedProcedure
-    .input(z.object({ id: z.number() }))
+    .input(periodSchema.extend({ id: z.number() }))
     .query(async ({ ctx, input }) => {
+      const { start, end } = getPeriods(input.period, input.from, input.to);
+      const timezone = ctx.session.user.timezone;
       const [artist, metrics] = await Promise.all([
         tryCatch(
           ctx.db.artist.findUnique({
@@ -65,7 +67,10 @@ export const artistRouter = createTRPCRouter({
             FROM playback
             JOIN track ON playback."trackId" = track."id"
             JOIN artist_track ON track."id" = artist_track."trackId" AND artist_track."role" = 'primary'
-            WHERE artist_track."artistId" = ${input.id} AND playback."userId" = ${ctx.session.user.id}
+            WHERE artist_track."artistId" = ${input.id}
+              AND playback."userId" = ${ctx.session.user.id}
+              AND timezone(${timezone}, playback."playedAt") >= timezone(${timezone}, ${start})
+              AND timezone(${timezone}, playback."playedAt") <= timezone(${timezone}, ${end})
           `),
         ),
       ]);

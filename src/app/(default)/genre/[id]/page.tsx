@@ -7,8 +7,8 @@ import ClientPage from "./_components/client-page";
 const Page = withAuth(async ({ params }: { params: { id: string } }) => {
   const { id } = params;
   const numericId = parseInt(id, 10);
-  const genre = await api.genre.get({ id: numericId });
   const periodInput = await getPreferredMetricsInput();
+  const genre = await api.genre.get({ id: numericId, period: periodInput });
 
   void api.genre.firstLastPlayed.prefetch({ id: numericId });
   void api.genre.recentPlaybacks.prefetch({ id: numericId });
@@ -18,6 +18,11 @@ const Page = withAuth(async ({ params }: { params: { id: string } }) => {
     ...periodInput,
   });
   void api.genre.getTopAlbums.prefetch({
+    id: numericId,
+    sortBy: "duration",
+    ...periodInput,
+  });
+  void api.genre.getTopArtists.prefetch({
     id: numericId,
     sortBy: "duration",
     ...periodInput,

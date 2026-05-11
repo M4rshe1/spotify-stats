@@ -9,9 +9,12 @@ import Link from "next/link";
 import React from "react";
 import { authClient } from "@/server/better-auth/client";
 import { Button } from "@/components/ui/button";
+import { providerPeriodToQueryInput } from "@/lib/provider-period-query-input";
+import type { ProviderPeriod } from "@/lib/consts/periods";
 
-const ArtistCard = ({ id }: { id: number }) => {
-  const { data: artist, isLoading } = api.artist.get.useQuery({ id });
+const ArtistCard = ({ id, period }: { id: number; period: ProviderPeriod }) => {
+  const periodInput = providerPeriodToQueryInput(period);
+  const { data: artist, isLoading } = api.artist.get.useQuery({ id, ...periodInput });
   const { mutate: refreshArtist } = api.admin.refreshMasterData.useMutation();
   const { data: session } = authClient.useSession();
   const utils = api.useUtils();
