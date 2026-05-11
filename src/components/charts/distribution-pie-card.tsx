@@ -119,7 +119,9 @@ export function DistributionPieCard({
     return rows.map((row) => ({
       ...row,
       percentage:
-        totalDuration > 0 ? (row.duration / totalDuration) * 100 : row.percentage,
+        totalDuration > 0
+          ? (row.duration / totalDuration) * 100
+          : row.percentage,
     }));
   }, [data, hiddenNames]);
 
@@ -163,9 +165,7 @@ export function DistributionPieCard({
     <Card className="flex h-full min-h-0 flex-col">
       <CardHeader>
         <CardTitle>{title}</CardTitle>
-        {description ? (
-          <CardDescription>{description}</CardDescription>
-        ) : null}
+        {description ? <CardDescription>{description}</CardDescription> : null}
         <CardAction>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -203,7 +203,10 @@ export function DistributionPieCard({
             Enable at least one segment to show the chart.
           </div>
         ) : (
-          <ChartContainer config={visibleChartConfig} className="h-[260px] w-full">
+          <ChartContainer
+            config={visibleChartConfig}
+            className="h-[260px] w-full"
+          >
             <PieChart margin={{ top: 8, right: 8, bottom: 8, left: 8 }}>
               <ChartTooltip
                 cursor={false}
@@ -220,7 +223,7 @@ export function DistributionPieCard({
                           <div>
                             {formatDuration(
                               item.payload.duration,
-                            ).toFormattedString("{h}h {m}m")}
+                            ).toBestDurationString()}
                           </div>
                           <div>{formatPercent(item.payload.percentage)}</div>
                         </div>
