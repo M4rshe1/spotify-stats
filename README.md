@@ -1,6 +1,9 @@
 <div align="center">
 
-<img src="public/wave.png" alt="Spotify Stats" width="300" />
+<picture>
+  <source srcSet="public/wave-dark.png" media="(prefers-color-scheme: dark)" />
+  <img src="public/wave-light.png" alt="Spotify Stats" width="300" />
+</picture>
 
 # Spotify Stats
 
