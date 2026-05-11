@@ -1,0 +1,20 @@
+[variables]
+main_domain = "${domain}"
+secret = "${base64:64}"
+
+[config]
+[[config.domains]]
+serviceName = "app"
+port = 3000
+host = "${main_domain}"
+path = "/"
+
+env = [
+    "BETTER_AUTH_SECRET=${secret}",
+    "BETTER_AUTH_GOOGLE_CLIENT_ID=",
+    "BETTER_AUTH_GOOGLE_CLIENT_SECRET=",
+    "BETTER_AUTH_GITHUB_CLIENT_ID=",
+    "BETTER_AUTH_GITHUB_CLIENT_SECRET=",
+    "BETTER_AUTH_URL=https://${main_domain}",
+    "TZ=Europe/Zurich",
+]

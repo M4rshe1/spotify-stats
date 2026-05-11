@@ -27,7 +27,9 @@ services:
       - backend
 
   app: &app-base
-    image: ghcr.io/m4rshe1/spotify-stats:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
     # ports:
     #   - 3000:3000
     env_file:
