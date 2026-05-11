@@ -37,6 +37,14 @@ type TopTrack = {
   count: number;
 };
 
+type TopArtist = {
+  id: number;
+  name: string;
+  image: string | null;
+  duration: number;
+  count: number;
+};
+
 export const genreRouter = createTRPCRouter({
   get: protectedProcedure
     .input(z.object({ id: z.number() }))
@@ -216,6 +224,75 @@ export const genreRouter = createTRPCRouter({
 
       return {
         items: albums.data ?? [],
+        totalCount: totals.totalCount,
+        totalDuration: totals.totalDuration,
+      };
+    }),
+
+  getTopArtists: protectedProcedure
+    .input(genreTopInputSchema)
+    .query(async ({ ctx, input }) => {
+      const { start, end } = getPeriods(input.period, input.from, input.to);
+      const timezone = ctx.session.user.timezone;
+      const userId = ctx.session.user.id;
+      const sortColumn =
+        input.sortBy === "count"
+          ? Prisma.sql`COUNT(*)::float8`
+          : Prisma.sql`SUM(playback."duration")::float8`;
+
+      const totalsResult = await tryCatch(
+        ctx.db.$queryRaw<{ totalCount: number; totalDuration: number }[]>(
+          Prisma.sql`
+            SELECT
+              COUNT(*)::float8 AS "totalCount",
+              COALESCE(SUM(playback."duration"), 0)::float8 AS "totalDuration"
+            FROM playback
+            JOIN track ON playback."trackId" = track."id"
+            JOIN artist_track ON track."id" = artist_track."trackId" AND artist_track."role" = 'primary'
+            JOIN artist_genres ON artist_genres."artistId" = artist_track."artistId" AND artist_genres."genreId" = ${input.id}
+            WHERE playback."userId" = ${userId}
+            AND timezone(${timezone}, playback."playedAt") >= timezone(${timezone}, ${start})
+            AND timezone(${timezone}, playback."playedAt") <= timezone(${timezone}, ${end})
+          `,
+        ),
+      );
+
+      const artists = await tryCatch(
+        ctx.db.$queryRaw<TopArtist[]>(Prisma.sql`
+          SELECT
+            COUNT(*)::float8 AS "count",
+            SUM(playback."duration")::float8 AS "duration",
+            artist."id",
+            artist."name",
+            artist."image"
+          FROM playback
+          JOIN track ON playback."trackId" = track."id"
+          JOIN artist_track ON track."id" = artist_track."trackId" AND artist_track."role" = 'primary'
+          JOIN artist ON artist_track."artistId" = artist."id"
+          JOIN artist_genres ON artist_genres."artistId" = artist."id" AND artist_genres."genreId" = ${input.id}
+          WHERE playback."userId" = ${userId}
+            AND timezone(${timezone}, playback."playedAt") >= timezone(${timezone}, ${start})
+            AND timezone(${timezone}, playback."playedAt") <= timezone(${timezone}, ${end})
+          GROUP BY artist."id", artist."name", artist."image"
+          ORDER BY ${sortColumn} DESC
+          LIMIT 10
+        `),
+      );
+
+      if (totalsResult.error || artists.error) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to get top artists",
+        });
+      }
+
+      const totals = totalsResult.data?.[0] ?? {
+        totalCount: 0,
+        totalDuration: 0,
+      };
+
+      return {
+        items: artists.data ?? [],
         totalCount: totals.totalCount,
         totalDuration: totals.totalDuration,
       };
