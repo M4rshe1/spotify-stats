@@ -20,20 +20,24 @@ type ArtistMetrics = {
   plays: number;
 };
 
-type TopAlbum = {
+type TopAlbumRow = {
   id: number;
   name: string;
   image: string | null;
   duration: number;
   count: number;
+  artistNames: string[] | null;
+  artistIds: number[] | null;
 };
 
-type TopTrack = {
+type TopTrackRow = {
   id: number;
   name: string;
   image: string | null;
   duration: number;
   count: number;
+  artistNames: string[] | null;
+  artistIds: number[] | null;
 };
 
 export const artistRouter = createTRPCRouter({
@@ -122,11 +126,25 @@ export const artistRouter = createTRPCRouter({
       );
 
       const tracks = await tryCatch(
-        ctx.db.$queryRaw<TopTrack[]>(Prisma.sql`
-          SELECT COUNT(*)::float8 AS "count", SUM(playback."duration")::float8 AS "duration", track."id", track."name", track."image"
+        ctx.db.$queryRaw<TopTrackRow[]>(Prisma.sql`
+          SELECT
+            COUNT(*)::float8 AS "count",
+            SUM(playback."duration")::float8 AS "duration",
+            track."id",
+            track."name",
+            track."image",
+            COALESCE(
+              ARRAY_AGG(DISTINCT artist."name") FILTER (WHERE artist."name" IS NOT NULL),
+              ARRAY[]::text[]
+            ) AS "artistNames",
+            COALESCE(
+              ARRAY_AGG(DISTINCT artist."id") FILTER (WHERE artist."id" IS NOT NULL),
+              ARRAY[]::integer[]
+            ) AS "artistIds"
           FROM playback
           JOIN track ON playback."trackId" = track."id"
           JOIN artist_track ON track."id" = artist_track."trackId" AND artist_track."role" = 'primary'
+          JOIN artist ON artist."id" = artist_track."artistId"
           WHERE artist_track."artistId" = ${input.id}
             AND playback."userId" = ${userId}
             AND timezone(${timezone}, playback."playedAt") >= timezone(${timezone}, ${start})
@@ -150,7 +168,15 @@ export const artistRouter = createTRPCRouter({
       };
 
       return {
-        items: tracks.data ?? [],
+        items: (tracks.data ?? []).map((row) => ({
+          id: row.id,
+          name: row.name,
+          image: row.image,
+          duration: row.duration,
+          count: row.count,
+          artists: row.artistNames ?? [],
+          artistIds: row.artistIds ?? [],
+        })),
         totalCount: totals.totalCount,
         totalDuration: totals.totalDuration,
       };
@@ -184,12 +210,26 @@ export const artistRouter = createTRPCRouter({
       );
 
       const albums = await tryCatch(
-        ctx.db.$queryRaw<TopAlbum[]>(Prisma.sql`
-          SELECT COUNT(*)::float8 AS "count", SUM(playback."duration")::float8 AS "duration", album."id", album."name", album."image"
+        ctx.db.$queryRaw<TopAlbumRow[]>(Prisma.sql`
+          SELECT
+            COUNT(*)::float8 AS "count",
+            SUM(playback."duration")::float8 AS "duration",
+            album."id",
+            album."name",
+            album."image",
+            COALESCE(
+              ARRAY_AGG(DISTINCT artist."name") FILTER (WHERE artist."name" IS NOT NULL),
+              ARRAY[]::text[]
+            ) AS "artistNames",
+            COALESCE(
+              ARRAY_AGG(DISTINCT artist."id") FILTER (WHERE artist."id" IS NOT NULL),
+              ARRAY[]::integer[]
+            ) AS "artistIds"
           FROM playback
           JOIN track ON playback."trackId" = track."id"
           JOIN album ON track."albumId" = album."id"
           JOIN artist_track ON track."id" = artist_track."trackId" AND artist_track."role" = 'primary'
+          JOIN artist ON artist."id" = artist_track."artistId"
           WHERE artist_track."artistId" = ${input.id}
             AND playback."userId" = ${userId}
             AND timezone(${timezone}, playback."playedAt") >= timezone(${timezone}, ${start})
@@ -213,7 +253,15 @@ export const artistRouter = createTRPCRouter({
       };
 
       return {
-        items: albums.data ?? [],
+        items: (albums.data ?? []).map((row) => ({
+          id: row.id,
+          name: row.name,
+          image: row.image,
+          duration: row.duration,
+          count: row.count,
+          artists: row.artistNames ?? [],
+          artistIds: row.artistIds ?? [],
+        })),
         totalCount: totals.totalCount,
         totalDuration: totals.totalDuration,
       };

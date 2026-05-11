@@ -29,7 +29,7 @@ export function PlaybackHistoryItem({
   return (
     <div className="bg-muted/30 relative isolate overflow-hidden rounded-md border">
       <CoverTintBackdrop coverUrl={item.image} className="rounded-md" />
-      <div className="relative z-10 flex items-center gap-3 p-2">
+      <div className="relative z-10 grid min-w-0 grid-cols-1 items-center gap-3 gap-x-6 p-2 sm:grid-cols-[auto_1fr_auto] md:grid-cols-[auto_1fr_auto_auto] lg:grid-cols-[auto_1fr_auto_auto_auto]">
         <div className="group relative h-12 w-12 shrink-0 overflow-hidden rounded-sm">
           <Link href={`/track/${item.trackId}`} className="block">
             {item.image ? (
@@ -61,11 +61,12 @@ export function PlaybackHistoryItem({
         <div className="min-w-0 flex-1">
           <Link
             href={`/track/${item.trackId}`}
-            className="truncate text-sm font-semibold underline-offset-2 hover:underline"
+            className="block truncate text-sm font-semibold underline-offset-2 hover:underline"
+            title={item.title}
           >
             {item.title}
           </Link>
-          <p className="text-muted-foreground truncate text-xs">
+          <p className="text-muted-foreground w-full truncate text-xs">
             {item.artists.length > 0
               ? item.artists.map((artist, artistIndex) => {
                   const artistId = item.artistIds[artistIndex];
@@ -89,11 +90,12 @@ export function PlaybackHistoryItem({
               : "Unknown Artist"}
           </p>
         </div>
-        <div className="hidden w-56 truncate text-right text-xs xl:block">
+        <div className="hidden max-w-[14rem] min-w-[6rem] truncate text-right text-xs xl:block">
           {item.albumId ? (
             <Link
               href={`/album/${item.albumId}`}
               className="underline-offset-2 hover:underline"
+              title={item.album}
             >
               {item.album}
             </Link>
@@ -101,10 +103,10 @@ export function PlaybackHistoryItem({
             item.album
           )}
         </div>
-        <div className="hidden w-28 text-right text-xs md:block">
+        <div className="hidden max-w-[5.5rem] min-w-fit text-right text-xs md:block">
           {duration(item.duration).toBestDurationString(false)}
         </div>
-        <div className="hidden w-64 text-right text-xs lg:block">
+        <div className="hidden max-w-[14rem] min-w-fit text-right text-xs whitespace-nowrap lg:block">
           {format(new Date(item.playedAt), "HH:mm")}{" "}
           <span className="text-muted-foreground">
             ({formatRelativePlayedAt(item.playedAt)})

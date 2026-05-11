@@ -118,7 +118,7 @@ export const topRouter = createTRPCRouter({
       return {
         items: items.map((row) => ({
           id: row.id,
-          title: row.name,
+          name: row.name,
           image: row.image,
           artists: row.artistNames ?? [],
           artistIds: row.artistIds ?? [],
@@ -229,7 +229,7 @@ export const topRouter = createTRPCRouter({
       return {
         items: items.map((row) => ({
           id: row.id,
-          title: row.name,
+          name: row.name,
           image: row.image,
           duration: row.duration,
           count: row.count,
@@ -348,7 +348,7 @@ export const topRouter = createTRPCRouter({
       return {
         items: items.map((row) => ({
           id: row.id ?? 0,
-          title: row.name,
+          name: row.name,
           image: row.image,
           artists: row.artistNames ?? [],
           artistIds: row.artistIds ?? [],
@@ -457,7 +457,7 @@ export const topRouter = createTRPCRouter({
       return {
         items: items.map((row) => ({
           id: row.id,
-          title: row.name,
+          name: row.name,
           image: null,
           duration: row.duration,
           count: row.count,
@@ -558,7 +558,7 @@ export const topRouter = createTRPCRouter({
       return {
         items: items.map((row) => ({
           id: row.id,
-          title: row.name,
+          name: row.name,
           image: row.image,
           duration: row.duration,
           count: row.count,

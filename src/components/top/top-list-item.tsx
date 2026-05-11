@@ -32,7 +32,7 @@ function getHref(type: TopListEntityType, id: number) {
 
 export type TopListItemData = {
   id: number;
-  title: string;
+  name: string;
   image: string | null;
   duration: number;
   count: number;
@@ -69,14 +69,14 @@ export function TopListItem({
             <Link href={href} className="block">
               <img
                 src={item.image}
-                alt={item.title}
+                alt={item.name}
                 className="h-12 w-12 object-cover"
               />
             </Link>
           ) : (
             <img
               src={item.image}
-              alt={item.title}
+              alt={item.name}
               className="h-12 w-12 object-cover"
             />
           )}
@@ -103,10 +103,10 @@ export function TopListItem({
             href={href}
             className="truncate text-sm font-semibold underline-offset-2 hover:underline"
           >
-            {item.title}
+            {item.name}
           </Link>
         ) : (
-          <p className="truncate text-sm font-semibold">{item.title}</p>
+          <p className="truncate text-sm font-semibold">{item.name}</p>
         )}
         {item.artists?.length ? (
           <p className="text-muted-foreground truncate text-xs">
@@ -172,10 +172,4 @@ export function TopListItem({
       </div>
     </div>
   );
-}
-function useMemo(
-  arg0: () => string | null,
-  arg1: (number | TopListEntityType)[],
-) {
-  throw new Error("Function not implemented.");
 }

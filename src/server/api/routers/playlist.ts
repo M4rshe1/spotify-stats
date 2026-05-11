@@ -19,12 +19,14 @@ type PlaylistMetrics = {
   tracks: number;
 };
 
-type TopTrack = {
+type TopTrackRow = {
   id: number;
   name: string;
   image: string | null;
   duration: number;
   count: number;
+  artistNames: string[] | null;
+  artistIds: number[] | null;
 };
 
 function playlistPlaybackJoin(playlistId: number) {
@@ -70,7 +72,10 @@ export const playlistRouter = createTRPCRouter({
         });
       }
       if (!playlist.data) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "Playlist not found" });
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Playlist not found",
+        });
       }
 
       return {
@@ -111,15 +116,25 @@ export const playlistRouter = createTRPCRouter({
       );
 
       const tracks = await tryCatch(
-        ctx.db.$queryRaw<TopTrack[]>(Prisma.sql`
+        ctx.db.$queryRaw<TopTrackRow[]>(Prisma.sql`
           SELECT
             COUNT(*)::float8 AS "count",
             SUM(playback."duration")::float8 AS "duration",
             track."id",
             track."name",
-            track."image"
+            track."image",
+            COALESCE(
+              ARRAY_AGG(DISTINCT artist."name") FILTER (WHERE artist."name" IS NOT NULL),
+              ARRAY[]::text[]
+            ) AS "artistNames",
+            COALESCE(
+              ARRAY_AGG(DISTINCT artist."id") FILTER (WHERE artist."id" IS NOT NULL),
+              ARRAY[]::integer[]
+            ) AS "artistIds"
           FROM playback
           JOIN track ON playback."trackId" = track."id"
+          LEFT JOIN artist_track ON track."id" = artist_track."trackId" AND artist_track."role" = 'primary'
+          LEFT JOIN artist ON artist_track."artistId" = artist."id"
           ${playlistPlaybackJoin(input.id)}
             AND playback."userId" = ${userId}
             AND timezone(${timezone}, playback."playedAt") >= timezone(${timezone}, ${start})
@@ -143,7 +158,15 @@ export const playlistRouter = createTRPCRouter({
       };
 
       return {
-        items: tracks.data ?? [],
+        items: (tracks.data ?? []).map((row) => ({
+          id: row.id,
+          name: row.name,
+          image: row.image,
+          duration: row.duration,
+          count: row.count,
+          artists: row.artistNames ?? [],
+          artistIds: row.artistIds ?? [],
+        })),
         totalCount: totals.totalCount,
         totalDuration: totals.totalDuration,
       };
@@ -200,7 +223,10 @@ export const playlistRouter = createTRPCRouter({
         select: { spotifyId: true },
       });
       if (!playlist) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "Playlist not found" });
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Playlist not found",
+        });
       }
 
       const rows = await ctx.db.playback.findMany({

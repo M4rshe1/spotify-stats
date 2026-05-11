@@ -3,10 +3,7 @@
 import { useState } from "react";
 
 import { NoDataCard } from "@/components/cards/no-data-card";
-import {
-  TopListItem,
-  type TopListItemData,
-} from "@/components/top/top-list-item";
+import { TopListItem } from "@/components/top/top-list-item";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loading } from "@/components/ui/loading";
 import {
@@ -23,22 +20,6 @@ import { Disc3Icon, UserIcon } from "lucide-react";
 
 type SortBy = "count" | "duration";
 
-function toListItem(album: {
-  id: number;
-  name: string;
-  image: string | null;
-  duration: number;
-  count: number;
-}): TopListItemData {
-  return {
-    id: album.id,
-    title: album.name,
-    image: album.image,
-    duration: album.duration,
-    count: album.count,
-  };
-}
-
 const TopArtists = ({ id }: { id: number }) => {
   const [sortBy, setSortBy] = useState<SortBy>("duration");
   const { selectedPeriod } = usePeriod();
@@ -54,8 +35,6 @@ const TopArtists = ({ id }: { id: number }) => {
   if (isLoadingTopArtists) {
     return <Loading />;
   }
-  console.log(data);
-
   const items = data?.items ?? [];
   const totalCount = data?.totalCount ?? 0;
   const totalDuration = data?.totalDuration ?? 0;
@@ -90,17 +69,16 @@ const TopArtists = ({ id }: { id: number }) => {
       </CardHeader>
       <CardContent className="space-y-2">
         {items.map((artist, index) => {
-          const item = toListItem(artist);
           const countPercentage =
-            totalCount > 0 ? (item.count / totalCount) * 100 : 0;
+            totalCount > 0 ? (artist.count / totalCount) * 100 : 0;
           const durationPercentage =
-            totalDuration > 0 ? (item.duration / totalDuration) * 100 : 0;
+            totalDuration > 0 ? (artist.duration / totalDuration) * 100 : 0;
           return (
             <TopListItem
-              key={item.id}
+              key={artist.id}
               rank={index + 1}
               type="artists"
-              item={item}
+              item={artist}
               countPercentage={countPercentage}
               durationPercentage={durationPercentage}
             />

@@ -3,10 +3,7 @@
 import { useState } from "react";
 
 import { NoDataCard } from "@/components/cards/no-data-card";
-import {
-  TopListItem,
-  type TopListItemData,
-} from "@/components/top/top-list-item";
+import { TopListItem } from "@/components/top/top-list-item";
 import {
   Card,
   CardContent,
@@ -27,22 +24,6 @@ import { api } from "@/trpc/react";
 import { Disc3Icon } from "lucide-react";
 
 type SortBy = "count" | "duration";
-
-function toListItem(album: {
-  id: number;
-  name: string;
-  image: string | null;
-  duration: number;
-  count: number;
-}): TopListItemData {
-  return {
-    id: album.id,
-    title: album.name,
-    image: album.image,
-    duration: album.duration,
-    count: album.count,
-  };
-}
 
 const TopAlbums = ({ id }: { id: number }) => {
   const [sortBy, setSortBy] = useState<SortBy>("duration");
@@ -94,17 +75,16 @@ const TopAlbums = ({ id }: { id: number }) => {
       </CardHeader>
       <CardContent className="space-y-2">
         {items.map((album, index) => {
-          const item = toListItem(album);
           const countPercentage =
-            totalCount > 0 ? (item.count / totalCount) * 100 : 0;
+            totalCount > 0 ? (album.count / totalCount) * 100 : 0;
           const durationPercentage =
-            totalDuration > 0 ? (item.duration / totalDuration) * 100 : 0;
+            totalDuration > 0 ? (album.duration / totalDuration) * 100 : 0;
           return (
             <TopListItem
-              key={item.id}
+              key={album.id}
               rank={index + 1}
               type="albums"
-              item={item}
+              item={album}
               countPercentage={countPercentage}
               durationPercentage={durationPercentage}
             />

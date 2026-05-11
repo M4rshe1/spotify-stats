@@ -3,10 +3,7 @@
 import { useState } from "react";
 
 import { NoDataCard } from "@/components/cards/no-data-card";
-import {
-  TopListItem,
-  type TopListItemData,
-} from "@/components/top/top-list-item";
+import { TopListItem } from "@/components/top/top-list-item";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loading } from "@/components/ui/loading";
 import {
@@ -23,22 +20,6 @@ import { Music2Icon } from "lucide-react";
 import { toast } from "sonner";
 
 type SortBy = "count" | "duration";
-
-function toListItem(track: {
-  id: number;
-  name: string;
-  image: string | null;
-  duration: number;
-  count: number;
-}): TopListItemData {
-  return {
-    id: track.id,
-    title: track.name,
-    image: track.image,
-    duration: track.duration,
-    count: track.count,
-  };
-}
 
 const TopTracks = ({ id }: { id: number }) => {
   const [sortBy, setSortBy] = useState<SortBy>("duration");
@@ -92,17 +73,16 @@ const TopTracks = ({ id }: { id: number }) => {
       </CardHeader>
       <CardContent className="space-y-2">
         {items.map((track, index) => {
-          const item = toListItem(track);
           const countPercentage =
-            totalCount > 0 ? (item.count / totalCount) * 100 : 0;
+            totalCount > 0 ? (track.count / totalCount) * 100 : 0;
           const durationPercentage =
-            totalDuration > 0 ? (item.duration / totalDuration) * 100 : 0;
+            totalDuration > 0 ? (track.duration / totalDuration) * 100 : 0;
           return (
             <TopListItem
-              key={item.id}
+              key={track.id}
               rank={index + 1}
               type="tracks"
-              item={item}
+              item={track}
               countPercentage={countPercentage}
               durationPercentage={durationPercentage}
               onPlay={(trackId) =>

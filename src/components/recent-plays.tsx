@@ -5,12 +5,7 @@ import {
   PlaybackHistoryItem,
   type PlaybackHistoryItemData,
 } from "@/components/playback-history-item";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loading } from "@/components/ui/loading";
 import { api } from "@/trpc/react";
 import { HistoryIcon } from "lucide-react";
