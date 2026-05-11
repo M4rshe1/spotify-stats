@@ -25,6 +25,7 @@ function usage(): never {
 Options:
   --dry-run   Show target version without changing files
   --git       git add package.json, commit, and create tag vX.Y.Z
+  --push      push the changes to the remote repository
 `);
   process.exit(1);
 }
@@ -51,10 +52,12 @@ function bump(parts: [number, number, number], kind: BumpKind): string {
 function parseArgs(argv: string[]) {
   let dryRun = false;
   let git = false;
+  let push = false;
   const pos: string[] = [];
   for (const a of argv) {
     if (a === "--dry-run") dryRun = true;
     else if (a === "--git") git = true;
+    else if (a === "--push") push = true;
     else if (a.startsWith("-")) {
       console.error(`Unknown option: ${a}`);
       usage();
@@ -64,7 +67,7 @@ function parseArgs(argv: string[]) {
 }
 
 async function main() {
-  const { dryRun, git, pos } = parseArgs(process.argv.slice(2));
+  const { dryRun, git, push, pos } = parseArgs(process.argv.slice(2));
   if (pos.length !== 1) usage();
 
   const arg = pos[0]!;
@@ -72,7 +75,7 @@ async function main() {
   const pkg = JSON.parse(raw) as { version?: string };
   const current = pkg.version;
   if (!current || typeof current !== "string") {
-    console.error("package.json has no string \"version\" field.");
+    console.error('package.json has no string "version" field.');
     process.exit(1);
   }
 
@@ -114,7 +117,12 @@ async function main() {
   if (git) {
     const msg = `chore: release ${tag}`;
     const run = (cmd: string[], label: string) => {
-      const r = Bun.spawnSync({ cmd, cwd: REPO_ROOT, stdout: "inherit", stderr: "inherit" });
+      const r = Bun.spawnSync({
+        cmd,
+        cwd: REPO_ROOT,
+        stdout: "inherit",
+        stderr: "inherit",
+      });
       if (r.exitCode !== 0) {
         console.error(`git step failed: ${label}`);
         process.exit(r.exitCode ?? 1);
@@ -122,8 +130,15 @@ async function main() {
     };
     run(["git", "add", "package.json"], "git add");
     run(["git", "commit", "-m", msg], "git commit");
-    run(["git", "tag", tag], "git tag");
-    console.log(`Committed and tagged ${tag}. Push with: git push && git push origin ${tag}`);
+    run(["git", "tag", tag], `git tag ${tag}`);
+    if (push) {
+      run(["git", "push"], "git push");
+      run(["git", "push", "origin", tag], `git push origin ${tag}`);
+    } else {
+      console.log(
+        `Committed and tagged ${tag}. Push with: git push && git push origin ${tag}`,
+      );
+    }
   }
 }
 
