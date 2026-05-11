@@ -45,6 +45,11 @@ const meta: Record<TopType, { title: string; empty: string; error: string }> = {
     empty: "No genres found in this time range.",
     error: "Failed to load top genres.",
   },
+  playlists: {
+    title: "Top playlists",
+    empty: "No playlists found in this time range.",
+    error: "Failed to load top playlists.",
+  },
 };
 
 export default function TopEntityPage({ type }: { type: TopType }) {
@@ -99,7 +104,16 @@ export default function TopEntityPage({ type }: { type: TopType }) {
     },
     { enabled: type === "genres" },
   );
-
+  const playlistsQuery = api.top.getTopPlaylists.useQuery(
+    {
+      ...periodInput,
+      sortBy,
+      limit: 20,
+      cursorId: cursor?.cursorId,
+      cursorValue: cursor?.cursorValue,
+    },
+    { enabled: type === "playlists" },
+  );
   const query =
     type === "tracks"
       ? songsQuery
@@ -107,7 +121,9 @@ export default function TopEntityPage({ type }: { type: TopType }) {
         ? artistsQuery
         : type === "albums"
           ? albumsQuery
-          : genresQuery;
+          : type === "genres"
+            ? genresQuery
+            : playlistsQuery;
   const data = query.data;
   const totalCount = data?.totalCount ?? 0;
   const totalDuration = data?.totalDuration ?? 0;

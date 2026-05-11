@@ -226,6 +226,7 @@ export function AdminMasterDataPageClient() {
           count={data.playlists}
           icon={ListMusic}
           iconClassName="text-fuchsia-600 dark:text-fuchsia-400"
+          href="/top/playlists"
         />
       </div>
 

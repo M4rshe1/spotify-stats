@@ -2,6 +2,7 @@ import Link from "next/link";
 import {
   ChevronRight,
   Disc3,
+  ListMusic,
   Music2,
   Tags,
   Users,
@@ -42,6 +43,12 @@ const topSections: {
     icon: Tags,
     iconClassName: "text-emerald-600 dark:text-emerald-400",
   },
+  {
+    href: "/top/playlists",
+    title: "Playlists",
+    icon: ListMusic,
+    iconClassName: "text-fuchsia-600 dark:text-fuchsia-400",
+  },
 ];
 
 export default withAuth(async () => {
@@ -49,7 +56,7 @@ export default withAuth(async () => {
     <div className="space-y-6">
       <PageBreadcrumbs trail={[{ label: "Top", href: "/top" }]} />
       <h1 className="text-lg font-semibold tracking-tight">Top</h1>
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {topSections.map((section) => (
           <Link
             key={section.href}

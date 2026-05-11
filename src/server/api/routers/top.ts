@@ -474,4 +474,105 @@ export const topRouter = createTRPCRouter({
             : null,
       };
     }),
+  getTopPlaylists: protectedProcedure
+    .input(topItemsSchema)
+    .query(async ({ ctx, input }) => {
+      const { start, end } = getPeriods(input.period, input.from, input.to);
+      const timezone = ctx.session.user.timezone;
+      const userId = ctx.session.user.id;
+      const limit = input.limit;
+      const sortColumn =
+        input.sortBy === "count"
+          ? Prisma.sql`COUNT(*)::float8`
+          : Prisma.sql`SUM(playback."duration")::float8`;
+      const cursorCondition =
+        input.cursorValue !== undefined && input.cursorId
+          ? Prisma.sql`
+              HAVING (
+                ${sortColumn} < ${input.cursorValue}
+                OR (${sortColumn} = ${input.cursorValue} AND playlist."id" > ${input.cursorId})
+              )
+            `
+          : Prisma.empty;
+      const totalsResult = await tryCatch(
+        ctx.db.$queryRaw<{ totalCount: number; totalDuration: number }[]>(
+          Prisma.sql`
+            SELECT
+              COUNT(*)::float8 AS "totalCount",
+              COALESCE(SUM(playback."duration"), 0)::float8 AS "totalDuration"
+            FROM playback
+            JOIN playlist ON (playback."contextId" = playlist."spotifyId" AND playback."context" IN ('playlist', 'collection'))
+            WHERE playback."userId" = ${userId}
+              AND timezone(${timezone}, playback."playedAt") >= timezone(${timezone}, ${start})
+              AND timezone(${timezone}, playback."playedAt") <= timezone(${timezone}, ${end})
+          `,
+        ),
+      );
+      if (totalsResult.error) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to get top playlists totals",
+        });
+      }
+
+      const rows = await tryCatch(
+        ctx.db.$queryRaw<
+          {
+            id: number;
+            name: string;
+            image: string | null;
+            duration: number;
+            count: number;
+          }[]
+        >(Prisma.sql`
+          SELECT
+            playlist."id",
+            playlist."name",
+            playlist."image",
+            SUM(playback."duration")::float8 AS "duration",
+            COUNT(*)::float8 AS "count"
+          FROM playback
+          JOIN playlist ON (playback."contextId" = playlist."spotifyId" AND playback."context" IN ('playlist', 'collection'))
+          WHERE playback."userId" = ${userId}
+            AND timezone(${timezone}, playback."playedAt") >= timezone(${timezone}, ${start})
+            AND timezone(${timezone}, playback."playedAt") <= timezone(${timezone}, ${end})
+          GROUP BY playlist."id", playlist."name", playlist."image"
+          ${cursorCondition}
+          ORDER BY ${sortColumn} DESC, playlist."id" ASC
+          LIMIT ${limit + 1}
+        `),
+      );
+      if (rows.error) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to get top playlists",
+        });
+      }
+      const hasMore = rows.data.length > limit;
+      const items = hasMore ? rows.data.slice(0, limit) : rows.data;
+      const last = items[items.length - 1];
+      const totals = totalsResult.data?.[0] ?? {
+        totalCount: 0,
+        totalDuration: 0,
+      };
+      return {
+        items: items.map((row) => ({
+          id: row.id,
+          title: row.name,
+          image: row.image,
+          duration: row.duration,
+          count: row.count,
+        })),
+        totalCount: totals.totalCount,
+        totalDuration: totals.totalDuration,
+        nextCursor:
+          hasMore && last
+            ? {
+                cursorId: last.id,
+                cursorValue:
+                  input.sortBy === "count" ? Number(last.count) : last.duration,
+              }
+            : null,
+      };
+    }),
 });

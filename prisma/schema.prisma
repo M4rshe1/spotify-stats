@@ -219,6 +219,7 @@ model Playback {
   device           String
   context          String?  @default("Unknown")
   contextUri       String?
+  contextId        String?
   platform         String
   originalPlatform String   @default("Unknown")
   trackId          Int

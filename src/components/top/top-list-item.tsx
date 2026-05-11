@@ -6,7 +6,12 @@ import { duration, formatPercent } from "@/lib/utils";
 import { PlayIcon } from "lucide-react";
 import Link from "next/link";
 
-export type TopListEntityType = "tracks" | "artists" | "albums" | "genres";
+export type TopListEntityType =
+  | "tracks"
+  | "artists"
+  | "albums"
+  | "genres"
+  | "playlists";
 
 function getHref(type: TopListEntityType, id: number) {
   switch (type) {
@@ -18,6 +23,8 @@ function getHref(type: TopListEntityType, id: number) {
       return `/genre/${id}`;
     case "albums":
       return `/album/${id}`;
+    case "playlists":
+      return `/playlist/${id}`;
     default:
       return null;
   }

@@ -108,7 +108,7 @@ export const auth = betterAuth({
             data: {
               spotifyId: user.id,
               name: "Favorites",
-              image: user.image ?? null,
+              image: "/favorites.png",
               type: "favorite",
             },
           });

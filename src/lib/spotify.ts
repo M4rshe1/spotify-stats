@@ -463,6 +463,9 @@ export async function createPlaybacks(
           duration: playback.track.duration_ms,
           context: state.context?.type ?? "Unknown",
           contextUri: state.context?.uri ?? null,
+          contextId: state.context?.uri
+            ? getIdFromUri(state.context.uri)
+            : null,
           device: state.device?.name ?? "Unknown",
           platform: state.device?.type ?? "Unknown",
           originalPlatform: state.device?.type ?? "Unknown",
