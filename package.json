@@ -22,7 +22,8 @@
     "deploy": "bun run db:migrate && bun run start",
     "typecheck": "tsc --noEmit",
     "worker:stats": "bun run worker/stats.ts",
-    "worker:cruncher": "bun run worker/cruncher.ts"
+    "worker:cruncher": "bun run worker/cruncher.ts",
+    "version:bump": "bun run scripts/bump-version.ts"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.7.2",
