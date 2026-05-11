@@ -92,6 +92,17 @@ export function AlbumRecentPlays({ id }: { id: number }) {
   );
 }
 
+export function PlaylistRecentPlays({ id }: { id: number }) {
+  const { data, isLoading } = api.playlist.recentPlaybacks.useQuery({ id });
+  return (
+    <RecentPlaysCard
+      plays={data}
+      isLoading={isLoading}
+      emptyDescription="No recent plays from this playlist."
+    />
+  );
+}
+
 export function TrackRecentPlays({ id }: { id: number }) {
   const { data, isLoading } = api.track.recentPlaybacks.useQuery({ id });
   return (

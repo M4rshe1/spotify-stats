@@ -9,6 +9,7 @@ import { albumRouter } from "@/server/api/routers/album";
 import { artistRouter } from "@/server/api/routers/artist";
 import { genreRouter } from "@/server/api/routers/genre";
 import { trackRouter } from "@/server/api/routers/track";
+import { playlistRouter } from "@/server/api/routers/playlist";
 import { topRouter } from "@/server/api/routers/top";
 import { sessionRouter } from "@/server/api/routers/session";
 import { searchRouter } from "@/server/api/routers/search";
@@ -29,6 +30,7 @@ export const appRouter = createTRPCRouter({
   artist: artistRouter,
   genre: genreRouter,
   track: trackRouter,
+  playlist: playlistRouter,
   top: topRouter,
   session: sessionRouter,
   search: searchRouter,

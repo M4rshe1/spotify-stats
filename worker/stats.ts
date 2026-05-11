@@ -104,5 +104,5 @@ async function fetchPlaybackStats() {
   logger.info("Playback stats fetched");
 }
 
-setInterval(fetchPlaybackStats, 1000 * 60 * 5);
+setInterval(fetchPlaybackStats, 1000 * 60 * 1);
 fetchPlaybackStats();
