@@ -29,7 +29,7 @@ export function PlaybackHistoryItem({
   return (
     <div className="bg-muted/30 relative isolate overflow-hidden rounded-md border">
       <CoverTintBackdrop coverUrl={item.image} className="rounded-md" />
-      <div className="relative z-10 grid min-w-0 grid-cols-1 items-center gap-3 gap-x-6 p-2 sm:grid-cols-[auto_1fr_auto] md:grid-cols-[auto_1fr_auto_auto] lg:grid-cols-[auto_1fr_auto_auto_auto]">
+      <div className="relative z-10 grid min-w-0 grid-cols-[auto_1fr_auto] items-center gap-3 gap-x-6 p-2 md:grid-cols-[auto_1fr_auto_auto] lg:grid-cols-[auto_1fr_auto_auto_auto]">
         <div className="group relative h-12 w-12 shrink-0 overflow-hidden rounded-sm">
           <Link href={`/track/${item.trackId}`} className="block">
             {item.image ? (
