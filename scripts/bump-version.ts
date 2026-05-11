@@ -63,7 +63,7 @@ function parseArgs(argv: string[]) {
       usage();
     } else pos.push(a);
   }
-  return { dryRun, git, pos };
+  return { dryRun, git, push, pos };
 }
 
 async function main() {
