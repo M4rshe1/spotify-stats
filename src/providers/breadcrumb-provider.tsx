@@ -2,14 +2,11 @@
 
 import {
   createContext,
-  useCallback,
   useContext,
-  useEffect,
   useMemo,
   useState,
   type ReactNode,
 } from "react";
-import { usePathname } from "next/navigation";
 
 export type BreadcrumbCrumb = {
   label: string;
@@ -17,7 +14,7 @@ export type BreadcrumbCrumb = {
 };
 
 type BreadcrumbContextValue = {
-  override: BreadcrumbCrumb[] | null;
+  breadcrumbs: BreadcrumbCrumb[] | null;
   setBreadcrumbs: (crumbs: BreadcrumbCrumb[] | null) => void;
 };
 
@@ -28,20 +25,13 @@ type BreadcrumbProviderProps = {
 };
 
 export function BreadcrumbProvider({ children }: BreadcrumbProviderProps) {
-  const pathname = usePathname();
-  const [override, setOverride] = useState<BreadcrumbCrumb[] | null>(null);
-
-  useEffect(() => {
-    setOverride(null);
-  }, [pathname]);
-
-  const setBreadcrumbs = useCallback((crumbs: BreadcrumbCrumb[] | null) => {
-    setOverride(crumbs);
-  }, []);
+  const [breadcrumbs, setBreadcrumbs] = useState<BreadcrumbCrumb[] | null>(
+    null,
+  );
 
   const value = useMemo(
-    () => ({ override, setBreadcrumbs }),
-    [override, setBreadcrumbs],
+    () => ({ breadcrumbs, setBreadcrumbs }),
+    [breadcrumbs, setBreadcrumbs],
   );
 
   return (
@@ -51,19 +41,13 @@ export function BreadcrumbProvider({ children }: BreadcrumbProviderProps) {
   );
 }
 
-export function useSetBreadcrumbs() {
+export function useBreadcrumbs() {
   const ctx = useContext(BreadcrumbContext);
   if (!ctx) {
-    throw new Error("useSetBreadcrumbs must be used within BreadcrumbProvider");
+    throw new Error("useBreadcrumbs must be used within BreadcrumbProvider");
   }
-  return ctx.setBreadcrumbs;
-}
-
-/** Used by `Header` to merge pathname-derived breadcrumbs with client-set overrides */
-export function useBreadcrumbOverride() {
-  const ctx = useContext(BreadcrumbContext);
-  if (!ctx) {
-    throw new Error("useBreadcrumbOverride must be used within BreadcrumbProvider");
-  }
-  return ctx.override;
+  return {
+    breadcrumbs: ctx.breadcrumbs,
+    setBreadcrumbs: ctx.setBreadcrumbs,
+  };
 }

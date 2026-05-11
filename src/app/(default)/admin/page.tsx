@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 
+import { PageBreadcrumbs } from "@/components/page-breadcrumbs";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { adminSubNavItems } from "@/lib/consts/admin-nav";
@@ -9,6 +10,7 @@ import { withAdmin } from "@/lib/hoc-pages";
 async function AdminOverviewPage() {
   return (
     <div className="space-y-6">
+      <PageBreadcrumbs trail={[{ label: "Admin", href: "/admin" }]} />
       <h1 className="text-lg font-semibold tracking-tight">Admin</h1>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {adminSubNavItems.map(

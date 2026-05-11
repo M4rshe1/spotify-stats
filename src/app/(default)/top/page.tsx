@@ -7,6 +7,7 @@ import {
   Users,
   type LucideIcon,
 } from "lucide-react";
+import { PageBreadcrumbs } from "@/components/page-breadcrumbs";
 import { withAuth } from "@/lib/hoc-pages";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
@@ -46,6 +47,7 @@ const topSections: {
 export default withAuth(async () => {
   return (
     <div className="space-y-6">
+      <PageBreadcrumbs trail={[{ label: "Top", href: "/top" }]} />
       <h1 className="text-lg font-semibold tracking-tight">Top</h1>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {topSections.map((section) => (

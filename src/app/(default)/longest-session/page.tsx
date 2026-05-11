@@ -1,3 +1,4 @@
+import { PageBreadcrumbs } from "@/components/page-breadcrumbs";
 import { getPreferredMetricsInput } from "@/lib/get-preferred-metrics-input";
 import { withAuth } from "@/lib/hoc-pages";
 import { api, HydrateClient } from "@/trpc/server";
@@ -8,8 +9,16 @@ export default withAuth(async () => {
   await api.session.getLongestSessions.prefetch(metricsInput);
 
   return (
-    <HydrateClient>
-      <LongestSessionPage />
-    </HydrateClient>
+    <>
+      <PageBreadcrumbs
+        trail={[
+          { label: "Dashboard", href: "/" },
+          { label: "Longest Session", href: "/longest-session" },
+        ]}
+      />
+      <HydrateClient>
+        <LongestSessionPage />
+      </HydrateClient>
+    </>
   );
 });

@@ -14,7 +14,7 @@ import { Separator } from "./ui/separator";
 import { SidebarTrigger } from "./ui/sidebar";
 import { periods, type Period } from "@/lib/consts/periods";
 import { usePeriod } from "@/providers/period-provider";
-import { Fragment, useEffect, useMemo, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import {
   CalendarIcon,
   ChevronDownIcon,
@@ -29,28 +29,12 @@ import {
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
 import { api } from "@/trpc/react";
-import { useBreadcrumbOverride } from "@/providers/breadcrumb-provider";
-import { usePathname } from "next/navigation";
+import { useBreadcrumbs } from "@/providers/breadcrumb-provider";
 
 const AUTO_REFRESH_LS_KEY = "header-auto-refresh-enabled";
-const breadcrumbLabels: Record<string, string> = {
-  top: "Top",
-  tracks: "Songs",
-  artists: "Artists",
-  albums: "Albums",
-  "longest-session": "Longest session",
-};
-
-const segmentToLabel = (segment: string) =>
-  breadcrumbLabels[segment] ??
-  segment
-    .split("-")
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(" ");
 
 const Header = () => {
-  const pathname = usePathname();
-  const breadcrumbOverride = useBreadcrumbOverride();
+  const { breadcrumbs } = useBreadcrumbs();
   const {
     selectedPeriod,
     openPeriodSelectDialog,
@@ -61,20 +45,6 @@ const Header = () => {
     periods[selectedPeriod.type]?.label ?? periods.today.label;
   const [autoRefresh, setAutoRefresh] = useState<boolean>(false);
   const utils = api.useUtils();
-  const breadcrumbs = useMemo(() => {
-    if (breadcrumbOverride?.length) {
-      return breadcrumbOverride;
-    }
-    const segments = pathname.split("/").filter(Boolean);
-    if (segments.length === 0) {
-      return [{ href: "/", label: "Dashboard" }];
-    }
-
-    return segments.map((segment, index) => ({
-      href: `/${segments.slice(0, index + 1).join("/")}`,
-      label: segmentToLabel(segment),
-    }));
-  }, [breadcrumbOverride, pathname]);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -134,8 +104,8 @@ const Header = () => {
           />
           <Breadcrumb>
             <BreadcrumbList>
-              {breadcrumbs.map((crumb, index) => {
-                const isLast = index === breadcrumbs.length - 1;
+              {breadcrumbs?.map((crumb, index) => {
+                const isLast = index === breadcrumbs?.length - 1;
 
                 return (
                   <Fragment key={crumb.href}>

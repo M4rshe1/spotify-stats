@@ -1,3 +1,4 @@
+import { PageBreadcrumbs } from "@/components/page-breadcrumbs";
 import { api, HydrateClient } from "@/trpc/server";
 import { getPreferredMetricsInput } from "@/lib/get-preferred-metrics-input";
 import { withAuth } from "@/lib/hoc-pages";
@@ -20,8 +21,11 @@ export default withAuth(async () => {
   ]);
 
   return (
-    <HydrateClient>
-      <ClientPage />
-    </HydrateClient>
+    <>
+      <PageBreadcrumbs trail={[{ label: "Dashboard", href: "/" }]} />
+      <HydrateClient>
+        <ClientPage />
+      </HydrateClient>
+    </>
   );
 });

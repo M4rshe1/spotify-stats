@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 
+import { PageBreadcrumbs } from "@/components/page-breadcrumbs";
 import { withAuth } from "@/lib/hoc-pages";
 import { isGoogleAuthConfigured } from "@/lib/google-auth";
 import { HydrateClient, api } from "@/trpc/server";
@@ -13,8 +14,11 @@ export default withAuth(async () => {
   await api.user.getSpotifyPlan.prefetch();
 
   return (
-    <HydrateClient>
-      <AccountPage googleAuthEnabled={isGoogleAuthConfigured()} />
-    </HydrateClient>
+    <>
+      <PageBreadcrumbs trail={[{ label: "Account", href: "/user/account" }]} />
+      <HydrateClient>
+        <AccountPage googleAuthEnabled={isGoogleAuthConfigured()} />
+      </HydrateClient>
+    </>
   );
 });

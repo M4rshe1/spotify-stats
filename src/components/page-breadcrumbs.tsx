@@ -1,7 +1,10 @@
 "use client";
 
-import { useSetBreadcrumbs, type BreadcrumbCrumb } from "@/providers/breadcrumb-provider";
-import { useEffect, useMemo } from "react";
+import {
+  useBreadcrumbs,
+  type BreadcrumbCrumb,
+} from "@/providers/breadcrumb-provider";
+import { useEffect } from "react";
 
 export type { BreadcrumbCrumb };
 
@@ -9,19 +12,13 @@ type PageBreadcrumbsProps = {
   trail: BreadcrumbCrumb[];
 };
 
-/**
- * Renders nothing. Registers `trail` in the breadcrumb header on mount and clears on unmount.
- * Safe to render from a server component parent (props are serialized to the client bundle).
- */
 export function PageBreadcrumbs({ trail }: PageBreadcrumbsProps) {
-  const setBreadcrumbs = useSetBreadcrumbs();
-  const trailKey = useMemo(() => JSON.stringify(trail), [trail]);
+  const { setBreadcrumbs } = useBreadcrumbs();
 
   useEffect(() => {
-    const parsed = JSON.parse(trailKey) as BreadcrumbCrumb[];
-    setBreadcrumbs(parsed.length > 0 ? parsed : null);
+    setBreadcrumbs(trail.length > 0 ? trail : null);
     return () => setBreadcrumbs(null);
-  }, [setBreadcrumbs, trailKey]);
+  }, [setBreadcrumbs, trail]);
 
   return null;
 }

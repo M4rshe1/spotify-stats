@@ -1,3 +1,4 @@
+import { PageBreadcrumbs } from "@/components/page-breadcrumbs";
 import { getPreferredMetricsInput } from "@/lib/get-preferred-metrics-input";
 import { withAuth } from "@/lib/hoc-pages";
 import { api, HydrateClient } from "@/trpc/server";
@@ -12,8 +13,16 @@ export default withAuth(async () => {
   });
 
   return (
-    <HydrateClient>
-      <TopEntityPage type="tracks" />
-    </HydrateClient>
+    <>
+      <PageBreadcrumbs
+        trail={[
+          { label: "Top", href: "/top" },
+          { label: "Top Tracks", href: "/top/tracks" },
+        ]}
+      />
+      <HydrateClient>
+        <TopEntityPage type="tracks" />
+      </HydrateClient>
+    </>
   );
 });
