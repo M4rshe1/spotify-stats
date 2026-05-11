@@ -297,6 +297,8 @@ export async function createAlbums(spotify: SpotifyApi) {
           data: {
             spotifyId: album.id,
             name: album.name,
+            releaseDate: album.release_date,
+            releaseDatePrecision: album.release_date_precision,
             image: album.images[0]?.url,
             artists: {
               create: album.artists.map((artist) => ({
@@ -351,6 +353,8 @@ export async function createTracks(spotify: SpotifyApi) {
           data: {
             spotifyId: track.id,
             name: track.name,
+            releaseDate: track.album.release_date,
+            releaseDatePrecision: track.album.release_date_precision,
             image: track.album.images[0]?.url,
             uri: track.uri,
             type: track.type,
