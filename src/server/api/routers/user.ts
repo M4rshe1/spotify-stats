@@ -15,7 +15,6 @@ import {
   isValidIanaTimezone,
   normalizeIanaTimezone,
 } from "@/lib/timezone";
-import { retrySpotifyCall } from "@/lib/spotify";
 import { spotifyProductLabel } from "@/lib/spotify-product";
 import getSpotifyApi from "@/server/spotify";
 import {
@@ -51,12 +50,9 @@ export const userRouter = createTRPCRouter({
     const cachedProduct = dbUser?.product ?? null;
 
     const spotify = getSpotifyApi(ctx.session.user.id);
-    const profileResult = await retrySpotifyCall(
-      () => spotify.currentUser.profile(),
-      "currentUser.profile",
-    );
+    const profileResult = await spotify.currentUser.profile();
 
-    if (profileResult.error || !profileResult.data) {
+    if (!profileResult) {
       return {
         source: "cached" as const,
         product: cachedProduct,
@@ -64,11 +60,14 @@ export const userRouter = createTRPCRouter({
       };
     }
 
-    const product = profileResult.data.product;
-    await ctx.db.user.update({
-      where: { id: ctx.session.user.id },
-      data: { product },
-    });
+    const liveProduct = profileResult.product;
+    if (liveProduct) {
+      await ctx.db.user.update({
+        where: { id: ctx.session.user.id },
+        data: { product: liveProduct },
+      });
+    }
+    const product = liveProduct ?? cachedProduct;
 
     return {
       source: "live" as const,

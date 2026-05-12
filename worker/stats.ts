@@ -9,7 +9,6 @@ import {
   createPlaybacks,
   addToCreationQueues,
   cleanQueues,
-  retrySpotifyCall,
   createPlaylists,
   getIdFromUri,
 } from "@/lib/spotify";
@@ -28,7 +27,15 @@ function enqueueTrackDependencies(track: {
   addToCreationQueues("tracks", track.id);
 }
 
-async function fetchPlaybackStats() {
+async function intervalAction(): Promise<void> {
+  try {
+    await fetchPlaybacks();
+  } catch (error) {
+    logger.error(error);
+  }
+}
+
+async function fetchPlaybacks() {
   logger.info("Fetching playback stats");
   cleanQueues();
   const users = await tryCatch(
@@ -59,17 +66,14 @@ async function fetchPlaybackStats() {
   for (const user of users.data) {
     const lastPlayedAtMs = user.playbacks[0]?.playedAt?.getTime() ?? 0;
     const spotify = getSpotifyApi(user.id);
-    const recentlyPlayed = await retrySpotifyCall(
-      () => spotify.player.getRecentlyPlayedTracks(50),
-      "player.getRecentlyPlayedTracks",
-    );
+    const recentlyPlayed = await spotify.player.getRecentlyPlayedTracks(50);
 
-    if (recentlyPlayed.error || !recentlyPlayed.data) {
-      logger.error(recentlyPlayed.error);
+    if (!recentlyPlayed) {
+      logger.error("Recently played tracks not found");
       continue;
     }
 
-    const filteredPlaybacks = recentlyPlayed.data.items.filter(
+    const filteredPlaybacks = recentlyPlayed.items.filter(
       (playback) => Date.parse(playback.played_at) > lastPlayedAtMs,
     );
     logger.info(
@@ -81,15 +85,12 @@ async function fetchPlaybackStats() {
     filteredPlaybacks.forEach((playback) =>
       enqueueTrackDependencies(playback.track),
     );
-    const state = await retrySpotifyCall(
-      () => spotify.player.getPlaybackState(),
-      "player.getPlaybackState",
-    );
-    if (state.error || !state.data) {
-      logger.error(state.error);
+    const state = await tryCatch(spotify.player.getPlaybackState());
+    if (state.error) {
+      logger.error("Playback state not found");
       continue;
     }
-    if (state.data.context?.uri.startsWith("spotify:playlist:")) {
+    if (state.data?.context?.uri.startsWith("spotify:playlist:")) {
       addToCreationQueues(
         "playlists",
         getIdFromUri(state.data.context.uri) ?? "",
@@ -98,11 +99,16 @@ async function fetchPlaybackStats() {
     await createArtists(spotify);
     await createAlbums(spotify);
     await createTracks(spotify);
-    await createPlaylists(spotify);
-    await createPlaybacks(user.id, filteredPlaybacks, state.data);
+    const favoritePlaylist = await createPlaylists(spotify);
+    await createPlaybacks(
+      user.id,
+      filteredPlaybacks,
+      state.data,
+      favoritePlaylist,
+    );
   }
   logger.info("Playback stats fetched");
 }
 
-setInterval(fetchPlaybackStats, 1000 * 60 * 1);
-fetchPlaybackStats();
+setInterval(intervalAction, 1000 * 60 * 1);
+intervalAction();

@@ -31,7 +31,6 @@
     "@date-fns/tz": "^1.4.1",
     "@prisma/client": "^6.6.0",
     "@prisma/studio-core": "^0.27.3",
-    "@spotify/web-api-ts-sdk": "^1.2.0",
     "@t3-oss/env-nextjs": "^0.12.0",
     "@tanstack/react-query": "^5.69.0",
     "@trpc/client": "^11.0.0",

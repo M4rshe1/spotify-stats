@@ -1,4 +1,4 @@
-import type { SpotifyApi } from "@spotify/web-api-ts-sdk";
+import type { SpotifyApi } from "@/server/spotify";
 
 import { logger } from "@/lib/logger";
 import { tryCatch } from "@/lib/try-catch";
@@ -10,7 +10,6 @@ import {
   createArtists,
   createGenres,
   createTracks,
-  retrySpotifyCall,
 } from "@/lib/spotify";
 import { db } from "@/server/db";
 
@@ -19,15 +18,11 @@ export async function hydrateCreationQueuesFromSpotifyTrackCatalog(
 ): Promise<void> {
   const batches = new Batches().fromQueue("tracks");
   for (const batch of batches) {
-    const result = await retrySpotifyCall(
-      () => spotify.tracks.get(batch),
-      "tracks.get",
-    );
-    if (result.error || result.data === undefined) {
-      logger.error(result.error);
+    const tracksData = await spotify.tracks.get(batch);
+    if (!tracksData) {
+      logger.error("Tracks not found");
       return;
     }
-    const tracksData = result.data;
     for (const track of tracksData) {
       addToCreationQueues("albums", track.album.id);
       track.artists.forEach((artist) => {

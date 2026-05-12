@@ -2,12 +2,13 @@ import { logger } from "./logger";
 import { platform } from "./platform";
 import { tryCatch } from "./try-catch";
 import { db } from "@/server/db";
+import type { SpotifyApi } from "@/server/spotify";
 import type {
   Artist,
   PlaybackState,
   PlayHistory,
-  SpotifyApi,
-} from "@spotify/web-api-ts-sdk";
+  Playlist,
+} from "@/server/spotify/types";
 
 export function getIdFromUri(uri: string): string | null {
   if (typeof uri !== "string" || uri.length === 0) return null;
@@ -66,9 +67,6 @@ export class Batches {
   }
 }
 
-const SPOTIFY_RETRY_LIMIT = 5;
-const SPOTIFY_RETRY_DELAY_MS = 2000;
-
 const creationQueues = {
   genres: new Set<string>(),
   artists: new Set<string>(),
@@ -117,45 +115,6 @@ export function cleanQueues() {
   >) {
     createdEntities[key].clear();
   }
-}
-
-export async function retrySpotifyCall<T>(
-  fn: () => Promise<T>,
-  operationName: string,
-): Promise<{ error?: any; data?: T }> {
-  let attempts = 0;
-  let waitTime = SPOTIFY_RETRY_DELAY_MS;
-  while (attempts < SPOTIFY_RETRY_LIMIT) {
-    try {
-      const res = await fn();
-      return { data: res };
-    } catch (err: any) {
-      const status = err?.status || err?.response?.status;
-      if (status === 429) {
-        const retryAfter =
-          typeof err?.response?.headers?.get === "function"
-            ? parseInt(err.response.headers.get("Retry-After") || "0", 10)
-            : 0;
-        const effectiveWait = retryAfter ? retryAfter * 1000 : waitTime;
-        logger.warn(
-          { operation: operationName, attempts, wait: effectiveWait },
-          `Spotify API rate limit hit for ${operationName}. Retrying in ${effectiveWait} ms`,
-        );
-        await new Promise((res) => setTimeout(res, effectiveWait));
-        attempts++;
-        waitTime *= 2;
-      } else {
-        logger.error(
-          { operation: operationName, error: err },
-          `Spotify API error in ${operationName}`,
-        );
-        return { error: err };
-      }
-    }
-  }
-  const errorMsg = `Exceeded retry limit for Spotify API in ${operationName}`;
-  logger.error({ operation: operationName }, errorMsg);
-  return { error: new Error(errorMsg) };
 }
 
 export async function createGenres() {
@@ -218,20 +177,17 @@ export async function createArtists(spotify: SpotifyApi) {
   const batches = new Batches().withSize(20).fromArray(remainingIds);
   const newArtists: Artist[] = [];
   for (const batchIds of batches) {
-    const { error, data: artistsData } = await retrySpotifyCall(
-      () => spotify.artists.get(batchIds),
-      "artists.get",
-    );
-    if (error || !artistsData) {
-      logger.error(error);
+    const artistsData = await tryCatch(spotify.artists.get(batchIds));
+    if (artistsData.error) {
+      logger.error(artistsData.error);
       return;
     }
-    artistsData.forEach((artist: Artist) => {
+    for (const artist of artistsData.data) {
       (artist.genres || []).forEach((genre) => {
         addToCreationQueues("genres", genre);
       });
       newArtists.push(artist);
-    });
+    }
   }
   await createGenres();
 
@@ -283,15 +239,12 @@ export async function createAlbums(spotify: SpotifyApi) {
 
   const batches = new Batches().withSize(20).fromArray(remainingIds);
   for (const batchIds of batches) {
-    const { error, data: albumsData } = await retrySpotifyCall(
-      () => spotify.albums.get(batchIds),
-      "albums.get",
-    );
-    if (error) {
-      logger.error(error);
+    const albumsData = await tryCatch(spotify.albums.get(batchIds));
+    if (albumsData.error) {
+      logger.error("Albums not found");
       return;
     }
-    for (const album of albumsData ?? []) {
+    for (const album of albumsData.data) {
       const createdAlbum = await tryCatch(
         db.album.create({
           data: {
@@ -339,15 +292,12 @@ export async function createTracks(spotify: SpotifyApi) {
 
   const batches = new Batches().withSize(20).fromArray(remainingIds);
   for (const batchIds of batches) {
-    const { error, data: tracksData } = await retrySpotifyCall(
-      () => spotify.tracks.get(batchIds),
-      "tracks.get",
-    );
-    if (error) {
-      logger.error(error);
+    const tracksData = await tryCatch(spotify.tracks.get(batchIds));
+    if (tracksData.error) {
+      logger.error("Tracks not found");
       return;
     }
-    for (const track of tracksData ?? []) {
+    for (const track of tracksData.data) {
       const createdTrack = await tryCatch(
         db.track.create({
           data: {
@@ -384,6 +334,8 @@ export async function createTracks(spotify: SpotifyApi) {
 }
 
 export async function createPlaylists(spotify: SpotifyApi) {
+  let favoritePlaylist = null;
+
   const playlistIds = Array.from(creationQueues.playlists);
   if (playlistIds.length === 0) return;
 
@@ -400,25 +352,29 @@ export async function createPlaylists(spotify: SpotifyApi) {
     createEntity("playlists", playlist.spotifyId);
   }
   for (const playlistId of Array.from(creationQueues.playlists)) {
-    const { error, data: playlistData } = await retrySpotifyCall(
-      () => spotify.playlists.getPlaylist(playlistId),
-      "playlists.getPlaylist",
-    );
-    if (error) {
-      logger.error(error);
+    const playlistData = await tryCatch(spotify.playlists.get(playlistId));
+    if (playlistData.error) {
+      logger.error("Playlist not found");
       continue;
     }
-    if (!playlistData) {
+    if (!playlistData.data) {
       logger.error("Playlist not found");
+      continue;
+    }
+
+    const isFavorite =
+      playlistData.data.images[0]?.url?.includes("liked-songs");
+    if (isFavorite) {
+      favoritePlaylist = playlistData.data;
       continue;
     }
     const createdPlaylist = await tryCatch(
       db.playlist.create({
         data: {
-          spotifyId: playlistData.id,
-          name: playlistData.name,
+          spotifyId: playlistId,
+          name: playlistData.data.name,
           type: "playlist",
-          image: playlistData.images[0]?.url,
+          image: playlistData.data.images[0]?.url,
         },
       }),
     );
@@ -428,12 +384,14 @@ export async function createPlaylists(spotify: SpotifyApi) {
     }
     createEntity("playlists", playlistId);
   }
+  return favoritePlaylist;
 }
 
 export async function createPlaybacks(
   userId: string,
   playbacks: PlayHistory[],
   state: PlaybackState,
+  favoritePlaylist?: Playlist | null,
 ) {
   for (const playback of playbacks) {
     const track = await tryCatch(
@@ -447,6 +405,19 @@ export async function createPlaybacks(
       return;
     }
     if (!track.data) continue;
+
+    let contextId = state.context?.uri ? getIdFromUri(state.context.uri) : null;
+
+    const isFavorite = favoritePlaylist?.id === contextId;
+    const context = isFavorite
+      ? "collection"
+      : (state.context?.type ?? "Unknown");
+    const contextUri = isFavorite
+      ? `spotify:user:${favoritePlaylist.owner.id}:collection`
+      : (state.context?.uri ?? null);
+    if (isFavorite) {
+      contextId = favoritePlaylist?.id;
+    }
 
     const createdPlayback = await tryCatch(
       db.playback.upsert({
@@ -465,11 +436,9 @@ export async function createPlaybacks(
           },
           track: { connect: { id: track.data.id } },
           duration: playback.track.duration_ms,
-          context: state.context?.type ?? "Unknown",
-          contextUri: state.context?.uri ?? null,
-          contextId: state.context?.uri
-            ? getIdFromUri(state.context.uri)
-            : null,
+          context,
+          contextUri,
+          contextId,
           device: state.device?.name ?? "Unknown",
           platform: state.device?.type ?? "Unknown",
           originalPlatform: state.device?.type ?? "Unknown",

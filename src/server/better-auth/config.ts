@@ -107,8 +107,8 @@ export const auth = betterAuth({
           await db.playlist.create({
             data: {
               spotifyId: user.id,
-              name: "Favorites",
-              image: "/favorites.png",
+              name: "Liked Songs",
+              image: "/liked-songs.png",
               type: "favorite",
             },
           });
