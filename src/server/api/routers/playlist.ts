@@ -4,6 +4,7 @@ import { TRPCError } from "@trpc/server";
 import { tryCatch } from "@/lib/try-catch";
 import { getPeriods } from "@/lib/periods";
 import { periodSchema } from "@/server/api/lib";
+import type { PlaybackRow } from "@/server/api/types/playback-row";
 import { Prisma } from "generated/prisma";
 
 const playlistTopSortSchema = z.enum(["count", "duration"]);
@@ -228,7 +229,7 @@ export const playlistRouter = createTRPCRouter({
     .query(async ({ ctx, input }) => {
       const playlist = await ctx.db.playlist.findUnique({
         where: { id: input.id },
-        select: { spotifyId: true },
+        select: { id: true },
       });
       if (!playlist) {
         throw new TRPCError({
@@ -237,47 +238,65 @@ export const playlistRouter = createTRPCRouter({
         });
       }
 
-      const rows = await ctx.db.playback.findMany({
-        where: {
-          userId: ctx.session.user.id,
-          contextId: playlist.spotifyId,
-          context: { in: ["playlist", "collection"] },
-        },
-        orderBy: { playedAt: "desc" },
-        take: 10,
-        select: {
-          id: true,
-          playedAt: true,
-          track: {
-            select: {
-              id: true,
-              name: true,
-              image: true,
-              duration: true,
-              album: { select: { id: true, name: true } },
-              artists: {
-                where: { role: "primary" },
-                orderBy: { artist: { name: "asc" } },
-                select: {
-                  artist: { select: { id: true, name: true } },
-                },
-              },
-            },
-          },
-        },
-      });
+      const userId = ctx.session.user.id;
+      const rows = await tryCatch(
+        ctx.db.$queryRaw<PlaybackRow[]>(Prisma.sql`
+          SELECT 
+            playback."id",
+            playback."playedAt", 
+            track."id" AS "trackId",
+            track."name" AS "trackName",
+            track."image" AS "trackImage",
+            playback."duration"::float8 AS "duration",
+            COALESCE(
+              ARRAY_AGG(DISTINCT artist."name") FILTER (WHERE artist."name" IS NOT NULL),
+              ARRAY[]::text[]
+            ) AS "artistNames",
+            COALESCE(
+              ARRAY_AGG(DISTINCT artist."id") FILTER (WHERE artist."id" IS NOT NULL),
+              ARRAY[]::integer[]
+            ) AS "artistIds",
+            album."id" AS "albumId",
+            album."name" AS "albumName",
+            playlist_ctx."id" AS "playlistId",
+            playlist_ctx."name" AS "playlistName",
+            playlist_ctx."image" AS "playlistImage"
+          FROM playback
+          JOIN track ON playback."trackId" = track."id"
+          JOIN playlist playlist_ctx ON playback."contextId" = playlist_ctx."spotifyId"
+            AND playback."context" IN ('playlist', 'collection')
+          LEFT JOIN artist_track ON track."id" = artist_track."trackId" AND artist_track."role" = 'primary'
+          LEFT JOIN artist ON artist_track."artistId" = artist."id"
+          LEFT JOIN album ON track."albumId" = album."id"
+          WHERE playlist_ctx."id" = ${input.id} AND playback."userId" = ${userId}
+          GROUP BY playback."id", track."id", track."name", track."image", album."id", album."name", playback."duration", playlist_ctx."id", playlist_ctx."name", playlist_ctx."image"
+          ORDER BY playback."playedAt" DESC
+          LIMIT 10
+        `),
+      );
 
-      return rows.map((p) => ({
+      return (rows.data ?? []).map((p) => ({
         id: p.id,
-        trackId: p.track.id,
-        image: p.track.image,
-        title: p.track.name,
-        artists: p.track.artists.map((a) => a.artist.name),
-        artistIds: p.track.artists.map((a) => a.artist.id),
-        duration: p.track.duration,
+        trackId: p.trackId,
+        image: p.trackImage,
+        title: p.trackName,
+        artists: [
+          ...(p.artistNames ?? []).map((name, index) => ({
+            id: p.artistIds?.[index] ?? null,
+            name,
+          })),
+        ],
+        duration: p.duration,
         playedAt: p.playedAt,
-        albumId: p.track.album?.id ?? null,
-        album: p.track.album?.name ?? "Unknown Album",
+        album: {
+          id: p.albumId,
+          name: p.albumName,
+        },
+        playlist: {
+          id: p.playlistId,
+          name: p.playlistName,
+          image: p.playlistImage,
+        },
       }));
     }),
   getTopArtists: protectedProcedure

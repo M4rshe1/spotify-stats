@@ -10,7 +10,7 @@ import type { RouterOutputs } from "@/trpc/react";
 import { duration } from "@/lib/utils";
 
 export type PlaybackHistoryItemData =
-  RouterOutputs["dashboard"]["getRecentlyPlayed"]["items"][number];
+  RouterOutputs["album"]["recentPlaybacks"][number];
 
 function formatRelativePlayedAt(playedAt: Date | string) {
   return formatDistanceToNowStrict(new Date(playedAt), {
@@ -29,7 +29,7 @@ export function PlaybackHistoryItem({
   return (
     <div className="bg-muted/30 relative isolate overflow-hidden rounded-md border">
       <CoverTintBackdrop coverUrl={item.image} className="rounded-md" />
-      <div className="relative z-10 grid min-w-0 grid-cols-[auto_1fr_auto] items-center gap-3 gap-x-6 p-2 md:grid-cols-[auto_1fr_auto_auto] lg:grid-cols-[auto_1fr_auto_auto_auto]">
+      <div className="relative z-10 grid min-w-0 items-center gap-x-4 px-4 py-3 md:grid-cols-[3rem_1.5fr_1fr] lg:grid-cols-[3rem_1.5fr_1fr_1fr] xl:grid-cols-[3rem_1.5fr_1fr_1fr_auto_auto]">
         <div className="group relative h-12 w-12 shrink-0 overflow-hidden rounded-sm">
           <Link href={`/track/${item.trackId}`} className="block">
             {item.image ? (
@@ -58,55 +58,79 @@ export function PlaybackHistoryItem({
             </Button>
           </div>
         </div>
-        <div className="min-w-0 flex-1">
+        {/* Title & Artists */}
+        <div className="flex min-w-0 flex-col justify-center">
           <Link
             href={`/track/${item.trackId}`}
-            className="block truncate text-sm font-semibold underline-offset-2 hover:underline"
+            className="truncate text-sm font-semibold underline-offset-2 hover:underline"
             title={item.title}
           >
             {item.title}
           </Link>
           <p className="text-muted-foreground w-full truncate text-xs">
             {item.artists.length > 0
-              ? item.artists.map((artist, artistIndex) => {
-                  const artistId = item.artistIds[artistIndex];
-                  return artistId ? (
-                    <span key={artistId}>
-                      {artistIndex > 0 ? ", " : ""}
+              ? item.artists.map((artist, index) => {
+                  return artist.id ? (
+                    <span key={artist.id}>
+                      {index > 0 ? ", " : ""}
                       <Link
-                        href={`/artist/${artistId}`}
+                        href={`/artist/${artist.id}`}
                         className="underline-offset-2 hover:underline"
                       >
-                        {artist}
+                        {artist.name}
                       </Link>
                     </span>
                   ) : (
-                    <span key={`${artist}-${artistIndex}`}>
-                      {artistIndex > 0 ? ", " : ""}
-                      {artist}
+                    <span key={`${artist.name}-${index}`}>
+                      {index > 0 ? ", " : ""}
+                      {artist.name}
                     </span>
                   );
                 })
               : "Unknown Artist"}
           </p>
         </div>
-        <div className="hidden max-w-[14rem] min-w-[6rem] truncate text-right text-xs xl:block">
-          {item.albumId ? (
+        {/* Playlist */}
+        <div className="hidden max-w-[14rem] min-w-[6rem] items-center truncate text-right text-xs xl:flex">
+          {item.playlist?.id ? (
             <Link
-              href={`/album/${item.albumId}`}
-              className="underline-offset-2 hover:underline"
-              title={item.album}
+              href={`/playlist/${item.playlist.id}`}
+              className="flex items-center gap-1 underline-offset-2 hover:underline"
+              title={item.playlist.name ?? undefined}
             >
-              {item.album}
+              {item.playlist.image && (
+                <img
+                  src={item.playlist.image ?? ""}
+                  alt={item.playlist.name ?? ""}
+                  className="size-4 rounded-xs object-cover"
+                />
+              )}
+              {item.playlist.name}
             </Link>
           ) : (
-            item.album
+            (item.playlist?.name ?? <span>&mdash;</span>)
           )}
         </div>
-        <div className="hidden max-w-[5.5rem] min-w-fit text-right text-xs md:block">
+        {/* Album */}
+        <div className="hidden max-w-[14rem] min-w-[6rem] truncate text-right text-xs xl:block">
+          {item.album.id ? (
+            <Link
+              href={`/album/${item.album.id}`}
+              className="underline-offset-2 hover:underline"
+              title={item.album.name}
+            >
+              {item.album.name}
+            </Link>
+          ) : (
+            item.album.name
+          )}
+        </div>
+        {/* Duration */}
+        <div className="hidden max-w-[5.5rem] min-w-[4rem] text-right text-xs lg:block">
           {duration(item.duration).toBestDurationString(false)}
         </div>
-        <div className="hidden max-w-[14rem] min-w-fit text-right text-xs whitespace-nowrap lg:block">
+        {/* Played at (time && relative) */}
+        <div className="flex w-full max-w-[8rem] min-w-fit items-center justify-end gap-1 text-right text-xs whitespace-nowrap">
           {format(new Date(item.playedAt), "HH:mm")}{" "}
           <span className="text-muted-foreground">
             ({formatRelativePlayedAt(item.playedAt)})
