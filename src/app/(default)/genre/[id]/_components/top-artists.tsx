@@ -26,7 +26,7 @@ const TopArtists = ({ id }: { id: number }) => {
   const periodInput = providerPeriodToQueryInput(selectedPeriod);
 
   const { data, isLoading: isLoadingTopArtists } =
-    api.playlist.getTopArtists.useQuery({
+    api.genre.getTopArtists.useQuery({
       id,
       sortBy,
       ...periodInput,
