@@ -331,12 +331,15 @@ export const dashboardRouter = createTRPCRouter({
             trackId: number;
             trackName: string;
             trackImage: string | null;
-            trackDuration: number;
+            duration: number;
             playedAt: Date;
             albumId: number | null;
             albumName: string | null;
             artistNames: string[] | null;
             artistIds: number[] | null;
+            playlistId: number | null;
+            playlistName: string | null;
+            playlistImage: string | null;
           }[]
         >(
           Prisma.sql`
@@ -345,28 +348,32 @@ export const dashboardRouter = createTRPCRouter({
               track."id" AS "trackId",
               track."name" AS "trackName",
               track."image" AS "trackImage",
-              track."duration" AS "trackDuration",
+              playback."duration"::float8 AS "duration",
               playback."playedAt",
               album."id" AS "albumId",
               album."name" AS "albumName",
               COALESCE(
-                ARRAY_AGG(artist."name" ORDER BY artist."name") FILTER (WHERE artist."name" IS NOT NULL),
+                ARRAY_AGG(DISTINCT artist."name") FILTER (WHERE artist."name" IS NOT NULL),
                 ARRAY[]::text[]
               ) AS "artistNames",
               COALESCE(
-                ARRAY_AGG(artist."id" ORDER BY artist."name") FILTER (WHERE artist."id" IS NOT NULL),
+                ARRAY_AGG(DISTINCT artist."id") FILTER (WHERE artist."id" IS NOT NULL),
                 ARRAY[]::integer[]
-              ) AS "artistIds"
+              ) AS "artistIds",
+              playlist."id" AS "playlistId",
+              playlist."name" AS "playlistName",
+              playlist."image" AS "playlistImage"
             FROM playback
             JOIN track ON playback."trackId" = track."id"
             LEFT JOIN album ON track."albumId" = album."id"
             LEFT JOIN artist_track ON track."id" = artist_track."trackId" AND artist_track."role" = 'primary'
             LEFT JOIN artist ON artist_track."artistId" = artist."id"
+            LEFT JOIN playlist ON playback."contextId" = playlist."spotifyId" AND playback."context" IN ('playlist', 'collection')
             WHERE playback."userId" = ${userId}
               AND playback."playedAt" >= ${start}
               AND playback."playedAt" <= ${end}
               ${cursorCondition}
-            GROUP BY playback."id", track."id", track."name", track."image", track."duration", playback."playedAt", album."id", album."name"
+            GROUP BY playback."id", track."id", track."name", track."image", playback."duration", playback."playedAt", album."id", album."name", playlist."id", playlist."name", playlist."image"
             ORDER BY playback."playedAt" DESC, playback."id" DESC
             LIMIT ${limit + 1}
           `,
@@ -390,12 +397,23 @@ export const dashboardRouter = createTRPCRouter({
           trackId: row.trackId,
           image: row.trackImage,
           title: row.trackName,
-          artists: row.artistNames ?? [],
-          artistIds: row.artistIds ?? [],
-          duration: row.trackDuration,
+          artists: [
+            ...(row.artistNames ?? []).map((name, index) => ({
+              id: row.artistIds?.[index] ?? null,
+              name,
+            })),
+          ],
+          duration: row.duration,
           playedAt: row.playedAt,
-          albumId: row.albumId,
-          album: row.albumName ?? "Unknown Album",
+          album: {
+            id: row.albumId ?? 0,
+            name: row.albumName ?? "Unknown Album",
+          },
+          playlist: {
+            id: row.playlistId,
+            name: row.playlistName,
+            image: row.playlistImage,
+          },
         })),
         nextCursor:
           hasMore && last

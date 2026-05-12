@@ -13,7 +13,10 @@ import type { ProviderPeriod } from "@/lib/consts/periods";
 
 const AlbumCard = ({ id, period }: { id: number; period: ProviderPeriod }) => {
   const periodInput = providerPeriodToQueryInput(period);
-  const { data: album, isLoading } = api.album.get.useQuery({ id, ...periodInput });
+  const { data: album, isLoading } = api.album.get.useQuery({
+    id,
+    ...periodInput,
+  });
   const { mutate: refreshAlbum } = api.admin.refreshMasterData.useMutation();
   const { data: session } = authClient.useSession();
   const utils = api.useUtils();
@@ -35,11 +38,6 @@ const AlbumCard = ({ id, period }: { id: number; period: ProviderPeriod }) => {
       />
     );
   }
-
-  const artistNames = album.artists
-    .map((a) => a.artist?.name)
-    .filter(Boolean)
-    .join(", ");
 
   return (
     <Card className="relative isolate">
@@ -64,12 +62,21 @@ const AlbumCard = ({ id, period }: { id: number; period: ProviderPeriod }) => {
               <p className="block text-2xl font-bold">
                 {truncateText(album.name, TOP_CARD_ENTITY_NAME_MAX)}
               </p>
-              <Link
-                href={`/artist/${album.artistId}`}
-                className="text-muted-foreground mt-1 text-sm hover:underline"
-              >
-                {artistNames || "—"}
-              </Link>
+              {album.artists.map((artist, index) => (
+                <span
+                  key={artist.artist.id}
+                  className="text-muted-foreground mt-1 text-sm"
+                >
+                  <Link
+                    key={artist.artist.id}
+                    href={`/artist/${artist.artist.id}`}
+                    className="underline-offset-2 hover:underline"
+                  >
+                    {artist.artist.name}
+                  </Link>
+                  {index < album.artists.length - 1 && ", "}
+                </span>
+              ))}
             </div>
             <div className="mt-3 space-y-2">
               <div className="flex flex-wrap items-baseline gap-x-1.5 gap-y-0">
