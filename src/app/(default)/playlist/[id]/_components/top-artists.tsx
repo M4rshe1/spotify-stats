@@ -16,7 +16,7 @@ import {
 import { providerPeriodToQueryInput } from "@/lib/provider-period-query-input";
 import { usePeriod } from "@/providers/period-provider";
 import { api } from "@/trpc/react";
-import { Disc3Icon, UserIcon } from "lucide-react";
+import {  UserIcon } from "lucide-react";
 
 type SortBy = "count" | "duration";
 

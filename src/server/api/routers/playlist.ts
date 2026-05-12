@@ -29,6 +29,14 @@ type TopTrackRow = {
   artistIds: number[] | null;
 };
 
+type TopArtistRow = {
+  id: number;
+  name: string;
+  image: string | null;
+  duration: number;
+  count: number;
+};
+
 function playlistPlaybackJoin(playlistId: number) {
   return Prisma.sql`
     JOIN playlist ON playback."contextId" = playlist."spotifyId"
@@ -271,5 +279,73 @@ export const playlistRouter = createTRPCRouter({
         albumId: p.track.album?.id ?? null,
         album: p.track.album?.name ?? "Unknown Album",
       }));
+    }),
+  getTopArtists: protectedProcedure
+    .input(playlistTopInputSchema)
+    .query(async ({ ctx, input }) => {
+      const { start, end } = getPeriods(input.period, input.from, input.to);
+      const timezone = ctx.session.user.timezone;
+      const userId = ctx.session.user.id;
+      const sortColumn =
+        input.sortBy === "count"
+          ? Prisma.sql`COUNT(*)::float8`
+          : Prisma.sql`SUM(playback."duration")::float8`;
+
+      const totalsResult = await tryCatch(
+        ctx.db.$queryRaw<{ totalCount: number; totalDuration: number }[]>(
+          Prisma.sql`
+            SELECT
+              COUNT(*)::float8 AS "totalCount",
+              COALESCE(SUM(playback."duration"), 0)::float8 AS "totalDuration"
+            FROM playback
+            JOIN track ON playback."trackId" = track."id"
+            ${playlistPlaybackJoin(input.id)}
+              AND playback."userId" = ${userId}
+              AND timezone(${timezone}, playback."playedAt") >= timezone(${timezone}, ${start})
+              AND timezone(${timezone}, playback."playedAt") <= timezone(${timezone}, ${end})
+          `,
+        ),
+      );
+
+      const artists = await tryCatch(
+        ctx.db.$queryRaw<TopArtistRow[]>(Prisma.sql`
+          SELECT
+            COUNT(*)::float8 AS "count",
+            SUM(playback."duration")::float8 AS "duration",
+            artist."id",
+            artist."name",
+            artist."image",
+            artist."spotifyId"
+          FROM playback
+          JOIN track ON playback."trackId" = track."id"
+          LEFT JOIN artist_track ON track."id" = artist_track."trackId" AND artist_track."role" = 'primary'
+          LEFT JOIN artist ON artist_track."artistId" = artist."id"
+          ${playlistPlaybackJoin(input.id)}
+            AND playback."userId" = ${userId}
+            AND timezone(${timezone}, playback."playedAt") >= timezone(${timezone}, ${start})
+            AND timezone(${timezone}, playback."playedAt") <= timezone(${timezone}, ${end})
+          GROUP BY artist."id", artist."name", artist."image", artist."spotifyId"
+          ORDER BY ${sortColumn} DESC
+          LIMIT 10
+        `),
+      );
+
+      if (totalsResult.error || artists.error) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to get top artists",
+        });
+      }
+
+      const totals = totalsResult.data?.[0] ?? {
+        totalCount: 0,
+        totalDuration: 0,
+      };
+
+      return {
+        items: artists.data ?? [],
+        totalCount: totals.totalCount,
+        totalDuration: totals.totalDuration,
+      };
     }),
 });

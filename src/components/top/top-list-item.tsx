@@ -101,15 +101,17 @@ export function TopListItem({
         {href ? (
           <Link
             href={href}
-            className="truncate text-sm font-semibold underline-offset-2 hover:underline"
+            className="block w-full max-w-full truncate text-sm font-semibold underline-offset-2 hover:underline"
           >
             {item.name}
           </Link>
         ) : (
-          <p className="truncate text-sm font-semibold">{item.name}</p>
+          <p className="block w-full max-w-full truncate text-sm font-semibold">
+            {item.name}
+          </p>
         )}
         {item.artists?.length ? (
-          <p className="text-muted-foreground truncate text-xs">
+          <p className="text-muted-foreground block w-full max-w-full truncate text-xs">
             {item.artists.map((artist, index) => {
               const artistId = item.artistIds?.[index];
               return artistId ? (
@@ -117,7 +119,7 @@ export function TopListItem({
                   {index > 0 ? ", " : ""}
                   <Link
                     href={`/artist/${artistId}`}
-                    className="underline-offset-2 hover:underline"
+                    className="block w-full max-w-full truncate underline-offset-2 hover:underline"
                   >
                     {artist}
                   </Link>
@@ -138,7 +140,7 @@ export function TopListItem({
             <Link
               href={`/album/${item.albumId}`}
               title={item.album}
-              className="text-muted-foreground block max-w-sm truncate underline-offset-2 hover:underline"
+              className="text-muted-foreground block w-full max-w-full truncate underline-offset-2 hover:underline"
             >
               {item.album}
             </Link>
