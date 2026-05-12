@@ -6,8 +6,9 @@
  *   bun run scripts/bump-version.ts 1.2.3
  *
  * Options:
- *   --dry-run   Print the new version only; do not write package.json
- *   --git       Stage package.json, commit "chore: release vX.Y.Z", tag vX.Y.Z (run from repo root)
+ *   --dry-run     Print the new version only; do not write package.json
+ *   --git         Commit, tag vX.Y.Z, and push branch + tag to origin (run from repo root)
+ *   --no-release  With --git: add [no-release] to the commit message so CI skips creating a GitHub Release
  */
 
 import path from "node:path";
@@ -23,9 +24,9 @@ function usage(): never {
   bun run scripts/bump-version.ts <x.y.z>
 
 Options:
-  --dry-run   Show target version without changing files
-  --git       git add package.json, commit, and create tag vX.Y.Z
-  --push      push the changes to the remote repository
+  --dry-run     Show target version without changing files
+  --git         commit, tag vX.Y.Z, push current branch and tag to origin
+  --no-release  with --git: CI will not create a GitHub Release (image still builds)
 `);
   process.exit(1);
 }
@@ -52,22 +53,22 @@ function bump(parts: [number, number, number], kind: BumpKind): string {
 function parseArgs(argv: string[]) {
   let dryRun = false;
   let git = false;
-  let push = false;
+  let noRelease = false;
   const pos: string[] = [];
   for (const a of argv) {
     if (a === "--dry-run") dryRun = true;
     else if (a === "--git") git = true;
-    else if (a === "--push") push = true;
+    else if (a === "--no-release") noRelease = true;
     else if (a.startsWith("-")) {
       console.error(`Unknown option: ${a}`);
       usage();
     } else pos.push(a);
   }
-  return { dryRun, git, push, pos };
+  return { dryRun, git, noRelease, pos };
 }
 
 async function main() {
-  const { dryRun, git, push, pos } = parseArgs(process.argv.slice(2));
+  const { dryRun, git, noRelease, pos } = parseArgs(process.argv.slice(2));
   if (pos.length !== 1) usage();
 
   const arg = pos[0]!;
@@ -115,7 +116,9 @@ async function main() {
   await Bun.write(PACKAGE_JSON, `${JSON.stringify(pkg, null, 2)}\n`);
 
   if (git) {
-    const msg = `chore: release ${tag}`;
+    const msg = noRelease
+      ? `chore: release ${tag} [no-release]`
+      : `chore: release ${tag}`;
     const run = (cmd: string[], label: string) => {
       const r = Bun.spawnSync({
         cmd,
@@ -131,14 +134,9 @@ async function main() {
     run(["git", "add", "package.json"], "git add");
     run(["git", "commit", "-m", msg], "git commit");
     run(["git", "tag", tag], `git tag ${tag}`);
-    if (push) {
-      run(["git", "push"], "git push");
-      run(["git", "push", "origin", tag], `git push origin ${tag}`);
-    } else {
-      console.log(
-        `Committed and tagged ${tag}. Push with: git push && git push origin ${tag}`,
-      );
-    }
+    run(["git", "push"], "git push");
+    run(["git", "push", "origin", tag], `git push origin ${tag}`);
+    console.log(`Pushed branch and ${tag}.`);
   }
 }
 
