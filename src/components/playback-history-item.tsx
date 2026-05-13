@@ -29,7 +29,7 @@ export function PlaybackHistoryItem({
   return (
     <div className="bg-muted/30 relative isolate overflow-hidden rounded-md border">
       <CoverTintBackdrop coverUrl={item.image} className="rounded-md" />
-      <div className="relative z-10 grid min-w-0 items-center gap-x-4 px-4 py-3 md:grid-cols-[3rem_1.5fr_1fr] lg:grid-cols-[3rem_1.5fr_1fr_1fr] xl:grid-cols-[3rem_1.5fr_1fr_1fr_auto_auto]">
+      <div className="relative z-10 grid min-w-0 grid-cols-[3rem_35%_auto] items-center gap-x-4 px-4 py-3 lg:grid-cols-[3rem_35%__auto_auto] xl:grid-cols-[3rem_30%_18%_17%_auto_auto]">
         <div className="group relative h-12 w-12 shrink-0 overflow-hidden rounded-sm">
           <Link href={`/track/${item.trackId}`} className="block">
             {item.image ? (
@@ -112,29 +112,35 @@ export function PlaybackHistoryItem({
           )}
         </div>
         {/* Album */}
-        <div className="hidden max-w-[14rem] min-w-[6rem] truncate text-right text-xs xl:block">
-          {item.album.id ? (
-            <Link
-              href={`/album/${item.album.id}`}
-              className="underline-offset-2 hover:underline"
-              title={item.album.name}
-            >
-              {item.album.name}
-            </Link>
-          ) : (
-            item.album.name
-          )}
+        <div className="flex hidden w-full min-w-[6rem] justify-end truncate text-xs xl:block">
+          <div className="w-full text-left">
+            {item.album.id ? (
+              <Link
+                href={`/album/${item.album.id}`}
+                className="underline-offset-2 hover:underline"
+                title={item.album.name}
+              >
+                {item.album.name}
+              </Link>
+            ) : (
+              item.album.name
+            )}
+          </div>
         </div>
         {/* Duration */}
-        <div className="hidden max-w-[5.5rem] min-w-[4rem] text-right text-xs lg:block">
-          {duration(item.duration).toBestDurationString(false)}
+        <div className="flex hidden w-full min-w-[4rem] justify-end text-xs lg:block">
+          <div className="w-full text-right">
+            {duration(item.duration).toBestDurationString(false)}
+          </div>
         </div>
         {/* Played at (time && relative) */}
-        <div className="flex w-full max-w-[8rem] min-w-fit items-center justify-end gap-1 text-right text-xs whitespace-nowrap">
-          {format(new Date(item.playedAt), "HH:mm")}{" "}
-          <span className="text-muted-foreground">
-            ({formatRelativePlayedAt(item.playedAt)})
-          </span>
+        <div className="flex w-full min-w-[7rem] items-center justify-end gap-1 text-xs whitespace-nowrap">
+          <div className="w-full text-right">
+            {format(new Date(item.playedAt), "HH:mm")}{" "}
+            <span className="text-muted-foreground">
+              ({formatRelativePlayedAt(item.playedAt)})
+            </span>
+          </div>
         </div>
       </div>
     </div>
