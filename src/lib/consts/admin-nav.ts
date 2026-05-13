@@ -27,7 +27,7 @@ export const adminSubNavItems: AdminSubNavItem[] = [
   {
     title: "Database",
     url: "/admin/database",
-    description: "Drizzle/Prisma tools and database maintenance.",
+    description: "Prisma tools and database maintenance.",
     icon: Database,
     iconClassName: "text-amber-600 dark:text-amber-400",
   },
