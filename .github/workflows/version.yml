@@ -52,6 +52,8 @@ jobs:
 
       - name: Create GitHub Release
         if: ${{ github.event.head_commit != null && !contains(github.event.head_commit.message, '[no-release]') }}
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
+          make_latest: true
+          overwrite_files: true
           generate_release_notes: true
