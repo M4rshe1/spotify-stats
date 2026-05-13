@@ -13,7 +13,6 @@ export type AdminSubNavItem = {
   url: string;
   description: string;
   icon: LucideIcon;
-  /** Tint class for the icon tile (same pattern as the Top overview). */
   iconClassName: string;
 };
 
@@ -24,13 +23,6 @@ export const adminSubNavItems: AdminSubNavItem[] = [
     description: "Accounts, roles, bans, and impersonation.",
     icon: Users,
     iconClassName: "text-violet-600 dark:text-violet-400",
-  },
-  {
-    title: "Imports",
-    url: "/admin/imports",
-    description: "Import jobs and upload activity.",
-    icon: Upload,
-    iconClassName: "text-sky-600 dark:text-sky-400",
   },
   {
     title: "Database",

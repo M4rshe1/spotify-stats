@@ -44,7 +44,6 @@ import {
 import { adminSubNavItems } from "@/lib/consts/admin-nav";
 import type { LatestReleaseInfo } from "@/lib/github-release";
 import type { User } from "@/server/better-auth/config";
-import { authClient } from "@/server/better-auth/client";
 
 const MainNav = [
   {
