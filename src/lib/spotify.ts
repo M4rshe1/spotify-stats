@@ -416,7 +416,7 @@ export async function createPlaybacks(
       ? `spotify:user:${favoritePlaylist.owner.id}:collection`
       : (state.context?.uri ?? null);
     if (isFavorite) {
-      contextId = favoritePlaylist?.id;
+      contextId = favoritePlaylist.owner.id;
     }
 
     const createdPlayback = await tryCatch(
