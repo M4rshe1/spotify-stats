@@ -2,7 +2,8 @@
 
 import { CoverTintBackdrop } from "@/components/cards/cover-tint-backdrop";
 import { Button } from "@/components/ui/button";
-import { duration, formatPercent } from "@/lib/utils";
+import { getGenreColor } from "@/lib/consts/genres";
+import { cn, duration, formatPercent } from "@/lib/utils";
 import { PlayIcon } from "lucide-react";
 import Link from "next/link";
 
@@ -100,6 +101,17 @@ export function TopListItem({
           ) : null}
         </div>
       ) : null}
+      {type == "genres" && (
+        <div
+          className={cn(
+            "flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-sm text-2xl font-extrabold",
+            getGenreColor(item.name).fg,
+            getGenreColor(item.name).bg,
+          )}
+        >
+          {item.name.slice(0, 1).toUpperCase()}
+        </div>
+      )}
       <div className="min-w-0 flex-1">
         {href ? (
           <Link
@@ -167,7 +179,13 @@ export function TopListItem({
 
   return (
     <div className="bg-muted/30 relative isolate w-full overflow-hidden rounded-md border">
-      <CoverTintBackdrop coverUrl={item.image} className="rounded-md" />
+      <CoverTintBackdrop
+        coverUrl={item.image}
+        colorOverride={
+          type == "genres" ? getGenreColor(item.name).bgx : undefined
+        }
+        className="rounded-md"
+      />
       <div className="relative z-10 flex w-full items-center gap-3 p-2">
         {content}
       </div>

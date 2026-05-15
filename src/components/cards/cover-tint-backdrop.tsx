@@ -98,17 +98,26 @@ function rgba(rgb: Rgb, alpha: number) {
 export function CoverTintBackdrop({
   coverUrl,
   className,
-  /** Tint extends edge-to-edge; row lists keep a softer fade-out on the right. */
+  colorOverride,
   fillsContainer = false,
 }: {
   coverUrl: string | null;
-  /** Include rounding (e.g. `rounded-md`) so the tint clips to row cards. */
   className?: string;
+  colorOverride?: string;
   fillsContainer?: boolean;
 }) {
   const [accent, setAccent] = useState<Rgb | null>(null);
 
   useEffect(() => {
+    if (colorOverride && colorOverride.startsWith("#")) {
+      setAccent({
+        r: parseInt(colorOverride.slice(1, 3), 16),
+        g: parseInt(colorOverride.slice(3, 5), 16),
+        b: parseInt(colorOverride.slice(5, 7), 16),
+      });
+
+      return;
+    }
     let cancelled = false;
     if (!coverUrl) {
       setAccent(null);

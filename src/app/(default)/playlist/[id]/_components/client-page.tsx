@@ -10,6 +10,8 @@ import PlaylistCard from "./playlist-card";
 import FirstLastPlayed from "./first-last-played";
 import TopTracks from "./top-tracks";
 import TopArtists from "./top-artists";
+import TopAlbums from "./top-albums";
+import TopGenres from "./top-genres";
 
 const ClientPage = ({ id }: { id: string }) => {
   const numericId = parseInt(id, 10);
@@ -35,6 +37,12 @@ const ClientPage = ({ id }: { id: string }) => {
       </div>
       <div className="h-fit">
         <TopArtists id={numericId} />
+      </div>
+      <div className="h-fit">
+        <TopAlbums id={numericId} />
+      </div>
+      <div className="h-fit">
+        <TopGenres id={numericId} />
       </div>
       <div className="h-fit lg:col-span-2">
         <PlaylistRecentPlays id={numericId} />

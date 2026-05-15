@@ -45,6 +45,13 @@ export type TopArtistRow = {
   count: number;
 };
 
+export type TopGenreRow = {
+  id: number;
+  name: string;
+  duration: number;
+  count: number;
+};
+
 export type FirstLastPlayed = {
   playedAt: Date | null;
   trackId: number | null;
