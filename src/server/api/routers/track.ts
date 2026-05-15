@@ -4,8 +4,8 @@ import { TRPCError } from "@trpc/server";
 import { tryCatch } from "@/lib/try-catch";
 import { Prisma } from "generated/prisma";
 import { getPeriods } from "@/lib/periods";
-import { periodSchema } from "@/server/api/lib";
-import type { PlaybackRow } from "@/server/api/types/playback-row";
+import { periodSchema, rowToArtists } from "@/server/api/lib";
+import type { PlaybackRow } from "@/server/api/types/sql-rows";
 
 type TrackMetrics = {
   plays: number;
@@ -126,13 +126,17 @@ export const trackRouter = createTRPCRouter({
             track."image" AS "trackImage",
             playback."duration"::float8 AS "duration",
             COALESCE(
-              ARRAY_AGG(DISTINCT artist."name") FILTER (WHERE artist."name" IS NOT NULL),
+              ARRAY_AGG(artist."name" ORDER BY artist_track."artistId") FILTER (WHERE artist."name" IS NOT NULL),
               ARRAY[]::text[]
             ) AS "artistNames",
             COALESCE(
-              ARRAY_AGG(DISTINCT artist."id") FILTER (WHERE artist."id" IS NOT NULL),
+              ARRAY_AGG(artist."id" ORDER BY artist_track."artistId") FILTER (WHERE artist."id" IS NOT NULL),
               ARRAY[]::integer[]
             ) AS "artistIds",
+            COALESCE(
+              ARRAY_AGG(artist_track."role" ORDER BY artist_track."artistId") FILTER (WHERE artist_track."role" IS NOT NULL),
+              ARRAY[]::text[]
+            ) AS "artistRoles",
             album."id" AS "albumId",
             album."name" AS "albumName",
             playlist."id" AS "playlistId",
@@ -140,7 +144,8 @@ export const trackRouter = createTRPCRouter({
             playlist."image" AS "playlistImage"
           FROM playback
           JOIN track ON playback."trackId" = track."id"
-          LEFT JOIN artist_track ON track."id" = artist_track."trackId" AND artist_track."role" = 'primary'
+          JOIN artist_track as filter_at ON track."id" = filter_at."trackId" AND filter_at."role" = 'primary'
+          LEFT JOIN artist_track ON track."id" = artist_track."trackId"
           LEFT JOIN artist ON artist_track."artistId" = artist."id"
           LEFT JOIN album ON track."albumId" = album."id"
           LEFT JOIN playlist ON playback."contextId" = playlist."spotifyId" AND playback."context" IN ('playlist', 'collection')
@@ -156,12 +161,7 @@ export const trackRouter = createTRPCRouter({
         trackId: p.trackId,
         image: p.trackImage,
         title: p.trackName,
-        artists: [
-          ...(p.artistNames ?? []).map((name, index) => ({
-            id: p.artistIds?.[index] ?? null,
-            name,
-          })),
-        ],
+        artists: rowToArtists(p),
         duration: p.duration,
         playedAt: p.playedAt,
         album: {

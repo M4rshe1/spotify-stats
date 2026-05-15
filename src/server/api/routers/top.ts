@@ -1,10 +1,11 @@
 import z from "zod";
 import { createTRPCRouter, protectedProcedure } from "../trpc";
-import { periodSchema } from "../lib";
+import { periodSchema, rowToArtists } from "../lib";
 import { getPeriods } from "@/lib/periods";
 import { tryCatch } from "@/lib/try-catch";
 import { Prisma } from "generated/prisma";
 import { TRPCError } from "@trpc/server";
+import type { TopTrackRow } from "@/server/api/types/sql-rows";
 const sortSchema = z.enum(["count", "duration"]);
 
 const topItemsSchema = periodSchema.extend({
@@ -56,19 +57,7 @@ export const topRouter = createTRPCRouter({
       }
 
       const rows = await tryCatch(
-        ctx.db.$queryRaw<
-          {
-            id: number;
-            name: string;
-            image: string | null;
-            albumId: number | null;
-            albumName: string | null;
-            duration: number;
-            count: number;
-            artistNames: string[] | null;
-            artistIds: number[] | null;
-          }[]
-        >(Prisma.sql`
+        ctx.db.$queryRaw<TopTrackRow[]>(Prisma.sql`
           SELECT
             track."id",
             track."name",
@@ -77,23 +66,27 @@ export const topRouter = createTRPCRouter({
             album."name" AS "albumName",
             SUM(playback."duration")::float8 AS "duration",
             COUNT(*)::float8 AS "count",
-            COALESCE(
-              ARRAY_AGG(DISTINCT artist."name") FILTER (WHERE artist."name" IS NOT NULL),
-              ARRAY[]::text[]
-            ) AS "artistNames",
-            COALESCE(
-              ARRAY_AGG(DISTINCT artist."id") FILTER (WHERE artist."id" IS NOT NULL),
-              ARRAY[]::integer[]
-            ) AS "artistIds"
+            artists."names" AS "artistNames",
+            artists."ids" AS "artistIds",
+            artists."roles" AS "artistRoles"
           FROM playback
           JOIN track ON playback."trackId" = track."id"
           LEFT JOIN album ON track."albumId" = album."id"
           LEFT JOIN artist_track ON track."id" = artist_track."trackId" AND artist_track."role" = 'primary'
           LEFT JOIN artist ON artist_track."artistId" = artist."id"
+          LEFT JOIN LATERAL (
+              SELECT 
+                  ARRAY_AGG(a."name" ORDER BY at."artistId") AS "names",
+                  ARRAY_AGG(at."artistId" ORDER BY at."artistId") AS "ids",
+                  ARRAY_AGG(at."role" ORDER BY at."artistId") AS "roles"
+              FROM artist_track at
+              LEFT JOIN artist a ON at."artistId" = a."id"
+              WHERE at."trackId" = track."id"
+          ) artists ON TRUE
           WHERE playback."userId" = ${userId}
             AND timezone(${timezone}, playback."playedAt") >= timezone(${timezone}, ${start})
             AND timezone(${timezone}, playback."playedAt") <= timezone(${timezone}, ${end})
-          GROUP BY track."id", track."name", track."image", album."id", album."name"
+          GROUP BY track."id", track."name", track."image", artists."names", artists."ids",  artists."roles", album."id", album."name"
           ${cursorCondition}
           ORDER BY ${sortColumn} DESC, track."id" ASC
           LIMIT ${limit + 1}
@@ -120,10 +113,7 @@ export const topRouter = createTRPCRouter({
           id: row.id,
           name: row.name,
           image: row.image,
-          artists: row.artistNames ?? [],
-          artistIds: row.artistIds ?? [],
-          albumId: row.albumId,
-          album: row.albumName ?? "Unknown Album",
+          artists: rowToArtists(row),
           duration: row.duration,
           count: row.count,
         })),

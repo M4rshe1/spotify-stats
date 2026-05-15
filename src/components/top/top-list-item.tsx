@@ -38,8 +38,11 @@ export type TopListItemData = {
   count: number;
   album?: string;
   albumId?: number | null;
-  artists?: string[];
-  artistIds?: number[];
+  artists?: {
+    id: number;
+    name: string;
+    role: string;
+  }[];
 };
 
 export function TopListItem({
@@ -110,29 +113,25 @@ export function TopListItem({
             {item.name}
           </p>
         )}
-        {item.artists?.length ? (
-          <p className="text-muted-foreground block w-full max-w-full truncate text-xs">
-            {item.artists.map((artist, index) => {
-              const artistId = item.artistIds?.[index];
-              return artistId ? (
-                <span key={artistId}>
-                  {index > 0 ? ", " : ""}
-                  <Link
-                    href={`/artist/${artistId}`}
-                    className="block w-full max-w-full truncate underline-offset-2 hover:underline"
-                  >
-                    {artist}
-                  </Link>
-                </span>
-              ) : (
-                <span key={`${artist}-${index}`}>
-                  {index > 0 ? ", " : ""}
-                  {artist}
-                </span>
-              );
-            })}
-          </p>
-        ) : null}
+        <p className="text-muted-foreground w-full truncate text-xs">
+          {item.artists && item.artists.length > 0
+            ? item.artists
+                .sort((a, b) => (a.role < b.role ? 1 : -1))
+                .map((artist, index) => {
+                  return (
+                    <span key={artist.id}>
+                      {index > 0 ? ", " : ""}
+                      <Link
+                        href={`/artist/${artist.id}`}
+                        className="underline-offset-2 hover:underline"
+                      >
+                        {artist.name}
+                      </Link>
+                    </span>
+                  );
+                })
+            : null}
+        </p>
       </div>
       {item.album ? (
         <div className="hidden min-w-0 flex-1 overflow-hidden text-left text-xs lg:block">

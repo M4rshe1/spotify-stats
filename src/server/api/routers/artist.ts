@@ -3,8 +3,13 @@ import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { tryCatch } from "@/lib/try-catch";
 import { getPeriods } from "@/lib/periods";
-import { periodSchema } from "@/server/api/lib";
-import type { PlaybackRow } from "@/server/api/types/playback-row";
+import { periodSchema, rowToArtists } from "@/server/api/lib";
+import type {
+  PlaybackRow,
+  TopAlbumRow,
+  TopTrackRow,
+  FirstLastPlayed,
+} from "@/server/api/types/sql-rows";
 import { Prisma } from "generated/prisma";
 
 const artistTopSortSchema = z.enum(["count", "duration"]);
@@ -19,26 +24,6 @@ type ArtistMetrics = {
   tracks: number;
   duration: number;
   plays: number;
-};
-
-type TopAlbumRow = {
-  id: number;
-  name: string;
-  image: string | null;
-  duration: number;
-  count: number;
-  artistNames: string[] | null;
-  artistIds: number[] | null;
-};
-
-type TopTrackRow = {
-  id: number;
-  name: string;
-  image: string | null;
-  duration: number;
-  count: number;
-  artistNames: string[] | null;
-  artistIds: number[] | null;
 };
 
 export const artistRouter = createTRPCRouter({
@@ -134,23 +119,28 @@ export const artistRouter = createTRPCRouter({
             track."id",
             track."name",
             track."image",
-            COALESCE(
-              ARRAY_AGG(DISTINCT artist."name") FILTER (WHERE artist."name" IS NOT NULL),
-              ARRAY[]::text[]
-            ) AS "artistNames",
-            COALESCE(
-              ARRAY_AGG(DISTINCT artist."id") FILTER (WHERE artist."id" IS NOT NULL),
-              ARRAY[]::integer[]
-            ) AS "artistIds"
+            artists."names" AS "artistNames",
+            artists."ids" AS "artistIds",
+            artists."roles" AS "artistRoles"
           FROM playback
           JOIN track ON playback."trackId" = track."id"
-          JOIN artist_track ON track."id" = artist_track."trackId" AND artist_track."role" = 'primary'
+          JOIN artist_track AS filter_at ON track."id" = filter_at."trackId" AND filter_at."role" = 'primary'
+          JOIN artist_track ON track."id" = artist_track."trackId"
           JOIN artist ON artist."id" = artist_track."artistId"
+          LEFT JOIN LATERAL (
+              SELECT 
+                  ARRAY_AGG(a."name" ORDER BY at."artistId") AS "names",
+                  ARRAY_AGG(at."artistId" ORDER BY at."artistId") AS "ids",
+                  ARRAY_AGG(at."role" ORDER BY at."artistId") AS "roles"
+              FROM artist_track at
+              LEFT JOIN artist a ON at."artistId" = a."id"
+              WHERE at."trackId" = track."id"
+          ) artists ON TRUE
           WHERE artist_track."artistId" = ${input.id}
             AND playback."userId" = ${userId}
             AND timezone(${timezone}, playback."playedAt") >= timezone(${timezone}, ${start})
             AND timezone(${timezone}, playback."playedAt") <= timezone(${timezone}, ${end})
-          GROUP BY track."id", track."name", track."image"
+          GROUP BY track."id", track."name", track."image", artists."names", artists."ids",  artists."roles"
           ORDER BY ${sortColumn} DESC
           LIMIT 10
         `),
@@ -175,8 +165,7 @@ export const artistRouter = createTRPCRouter({
           image: row.image,
           duration: row.duration,
           count: row.count,
-          artists: row.artistNames ?? [],
-          artistIds: row.artistIds ?? [],
+          artists: rowToArtists(row),
         })),
         totalCount: totals.totalCount,
         totalDuration: totals.totalDuration,
@@ -270,32 +259,21 @@ export const artistRouter = createTRPCRouter({
   firstLastPlayed: protectedProcedure
     .input(z.object({ id: z.number() }))
     .query(async ({ ctx, input }) => {
-      // Get the first listened playback for this artist (with track)
-      const firstRes = await ctx.db.$queryRaw<{ 
-        playedAt: Date | null, 
-        trackId: number | null, 
-        trackName: string | null, 
-        trackImage: string | null 
-      }[]>(Prisma.sql`
+      const firstRes = await ctx.db.$queryRaw<FirstLastPlayed[]>(Prisma.sql`
         SELECT playback."playedAt", track."id" AS "trackId", track."name" AS "trackName", track."image" AS "trackImage"
         FROM playback
         JOIN track ON playback."trackId" = track."id"
-        JOIN artist_track ON track."id" = artist_track."trackId" AND artist_track."role" = 'primary'
+        JOIN artist_track ON track."id" = artist_track."trackId"
         WHERE artist_track."artistId" = ${input.id} AND playback."userId" = ${ctx.session.user.id}
         ORDER BY playback."playedAt" ASC
         LIMIT 1
       `);
 
-      const lastRes = await ctx.db.$queryRaw<{ 
-        playedAt: Date | null, 
-        trackId: number | null, 
-        trackName: string | null, 
-        trackImage: string | null 
-      }[]>(Prisma.sql`
+      const lastRes = await ctx.db.$queryRaw<FirstLastPlayed[]>(Prisma.sql`
         SELECT playback."playedAt", track."id" AS "trackId", track."name" AS "trackName", track."image" AS "trackImage"
         FROM playback
         JOIN track ON playback."trackId" = track."id"
-        JOIN artist_track ON track."id" = artist_track."trackId" AND artist_track."role" = 'primary'
+        JOIN artist_track ON track."id" = artist_track."trackId"
         WHERE artist_track."artistId" = ${input.id} AND playback."userId" = ${ctx.session.user.id}
         ORDER BY playback."playedAt" DESC
         LIMIT 1
@@ -323,13 +301,23 @@ export const artistRouter = createTRPCRouter({
             track."image" AS "trackImage",
             playback."duration"::float8 AS "duration",
             COALESCE(
-              ARRAY_AGG(DISTINCT artist."name") FILTER (WHERE artist."name" IS NOT NULL),
+              ARRAY_AGG(
+                artist."name" ORDER BY artist_track."artistId"
+              ) FILTER (WHERE artist."name" IS NOT NULL),
               ARRAY[]::text[]
             ) AS "artistNames",
             COALESCE(
-              ARRAY_AGG(DISTINCT artist."id") FILTER (WHERE artist."id" IS NOT NULL),
+              ARRAY_AGG(
+                artist_track."artistId" ORDER BY artist_track."artistId"
+              ) FILTER (WHERE artist_track."artistId" IS NOT NULL),
               ARRAY[]::integer[]
             ) AS "artistIds",
+            COALESCE(
+              ARRAY_AGG(
+                artist_track."role" ORDER BY artist_track."artistId"
+              ) FILTER (WHERE artist_track."role" IS NOT NULL),
+              ARRAY[]::text[]
+            ) AS "artistRoles",
             album."id" AS "albumId",
             album."name" AS "albumName",
             playlist."id" AS "playlistId",
@@ -337,8 +325,8 @@ export const artistRouter = createTRPCRouter({
             playlist."image" AS "playlistImage"
           FROM playback
           JOIN track ON playback."trackId" = track."id"
-          JOIN artist_track filter_at ON track."id" = filter_at."trackId" AND filter_at."role" = 'primary' AND filter_at."artistId" = ${input.id}
-          LEFT JOIN artist_track ON track."id" = artist_track."trackId" AND artist_track."role" = 'primary'
+          JOIN artist_track AS filter_at ON track."id" = filter_at."trackId"  AND filter_at."artistId" = ${input.id}
+          LEFT JOIN artist_track ON track."id" = artist_track."trackId"
           LEFT JOIN artist ON artist_track."artistId" = artist."id"
           LEFT JOIN album ON track."albumId" = album."id"
           LEFT JOIN playlist ON playback."contextId" = playlist."spotifyId" AND playback."context" IN ('playlist', 'collection')
@@ -358,6 +346,7 @@ export const artistRouter = createTRPCRouter({
           ...(p.artistNames ?? []).map((name, index) => ({
             id: p.artistIds?.[index] ?? null,
             name,
+            role: p.artistRoles?.[index] ?? null,
           })),
         ],
         duration: p.duration,
