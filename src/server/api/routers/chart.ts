@@ -2,6 +2,7 @@ import { createTRPCRouter, protectedProcedure } from "../trpc";
 import type { PeriodGrouping } from "@/lib/consts/periods";
 import { getPeriods } from "@/lib/periods";
 import { periodSchema } from "@/server/api/lib";
+import { getSelectedPeriodSql } from "@/server/api/sql-snippets";
 import { tryCatch } from "@/lib/try-catch";
 import { TRPCError } from "@trpc/server";
 import { Prisma } from "generated/prisma";
@@ -187,7 +188,7 @@ export const chartRouter = createTRPCRouter({
               COUNT(*)::float8 AS count,
               ${groupSql} as "date"
             FROM playback
-            WHERE "playedAt" >= ${start} AND "playedAt" <= ${end}
+            WHERE ${getSelectedPeriodSql(ctx.session.user.timezone, start, end)}
               AND "userId" = ${ctx.session.user.id}
             GROUP BY ${groupSql}
             ORDER BY "date" ASC
@@ -235,8 +236,7 @@ export const chartRouter = createTRPCRouter({
             JOIN track ON playback."trackId" = track."id"
             JOIN artist_track ON track."id" = artist_track."trackId"
               AND artist_track."role" = 'primary'
-            WHERE playback."playedAt" >= ${start}
-              AND playback."playedAt" <= ${end}
+            WHERE ${getSelectedPeriodSql(ctx.session.user.timezone, start, end)}
               AND playback."userId" = ${ctx.session.user.id}
               AND artist_track."artistId" = ${input.artistId}
             GROUP BY ${groupSql}
@@ -275,7 +275,7 @@ export const chartRouter = createTRPCRouter({
             ${groupSql} AS "date",
             COUNT(*)::float8 AS count
           FROM playback
-          WHERE "playedAt" >= ${start} AND "playedAt" <= ${end}
+          WHERE ${getSelectedPeriodSql(ctx.session.user.timezone, start, end)}
             AND "userId" = ${ctx.session.user.id}
           GROUP BY ${groupSql}
           ORDER BY "date" ASC
@@ -323,8 +323,7 @@ export const chartRouter = createTRPCRouter({
           JOIN track ON playback."trackId" = track."id"
           JOIN artist_track ON track."id" = artist_track."trackId"
             AND artist_track."role" = 'primary'
-          WHERE playback."playedAt" >= ${start}
-            AND playback."playedAt" <= ${end}
+          WHERE ${getSelectedPeriodSql(ctx.session.user.timezone, start, end)}
             AND playback."userId" = ${ctx.session.user.id}
             AND artist_track."artistId" = ${input.artistId}
           GROUP BY ${groupSql}
@@ -380,8 +379,7 @@ export const chartRouter = createTRPCRouter({
               ${groupSql} AS "date"
             FROM playback
             JOIN track ON playback."trackId" = track."id"
-            WHERE playback."playedAt" >= ${start}
-              AND playback."playedAt" <= ${end}
+            WHERE ${getSelectedPeriodSql(ctx.session.user.timezone, start, end)}
               AND playback."userId" = ${ctx.session.user.id}
               AND track."albumId" = ${input.albumId}
             GROUP BY ${groupSql}
@@ -421,8 +419,7 @@ export const chartRouter = createTRPCRouter({
             COUNT(*)::float8 AS count
           FROM playback
           JOIN track ON playback."trackId" = track."id"
-          WHERE playback."playedAt" >= ${start}
-            AND playback."playedAt" <= ${end}
+          WHERE ${getSelectedPeriodSql(ctx.session.user.timezone, start, end)}
             AND playback."userId" = ${ctx.session.user.id}
             AND track."albumId" = ${input.albumId}
           GROUP BY ${groupSql}
@@ -480,8 +477,7 @@ export const chartRouter = createTRPCRouter({
             JOIN track ON playback."trackId" = track."id"
             JOIN playlist ON playback."contextId" = playlist."spotifyId"
               AND playback."context" IN ('playlist', 'collection')
-            WHERE playback."playedAt" >= ${start}
-              AND playback."playedAt" <= ${end}
+            WHERE ${getSelectedPeriodSql(ctx.session.user.timezone, start, end)}
               AND playback."userId" = ${ctx.session.user.id}
               AND playlist."id" = ${input.playlistId}
             GROUP BY ${groupSql}
@@ -523,8 +519,7 @@ export const chartRouter = createTRPCRouter({
           JOIN track ON playback."trackId" = track."id"
           JOIN playlist ON playback."contextId" = playlist."spotifyId"
             AND playback."context" IN ('playlist', 'collection')
-          WHERE playback."playedAt" >= ${start}
-            AND playback."playedAt" <= ${end}
+          WHERE ${getSelectedPeriodSql(ctx.session.user.timezone, start, end)}
             AND playback."userId" = ${ctx.session.user.id}
             AND playlist."id" = ${input.playlistId}
           GROUP BY ${groupSql}
@@ -579,8 +574,7 @@ export const chartRouter = createTRPCRouter({
               COUNT(*)::float8 AS count,
               ${groupSql} AS "date"
             FROM playback
-            WHERE playback."playedAt" >= ${start}
-              AND playback."playedAt" <= ${end}
+            WHERE ${getSelectedPeriodSql(ctx.session.user.timezone, start, end)}
               AND playback."userId" = ${ctx.session.user.id}
               AND playback."trackId" = ${input.trackId}
             GROUP BY ${groupSql}
@@ -619,8 +613,7 @@ export const chartRouter = createTRPCRouter({
             ${groupSql} AS "date",
             COUNT(*)::float8 AS count
           FROM playback
-          WHERE playback."playedAt" >= ${start}
-            AND playback."playedAt" <= ${end}
+          WHERE ${getSelectedPeriodSql(ctx.session.user.timezone, start, end)}
             AND playback."userId" = ${ctx.session.user.id}
             AND playback."trackId" = ${input.trackId}
           GROUP BY ${groupSql}
@@ -679,8 +672,7 @@ export const chartRouter = createTRPCRouter({
               AND artist_track."role" = 'primary'
             JOIN artist_genre ON artist_genre."artistId" = artist_track."artistId"
               AND artist_genre."genreId" = ${input.genreId}
-            WHERE playback."playedAt" >= ${start}
-              AND playback."playedAt" <= ${end}
+            WHERE ${getSelectedPeriodSql(ctx.session.user.timezone, start, end)}
               AND playback."userId" = ${ctx.session.user.id}
             GROUP BY ${groupSql}
             ORDER BY "date" ASC
@@ -723,8 +715,7 @@ export const chartRouter = createTRPCRouter({
             AND artist_track."role" = 'primary'
           JOIN artist_genre ON artist_genre."artistId" = artist_track."artistId"
             AND artist_genre."genreId" = ${input.genreId}
-          WHERE playback."playedAt" >= ${start}
-            AND playback."playedAt" <= ${end}
+          WHERE ${getSelectedPeriodSql(ctx.session.user.timezone, start, end)}
             AND playback."userId" = ${ctx.session.user.id}
           GROUP BY ${groupSql}
           ORDER BY "date" ASC
@@ -771,8 +762,7 @@ export const chartRouter = createTRPCRouter({
               COUNT(*)::float8 AS "count",
               COALESCE(SUM(playback."duration"), 0)::float8 AS "duration"
             FROM playback
-            WHERE playback."playedAt" >= ${start}
-              AND playback."playedAt" <= ${end}
+            WHERE ${getSelectedPeriodSql(ctx.session.user.timezone, start, end)}
               AND playback."userId" = ${ctx.session.user.id}
             GROUP BY NULLIF(TRIM(playback."platform"), '')
             ORDER BY "count" DESC
@@ -807,8 +797,7 @@ export const chartRouter = createTRPCRouter({
               COUNT(*)::float8 AS "count",
               COALESCE(SUM(playback."duration"), 0)::float8 AS "duration"
             FROM playback
-            WHERE playback."playedAt" >= ${start}
-              AND playback."playedAt" <= ${end}
+            WHERE ${getSelectedPeriodSql(ctx.session.user.timezone, start, end)}
               AND playback."userId" = ${ctx.session.user.id}
             GROUP BY NULLIF(TRIM(playback."device"), '')
             ORDER BY "count" DESC
@@ -843,8 +832,7 @@ export const chartRouter = createTRPCRouter({
               COUNT(*)::float8 AS "count",
               COALESCE(SUM(playback."duration"), 0)::float8 AS "duration"
             FROM playback
-            WHERE playback."playedAt" >= ${start}
-              AND playback."playedAt" <= ${end}
+            WHERE ${getSelectedPeriodSql(ctx.session.user.timezone, start, end)}
               AND playback."userId" = ${ctx.session.user.id}
             GROUP BY NULLIF(TRIM(playback."context"), '')
             ORDER BY "count" DESC
