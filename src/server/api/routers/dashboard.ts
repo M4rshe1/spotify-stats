@@ -3,8 +3,9 @@ import { TRPCError } from "@trpc/server";
 import { getPeriods } from "@/lib/periods";
 import { tryCatch } from "@/lib/try-catch";
 import { Prisma } from "generated/prisma";
-import { periodSchema } from "@/server/api/lib";
+import { periodSchema, rowToArtists } from "@/server/api/lib";
 import z from "zod";
+import type { PlaybackRow } from "../types/sql-rows";
 
 export const dashboardRouter = createTRPCRouter({
   getTracksMetric: protectedProcedure
@@ -325,23 +326,7 @@ export const dashboardRouter = createTRPCRouter({
           : Prisma.empty;
 
       const rows = await tryCatch(
-        ctx.db.$queryRaw<
-          {
-            id: number;
-            trackId: number;
-            trackName: string;
-            trackImage: string | null;
-            duration: number;
-            playedAt: Date;
-            albumId: number | null;
-            albumName: string | null;
-            artistNames: string[] | null;
-            artistIds: number[] | null;
-            playlistId: number | null;
-            playlistName: string | null;
-            playlistImage: string | null;
-          }[]
-        >(
+        ctx.db.$queryRaw<PlaybackRow[]>(
           Prisma.sql`
             SELECT
               playback."id",
@@ -353,13 +338,17 @@ export const dashboardRouter = createTRPCRouter({
               album."id" AS "albumId",
               album."name" AS "albumName",
               COALESCE(
-                ARRAY_AGG(DISTINCT artist."name") FILTER (WHERE artist."name" IS NOT NULL),
+                ARRAY_AGG(artist."name" ORDER BY artist_track."artistId") FILTER (WHERE artist."name" IS NOT NULL),
                 ARRAY[]::text[]
               ) AS "artistNames",
               COALESCE(
-                ARRAY_AGG(DISTINCT artist."id") FILTER (WHERE artist."id" IS NOT NULL),
+                ARRAY_AGG(artist."id" ORDER BY artist_track."artistId") FILTER (WHERE artist."id" IS NOT NULL),
                 ARRAY[]::integer[]
               ) AS "artistIds",
+              COALESCE(
+                ARRAY_AGG(artist_track."role" ORDER BY artist_track."artistId") FILTER (WHERE artist_track."role" IS NOT NULL),
+                ARRAY[]::text[]
+              ) AS "artistRoles",
               playlist."id" AS "playlistId",
               playlist."name" AS "playlistName",
               playlist."image" AS "playlistImage"
@@ -397,12 +386,7 @@ export const dashboardRouter = createTRPCRouter({
           trackId: row.trackId,
           image: row.trackImage,
           title: row.trackName,
-          artists: [
-            ...(row.artistNames ?? []).map((name, index) => ({
-              id: row.artistIds?.[index] ?? null,
-              name,
-            })),
-          ],
+          artists: rowToArtists(row),
           duration: row.duration,
           playedAt: row.playedAt,
           album: {

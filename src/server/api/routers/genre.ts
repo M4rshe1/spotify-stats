@@ -449,12 +449,7 @@ export const genreRouter = createTRPCRouter({
         trackId: p.trackId,
         image: p.trackImage,
         title: p.trackName,
-        artists: [
-          ...(p.artistNames ?? []).map((name, index) => ({
-            id: p.artistIds?.[index] ?? null,
-            name,
-          })),
-        ],
+        artists: rowToArtists(p),
         duration: p.duration,
         playedAt: p.playedAt,
         album: {

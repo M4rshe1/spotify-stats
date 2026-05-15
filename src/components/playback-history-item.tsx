@@ -10,7 +10,7 @@ import type { RouterOutputs } from "@/trpc/react";
 import { duration } from "@/lib/utils";
 
 export type PlaybackHistoryItemData =
-  RouterOutputs["album"]["recentPlaybacks"][number];
+  RouterOutputs["playlist"]["recentPlaybacks"][number];
 
 function formatRelativePlayedAt(playedAt: Date | string) {
   return formatDistanceToNowStrict(new Date(playedAt), {
@@ -73,14 +73,18 @@ export function PlaybackHistoryItem({
                   .sort((a, b) => (a.role < b.role ? 1 : -1))
                   .map((artist, index) => {
                     return (
-                      <span key={artist.id}>
+                      <span key={`${artist.id ?? artist.name}-${index}`}>
                         {index > 0 ? ", " : ""}
-                        <Link
-                          href={`/artist/${artist.id}`}
-                          className="underline-offset-2 hover:underline"
-                        >
-                          {artist.name}
-                        </Link>
+                        {artist.id ? (
+                          <Link
+                            href={`/artist/${artist.id}`}
+                            className="underline-offset-2 hover:underline"
+                          >
+                            {artist.name}
+                          </Link>
+                        ) : (
+                          artist.name
+                        )}
                       </span>
                     );
                   })

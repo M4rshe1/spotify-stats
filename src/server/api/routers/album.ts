@@ -3,7 +3,7 @@ import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { tryCatch } from "@/lib/try-catch";
 import { getPeriods } from "@/lib/periods";
-import { periodSchema } from "@/server/api/lib";
+import { periodSchema, rowToArtists } from "@/server/api/lib";
 import type { PlaybackRow, TopTrackRow } from "@/server/api/types/sql-rows";
 import { Prisma } from "generated/prisma";
 import { getTrackArtistsLateralSql } from "../sql-snippets";
@@ -306,13 +306,7 @@ export const albumRouter = createTRPCRouter({
         trackId: p.trackId,
         image: p.trackImage,
         title: p.trackName,
-        artists: [
-          ...(p.artistNames ?? []).map((name, index) => ({
-            id: p.artistIds?.[index] ?? null,
-            name,
-            role: p.artistRoles?.[index] ?? "feature",
-          })),
-        ],
+        artists: rowToArtists(p),
         duration: p.duration,
         playedAt: p.playedAt,
         album: {

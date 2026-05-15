@@ -40,7 +40,7 @@ export type TopListItemData = {
   album?: string;
   albumId?: number | null;
   artists?: {
-    id: number;
+    id: number | null;
     name: string;
     role: string;
   }[];
@@ -131,14 +131,18 @@ export function TopListItem({
                 .sort((a, b) => (a.role < b.role ? 1 : -1))
                 .map((artist, index) => {
                   return (
-                    <span key={artist.id}>
+                    <span key={`${artist.id ?? artist.name}-${index}`}>
                       {index > 0 ? ", " : ""}
-                      <Link
-                        href={`/artist/${artist.id}`}
-                        className="underline-offset-2 hover:underline"
-                      >
-                        {artist.name}
-                      </Link>
+                      {artist.id ? (
+                        <Link
+                          href={`/artist/${artist.id}`}
+                          className="underline-offset-2 hover:underline"
+                        >
+                          {artist.name}
+                        </Link>
+                      ) : (
+                        artist.name
+                      )}
                     </span>
                   );
                 })
