@@ -23,7 +23,6 @@ export function AppCredit({
   latestRelease,
 }: AppCreditProps) {
   const isSidebar = variant === "sidebar";
-  const hasUpdate = Boolean(latestRelease?.isNewer);
   const versionLabel = `v${APP_VERSION}`;
 
   return (
@@ -46,7 +45,7 @@ export function AppCredit({
         >
           {versionLabel}
         </a>
-        {hasUpdate && latestRelease ? (
+        {latestRelease?.isNewer && latestRelease ? (
           <a
             href={latestRelease.htmlUrl}
             target="_blank"
