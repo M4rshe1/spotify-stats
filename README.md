@@ -9,7 +9,7 @@
 
 **Personal Spotify listening stats** — see how you have changed over the years and discover new patterns in your music taste. Effortlessly track your favorite genres, artists, and songs, analyze trends and listening habits, and visualize your evolution as a Spotify user over time.
 
-[![Version](https://flat.badgen.net/github/release/m4rshe1/spotify-stats)](https://github.com/M4rshe1/spotify-stats/blob/master/package.json)
+[![Version](https://flat.badgen.net/github/release/m4rshe1/spotify-stats)](https://github.com/M4rshe1/spotify-stats/releases/latest)
 [![Bun](https://img.shields.io/badge/runtime-bun-000000?logo=bun)](https://bun.sh)
 [![Next.js](https://img.shields.io/badge/Next.js-15-black?logo=next.js)](https://nextjs.org)
 
@@ -50,12 +50,10 @@ Spotify Stats is a self-hosted web app built with **Next.js**, **Better Auth** (
   <img src=".github/assets/screenshots/top-tracks.png" alt="Top tracks ranking and stats" width="720" />
 </p>
 
-
 <p align="center"><em>Track</em></p>
 <p align="center">
   <img src=".github/assets/screenshots/track.png" alt="Single track detail view" width="720" />
 </p>
-
 
 </details>
 
