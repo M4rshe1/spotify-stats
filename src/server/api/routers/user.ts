@@ -197,7 +197,7 @@ export const userRouter = createTRPCRouter({
 
       const upsertSetting = async (key: string, value: string) => {
         const { data: setting } = await tryCatch(
-          ctx.db.settings.findFirst({
+          ctx.db.setting.findFirst({
             where: {
               userId: ctx.session?.user.id,
               key,
@@ -207,14 +207,14 @@ export const userRouter = createTRPCRouter({
 
         if (setting) {
           await tryCatch(
-            ctx.db.settings.update({
+            ctx.db.setting.update({
               where: { id: setting.id },
               data: { value, userId: ctx.session?.user.id },
             }),
           );
         } else {
           await tryCatch(
-            ctx.db.settings.create({
+            ctx.db.setting.create({
               data: {
                 key,
                 value,
