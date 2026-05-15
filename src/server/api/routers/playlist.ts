@@ -8,10 +8,12 @@ import type {
   PlaybackRow,
   TopArtistRow,
   TopAlbumRow,
+  TopGenreRow,
   TopTrackRow,
 } from "@/server/api/types/sql-rows";
 import { Prisma } from "generated/prisma";
 import {
+  getAlbumArtistsLateralSql,
   getSelectedPeriodSql,
   getTrackArtistsLateralSql,
 } from "../sql-snippets";
@@ -297,6 +299,168 @@ export const playlistRouter = createTRPCRouter({
         },
       }));
     }),
+  getTopAlbums: protectedProcedure
+    .input(playlistTopInputSchema)
+    .query(async ({ ctx, input }) => {
+      const { start, end } = getPeriods(input.period, input.from, input.to);
+      const timezone = ctx.session.user.timezone;
+      const userId = ctx.session.user.id;
+      const sortColumn =
+        input.sortBy === "count"
+          ? Prisma.sql`COUNT(*)::float8`
+          : Prisma.sql`SUM(playback."duration")::float8`;
+      const rankedOrderColumn =
+        input.sortBy === "count"
+          ? Prisma.sql`ranked."count"`
+          : Prisma.sql`ranked."duration"`;
+
+      const totalsResult = await tryCatch(
+        ctx.db.$queryRaw<{ totalCount: number; totalDuration: number }[]>(
+          Prisma.sql`
+            SELECT
+              COUNT(*)::float8 AS "totalCount",
+              COALESCE(SUM(playback."duration"), 0)::float8 AS "totalDuration"
+            FROM playback
+            JOIN track ON playback."trackId" = track."id"
+            ${playlistPlaybackJoin(input.id)}
+              AND playback."userId" = ${userId}
+              AND ${getSelectedPeriodSql(timezone, start, end)}
+          `,
+        ),
+      );
+
+      const albums = await tryCatch(
+        ctx.db.$queryRaw<TopAlbumRow[]>(Prisma.sql`
+          WITH ranked_albums AS (
+            SELECT
+              COUNT(*)::float8 AS "count",
+              SUM(playback."duration")::float8 AS "duration",
+              album."id",
+              album."name",
+              album."image"
+            FROM playback
+            JOIN track ON playback."trackId" = track."id"
+            JOIN album ON track."albumId" = album."id"
+            ${playlistPlaybackJoin(input.id)}
+              AND playback."userId" = ${userId}
+              AND ${getSelectedPeriodSql(timezone, start, end)}
+            GROUP BY album."id", album."name", album."image"
+            ORDER BY ${sortColumn} DESC
+            LIMIT 10
+          )
+          SELECT
+            ranked."count",
+            ranked."duration",
+            ranked."id",
+            ranked."name",
+            ranked."image",
+            artists."names" AS "artistNames",
+            artists."ids" AS "artistIds",
+            artists."roles" AS "artistRoles"
+          FROM ranked_albums ranked
+          ${getAlbumArtistsLateralSql(Prisma.sql`ranked."id"`)}
+          ORDER BY ${rankedOrderColumn} DESC
+        `),
+      );
+
+      if (totalsResult.error || albums.error) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to get top albums",
+        });
+      }
+
+      const totals = totalsResult.data?.[0] ?? {
+        totalCount: 0,
+        totalDuration: 0,
+      };
+
+      return {
+        items: (albums.data ?? []).map((row) => ({
+          id: row.id,
+          name: row.name,
+          image: row.image,
+          duration: row.duration,
+          count: row.count,
+          artists: rowToArtists(row),
+        })),
+        totalCount: totals.totalCount,
+        totalDuration: totals.totalDuration,
+      };
+    }),
+
+  getTopGenres: protectedProcedure
+    .input(playlistTopInputSchema)
+    .query(async ({ ctx, input }) => {
+      const { start, end } = getPeriods(input.period, input.from, input.to);
+      const timezone = ctx.session.user.timezone;
+      const userId = ctx.session.user.id;
+      const sortColumn =
+        input.sortBy === "count"
+          ? Prisma.sql`COUNT(*)::float8`
+          : Prisma.sql`SUM(playback."duration")::float8`;
+
+      const totalsResult = await tryCatch(
+        ctx.db.$queryRaw<{ totalCount: number; totalDuration: number }[]>(
+          Prisma.sql`
+            SELECT
+              COUNT(*)::float8 AS "totalCount",
+              COALESCE(SUM(playback."duration"), 0)::float8 AS "totalDuration"
+            FROM playback
+            JOIN track ON playback."trackId" = track."id"
+            ${playlistPlaybackJoin(input.id)}
+              AND playback."userId" = ${userId}
+              AND ${getSelectedPeriodSql(timezone, start, end)}
+          `,
+        ),
+      );
+
+      const genres = await tryCatch(
+        ctx.db.$queryRaw<TopGenreRow[]>(Prisma.sql`
+          SELECT
+            COUNT(*)::float8 AS "count",
+            SUM(playback."duration")::float8 AS "duration",
+            genre."id",
+            genre."name"
+          FROM playback
+          JOIN track ON playback."trackId" = track."id"
+          JOIN artist_track ON track."id" = artist_track."trackId" AND artist_track."role" = 'primary'
+          JOIN artist_genre ON artist_genre."artistId" = artist_track."artistId"
+          JOIN genre ON genre."id" = artist_genre."genreId"
+          ${playlistPlaybackJoin(input.id)}
+            AND playback."userId" = ${userId}
+            AND ${getSelectedPeriodSql(timezone, start, end)}
+          GROUP BY genre."id", genre."name"
+          ORDER BY ${sortColumn} DESC
+          LIMIT 10
+        `),
+      );
+
+      if (totalsResult.error || genres.error) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to get top genres",
+        });
+      }
+
+      const totals = totalsResult.data?.[0] ?? {
+        totalCount: 0,
+        totalDuration: 0,
+      };
+
+      return {
+        items: (genres.data ?? []).map((row) => ({
+          id: row.id,
+          name: row.name,
+          image: null,
+          duration: row.duration,
+          count: row.count,
+        })),
+        totalCount: totals.totalCount,
+        totalDuration: totals.totalDuration,
+      };
+    }),
+
   getTopArtists: protectedProcedure
     .input(playlistTopInputSchema)
     .query(async ({ ctx, input }) => {

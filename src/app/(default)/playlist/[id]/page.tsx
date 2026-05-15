@@ -48,6 +48,16 @@ const Page = withAuth(async ({ params }: { params: { id: string } }) => {
     sortBy: "duration",
     ...periodInput,
   });
+  void api.playlist.getTopAlbums.prefetch({
+    id: numericId,
+    sortBy: "duration",
+    ...periodInput,
+  });
+  void api.playlist.getTopGenres.prefetch({
+    id: numericId,
+    sortBy: "duration",
+    ...periodInput,
+  });
   void api.chart.getPlaylistTimeListened.prefetch({
     playlistId: numericId,
     ...periodInput,
