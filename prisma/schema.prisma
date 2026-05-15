@@ -28,7 +28,7 @@ model User {
   sessions      Session[]
   accounts      Account[]
   playbacks     Playback[]
-  settings      Settings[]
+  settings      Setting[]
   imports       Import[]
 
   role       String
@@ -90,7 +90,7 @@ model Verification {
   @@map("verification")
 }
 
-model Settings {
+model Setting {
   id        Int      @id @default(autoincrement())
   key       String
   value     String
@@ -100,44 +100,44 @@ model Settings {
   updatedAt DateTime @default(now()) @updatedAt
 
   @@unique([userId, key])
-  @@map("settings")
+  @@map("setting")
 }
 
 model Artist {
-  id        Int            @id @default(autoincrement())
-  spotifyId String         @unique
+  id        Int           @id @default(autoincrement())
+  spotifyId String        @unique
   name      String
   image     String?
-  createdAt DateTime       @default(now())
-  updatedAt DateTime       @default(now()) @updatedAt
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @default(now()) @updatedAt
   tracks    ArtistTrack[]
-  genres    ArtistGenres[]
-  albums    AlbumArtists[]
+  genres    ArtistGenre[]
+  albums    AlbumArtist[]
 
   @@map("artist")
 }
 
-model ArtistGenres {
+model ArtistGenre {
   id       Int    @id @default(autoincrement())
   artistId Int
   artist   Artist @relation(fields: [artistId], references: [id], onDelete: Cascade)
   genreId  Int
   genre    Genre  @relation(fields: [genreId], references: [id], onDelete: Cascade)
 
-  @@map("artist_genres")
+  @@map("artist_genre")
 }
 
 model Genre {
-  id        Int            @id @default(autoincrement())
-  name      String         @unique
-  createdAt DateTime       @default(now())
-  updatedAt DateTime       @default(now()) @updatedAt
-  artists   ArtistGenres[]
+  id        Int           @id @default(autoincrement())
+  name      String        @unique
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @default(now()) @updatedAt
+  artists   ArtistGenre[]
 
   @@map("genre")
 }
 
-model AlbumArtists {
+model AlbumArtist {
   id       Int    @id @default(autoincrement())
   albumId  Int
   album    Album  @relation(fields: [albumId], references: [id], onDelete: Cascade)
@@ -145,20 +145,20 @@ model AlbumArtists {
   artistId Int
   artist   Artist @relation(fields: [artistId], references: [id], onDelete: Cascade)
 
-  @@map("album_artists")
+  @@map("album_artist")
 }
 
 model Album {
-  id                   Int            @id @default(autoincrement())
-  spotifyId            String         @unique
+  id                   Int           @id @default(autoincrement())
+  spotifyId            String        @unique
   name                 String
   image                String?
   releaseDate          String?
   releaseDatePrecision String?
-  createdAt            DateTime       @default(now())
-  updatedAt            DateTime       @default(now()) @updatedAt
+  createdAt            DateTime      @default(now())
+  updatedAt            DateTime      @default(now()) @updatedAt
   tracks               Track[]
-  artists              AlbumArtists[]
+  artists              AlbumArtist[]
 
   @@map("album")
 }

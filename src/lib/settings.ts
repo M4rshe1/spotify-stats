@@ -1,6 +1,6 @@
 import { db } from "@/server/db";
 import { tryCatch, tryCatchSync } from "./try-catch";
-import type { Settings } from "generated/prisma";
+import type { Setting as DbSetting } from "generated/prisma";
 import {
   settings as settingDefs,
   type Setting,
@@ -8,7 +8,7 @@ import {
   type SettingsRecord,
 } from "./consts/settings";
 
-function toRecord(settings: Settings[], defs: Record<string, Setting>) {
+function toRecord(settings: DbSetting[], defs: Record<string, Setting>) {
   const record: Record<string, Setting["defaultValue"]> = {};
   settings.forEach((setting) => {
     const settingDef = defs[setting.key as keyof typeof settingDefs];
@@ -51,7 +51,7 @@ function toRecord(settings: Settings[], defs: Record<string, Setting>) {
 
 export async function getSettings() {
   const result = await tryCatch(
-    db.settings.findMany({
+    db.setting.findMany({
       where: {
         userId: {
           equals: null,
@@ -64,7 +64,7 @@ export async function getSettings() {
 
 export async function getSetting(key: string) {
   const result = await tryCatch(
-    db.settings.findFirst({
+    db.setting.findFirst({
       where: {
         userId: null,
         key,
@@ -76,7 +76,7 @@ export async function getSetting(key: string) {
 
 export async function getSettingsForUser(userId: string) {
   const result = await tryCatch(
-    db.settings.findMany({
+    db.setting.findMany({
       where: {
         userId,
       },
@@ -87,7 +87,7 @@ export async function getSettingsForUser(userId: string) {
 
 export async function getSettingForUser(userId: string, key: string) {
   const result = await tryCatch(
-    db.settings.findFirst({
+    db.setting.findFirst({
       where: { userId, key },
     }),
   );
@@ -100,7 +100,7 @@ export async function setSettingForUser(
   value: string,
 ) {
   const result = await tryCatch(
-    db.settings.upsert({
+    db.setting.upsert({
       where: {
         userId_key: {
           userId,
@@ -122,7 +122,7 @@ export async function setSettingForUser(
 
 export async function setSetting(key: string, value: string) {
   const setting = await tryCatch(
-    db.settings.findFirst({
+    db.setting.findFirst({
       where: {
         userId: null,
         key,
@@ -131,14 +131,14 @@ export async function setSetting(key: string, value: string) {
   );
   if (setting.data) {
     await tryCatch(
-      db.settings.update({
+      db.setting.update({
         where: { id: setting.data.id },
         data: { value },
       }),
     );
   } else {
     await tryCatch(
-      db.settings.create({
+      db.setting.create({
         data: { key, value, userId: null },
       }),
     );
@@ -152,7 +152,7 @@ export async function setSettings(settings: Record<string, string>) {
 }
 export async function deleteSetting(key: string) {
   const result = await tryCatch(
-    db.settings.delete({
+    db.setting.delete({
       where: {
         userId_key: {
           userId: null as unknown as string,
@@ -166,7 +166,7 @@ export async function deleteSetting(key: string) {
 
 export async function deleteSettingForUser(userId: string, key: string) {
   const result = await tryCatch(
-    db.settings.delete({
+    db.setting.delete({
       where: {
         userId_key: {
           userId,

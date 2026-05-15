@@ -46,8 +46,8 @@ export const adminRouter = createTRPCRouter({
       ctx.db.album.count(),
       ctx.db.track.count(),
       ctx.db.playlist.count(),
-      ctx.db.artistGenres.count(),
-      ctx.db.albumArtists.count(),
+      ctx.db.artistGenre.count(),
+      ctx.db.albumArtist.count(),
       ctx.db.artistTrack.count(),
     ]);
 
