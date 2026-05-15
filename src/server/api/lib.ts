@@ -1,6 +1,6 @@
 import z from "zod";
 import { periods, type Period } from "@/lib/consts/periods";
-import type { PlaybackRow, TopTrackRow } from "./types/sql-rows";
+import type { PlaybackRow, TopAlbumRow, TopTrackRow } from "./types/sql-rows";
 
 const periodKeys = Object.keys(periods) as Period[];
 const periodEnum = z.enum(periodKeys as [Period, ...Period[]]);
@@ -13,7 +13,7 @@ export const periodSchema = z.object({
 
 export type PeriodQueryInput = z.infer<typeof periodSchema>;
 
-export function rowToArtists(row: TopTrackRow | PlaybackRow) {
+export function rowToArtists(row: TopTrackRow | PlaybackRow | TopAlbumRow) {
   return [
     ...(row.artistNames ?? []).map((name, index) => ({
       id: row.artistIds?.[index] ?? null,

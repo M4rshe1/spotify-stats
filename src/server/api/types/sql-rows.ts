@@ -34,6 +34,7 @@ export type TopAlbumRow = {
   count: number;
   artistNames: string[] | null;
   artistIds: number[] | null;
+  artistRoles: string[] | null;
 };
 
 export type TopArtistRow = {
