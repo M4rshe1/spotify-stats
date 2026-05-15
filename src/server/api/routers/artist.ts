@@ -11,6 +11,11 @@ import type {
   FirstLastPlayed,
 } from "@/server/api/types/sql-rows";
 import { Prisma } from "generated/prisma";
+import {
+  getAlbumArtistsLateralSql,
+  getSelectedPeriodSql,
+  getTrackArtistsLateralSql,
+} from "../sql-snippets";
 
 const artistTopSortSchema = z.enum(["count", "duration"]);
 
@@ -59,8 +64,7 @@ export const artistRouter = createTRPCRouter({
             JOIN artist_track ON track."id" = artist_track."trackId" AND artist_track."role" = 'primary'
             WHERE artist_track."artistId" = ${input.id}
               AND playback."userId" = ${ctx.session.user.id}
-              AND timezone(${timezone}, playback."playedAt") >= timezone(${timezone}, ${start})
-              AND timezone(${timezone}, playback."playedAt") <= timezone(${timezone}, ${end})
+              AND ${getSelectedPeriodSql(timezone, start, end)}
           `),
         ),
       ]);
@@ -93,6 +97,10 @@ export const artistRouter = createTRPCRouter({
         input.sortBy === "count"
           ? Prisma.sql`COUNT(*)::float8`
           : Prisma.sql`SUM(playback."duration")::float8`;
+      const rankedOrderColumn =
+        input.sortBy === "count"
+          ? Prisma.sql`ranked."count"`
+          : Prisma.sql`ranked."duration"`;
 
       const totalsResult = await tryCatch(
         ctx.db.$queryRaw<{ totalCount: number; totalDuration: number }[]>(
@@ -105,44 +113,42 @@ export const artistRouter = createTRPCRouter({
             JOIN artist_track ON track."id" = artist_track."trackId" AND artist_track."role" = 'primary'
             WHERE artist_track."artistId" = ${input.id}
               AND playback."userId" = ${userId}
-              AND timezone(${timezone}, playback."playedAt") >= timezone(${timezone}, ${start})
-              AND timezone(${timezone}, playback."playedAt") <= timezone(${timezone}, ${end})
+              AND ${getSelectedPeriodSql(timezone, start, end)}
           `,
         ),
       );
 
       const tracks = await tryCatch(
         ctx.db.$queryRaw<TopTrackRow[]>(Prisma.sql`
+          WITH ranked_tracks AS (
+            SELECT
+              COUNT(*)::float8 AS "count",
+              SUM(playback."duration")::float8 AS "duration",
+              track."id",
+              track."name",
+              track."image"
+            FROM playback
+            JOIN track ON playback."trackId" = track."id"
+            JOIN artist_track AS filter_at ON track."id" = filter_at."trackId" AND filter_at."role" = 'primary'
+            WHERE filter_at."artistId" = ${input.id}
+              AND playback."userId" = ${userId}
+              AND ${getSelectedPeriodSql(timezone, start, end)}
+            GROUP BY track."id", track."name", track."image"
+            ORDER BY ${sortColumn} DESC
+            LIMIT 10
+          )
           SELECT
-            COUNT(*)::float8 AS "count",
-            SUM(playback."duration")::float8 AS "duration",
-            track."id",
-            track."name",
-            track."image",
+            ranked."count",
+            ranked."duration",
+            ranked."id",
+            ranked."name",
+            ranked."image",
             artists."names" AS "artistNames",
             artists."ids" AS "artistIds",
             artists."roles" AS "artistRoles"
-          FROM playback
-          JOIN track ON playback."trackId" = track."id"
-          JOIN artist_track AS filter_at ON track."id" = filter_at."trackId" AND filter_at."role" = 'primary'
-          JOIN artist_track ON track."id" = artist_track."trackId"
-          JOIN artist ON artist."id" = artist_track."artistId"
-          LEFT JOIN LATERAL (
-              SELECT 
-                  ARRAY_AGG(a."name" ORDER BY at."artistId") AS "names",
-                  ARRAY_AGG(at."artistId" ORDER BY at."artistId") AS "ids",
-                  ARRAY_AGG(at."role" ORDER BY at."artistId") AS "roles"
-              FROM artist_track at
-              LEFT JOIN artist a ON at."artistId" = a."id"
-              WHERE at."trackId" = track."id"
-          ) artists ON TRUE
-          WHERE artist_track."artistId" = ${input.id}
-            AND playback."userId" = ${userId}
-            AND timezone(${timezone}, playback."playedAt") >= timezone(${timezone}, ${start})
-            AND timezone(${timezone}, playback."playedAt") <= timezone(${timezone}, ${end})
-          GROUP BY track."id", track."name", track."image", artists."names", artists."ids",  artists."roles"
-          ORDER BY ${sortColumn} DESC
-          LIMIT 10
+          FROM ranked_tracks ranked
+          ${getTrackArtistsLateralSql(Prisma.sql`ranked."id"`)}
+          ORDER BY ${rankedOrderColumn} DESC
         `),
       );
 
@@ -181,6 +187,10 @@ export const artistRouter = createTRPCRouter({
         input.sortBy === "count"
           ? Prisma.sql`COUNT(*)::float8`
           : Prisma.sql`SUM(playback."duration")::float8`;
+      const rankedOrderColumn =
+        input.sortBy === "count"
+          ? Prisma.sql`ranked."count"`
+          : Prisma.sql`ranked."duration"`;
 
       const totalsResult = await tryCatch(
         ctx.db.$queryRaw<{ totalCount: number; totalDuration: number }[]>(
@@ -193,40 +203,43 @@ export const artistRouter = createTRPCRouter({
             JOIN artist_track ON track."id" = artist_track."trackId" AND artist_track."role" = 'primary'
             WHERE artist_track."artistId" = ${input.id}
               AND playback."userId" = ${userId}
-              AND timezone(${timezone}, playback."playedAt") >= timezone(${timezone}, ${start})
-              AND timezone(${timezone}, playback."playedAt") <= timezone(${timezone}, ${end})
+              AND ${getSelectedPeriodSql(timezone, start, end)}
           `,
         ),
       );
 
       const albums = await tryCatch(
         ctx.db.$queryRaw<TopAlbumRow[]>(Prisma.sql`
+          WITH ranked_albums AS (
+            SELECT
+              COUNT(*)::float8 AS "count",
+              SUM(playback."duration")::float8 AS "duration",
+              album."id",
+              album."name",
+              album."image"
+            FROM playback
+            JOIN track ON playback."trackId" = track."id"
+            JOIN album ON track."albumId" = album."id"
+            JOIN album_artist ON album."id" = album_artist."albumId" AND album_artist."role" = 'primary'
+            WHERE album_artist."artistId" = ${input.id}
+              AND playback."userId" = ${userId}
+              AND ${getSelectedPeriodSql(timezone, start, end)}
+            GROUP BY album."id", album."name", album."image"
+            ORDER BY ${sortColumn} DESC
+            LIMIT 10
+          )
           SELECT
-            COUNT(*)::float8 AS "count",
-            SUM(playback."duration")::float8 AS "duration",
-            album."id",
-            album."name",
-            album."image",
-            COALESCE(
-              ARRAY_AGG(DISTINCT artist."name") FILTER (WHERE artist."name" IS NOT NULL),
-              ARRAY[]::text[]
-            ) AS "artistNames",
-            COALESCE(
-              ARRAY_AGG(DISTINCT artist."id") FILTER (WHERE artist."id" IS NOT NULL),
-              ARRAY[]::integer[]
-            ) AS "artistIds"
-          FROM playback
-          JOIN track ON playback."trackId" = track."id"
-          JOIN album ON track."albumId" = album."id"
-          JOIN artist_track ON track."id" = artist_track."trackId" AND artist_track."role" = 'primary'
-          JOIN artist ON artist."id" = artist_track."artistId"
-          WHERE artist_track."artistId" = ${input.id}
-            AND playback."userId" = ${userId}
-            AND timezone(${timezone}, playback."playedAt") >= timezone(${timezone}, ${start})
-            AND timezone(${timezone}, playback."playedAt") <= timezone(${timezone}, ${end})
-          GROUP BY album."id", album."name", album."image"
-          ORDER BY ${sortColumn} DESC
-          LIMIT 10
+            ranked."count",
+            ranked."duration",
+            ranked."id",
+            ranked."name",
+            ranked."image",
+            artists."names" AS "artistNames",
+            artists."ids" AS "artistIds",
+            artists."roles" AS "artistRoles"
+          FROM ranked_albums ranked
+          ${getAlbumArtistsLateralSql(Prisma.sql`ranked."id"`)}
+          ORDER BY ${rankedOrderColumn} DESC
         `),
       );
 
@@ -249,8 +262,7 @@ export const artistRouter = createTRPCRouter({
           image: row.image,
           duration: row.duration,
           count: row.count,
-          artists: row.artistNames ?? [],
-          artistIds: row.artistIds ?? [],
+          artists: rowToArtists(row),
         })),
         totalCount: totals.totalCount,
         totalDuration: totals.totalDuration,
