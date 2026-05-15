@@ -853,4 +853,47 @@ export const chartRouter = createTRPCRouter({
         duration: row.duration,
       }));
     }),
+  getArtistCountDistribution: protectedProcedure
+    .input(periodSchema)
+    .query(async ({ ctx, input }) => {
+      const { start, end } = getPeriods(input.period, input.from, input.to);
+      const result = await tryCatch(
+        ctx.db.$queryRaw<
+          { artists: number; count: number; duration: number }[]
+        >(
+          Prisma.sql`
+            SELECT
+              sub."count" AS artists,
+              COUNT(sub."count")::float8 AS count,
+              SUM(sub."duration")::float8 AS "duration"
+            FROM (
+              SELECT
+                COUNT(*)::int AS "count",
+                COALESCE(SUM(playback."duration"), 0)::float8 AS "duration"
+              FROM playback
+              JOIN track ON track."id" = playback."trackId"
+              JOIN artist_track ON artist_track."trackId" = track."id"
+              WHERE ${getSelectedPeriodSql(ctx.session.user.timezone, start, end)}
+                AND playback."userId" = ${ctx.session.user.id}
+              GROUP BY playback."id"
+            ) AS sub
+            GROUP BY sub."count"
+            ORDER BY sub."count" DESC
+          `,
+        ),
+      );
+
+      if (result.error) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to get context distribution",
+        });
+      }
+
+      return result.data.map((row) => ({
+        name: `${row.artists} ${row.artists > 1 ? "Artists" : "Artist"}`,
+        value: row.count,
+        duration: row.duration,
+      }));
+    }),
 });
