@@ -20,6 +20,7 @@
 ## Table of contents
 
 - [Overview](#overview)
+- [Screenshots](#screenshots)
 - [Requirements](#requirements)
 - [Environment variables](#environment-variables)
 - [Docker](#docker)
@@ -33,6 +34,30 @@
 ## Overview
 
 Spotify Stats is a self-hosted web app built with **Next.js**, **Better Auth** (Spotify sign-in), **Prisma** (PostgreSQL), **Redis**, and **BullMQ** workers for stats and import processing. Users sign in with Spotify, and can upload **Spotify extended streaming history** JSON exports for richer playback data.
+
+<div id="screenshots"></div>
+
+<details>
+<summary><strong>Screenshots</strong> — click to expand</summary>
+
+<p align="center"><em>Dashboard</em></p>
+<p align="center">
+  <img src=".github/assets/screenshots/dashboard.png" alt="Dashboard with listening stats overview" width="720" />
+</p>
+
+<p align="center"><em>Top tracks</em></p>
+<p align="center">
+  <img src=".github/assets/screenshots/top-tracks.png" alt="Top tracks ranking and stats" width="720" />
+</p>
+
+
+<p align="center"><em>Track</em></p>
+<p align="center">
+  <img src=".github/assets/screenshots/track.png" alt="Single track detail view" width="720" />
+</p>
+
+
+</details>
 
 ---
 
