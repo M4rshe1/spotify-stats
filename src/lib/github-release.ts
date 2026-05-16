@@ -5,7 +5,7 @@ import { logger } from "@/lib/logger";
 import { subDays } from "date-fns";
 
 const RELEASES_API_URL =
-  "https://api.github.com/repos/M4rshe1/spotify/releases/latest";
+  "https://api.github.com/repos/M4rshe1/spotify-stats/releases/latest";
 const RELEASE_FALLBACK_URL = `${APP_REPO_URL}/releases/latest`;
 const REVALIDATE_SECONDS = 60 * 60;
 
@@ -17,7 +17,7 @@ const LATEST_RELEASE_VERSION = {
 };
 
 const LAST_UPDATED_AT = subDays(new Date(), 1);
-const UPDATE_INTERVAL = 1000 * 60 * 60;
+const UPDATE_INTERVAL = 1000 * REVALIDATE_SECONDS;
 
 export type LatestReleaseInfo = {
   version: string;
