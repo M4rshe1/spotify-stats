@@ -16,8 +16,18 @@ export default withAuth(async () => {
   const metricsInput = await getPreferredMetricsInput();
 
   await Promise.all([
+    api.chart.getTimeListened.prefetch(metricsInput),
+    api.chart.getTimeDistribution.prefetch(metricsInput),
+    api.chart.getDayOfWeekDistribution.prefetch(metricsInput),
     api.chart.getPlatformDistribution.prefetch(metricsInput),
     api.chart.getDeviceDistribution.prefetch(metricsInput),
+    api.chart.getContextDistribution.prefetch(metricsInput),
+    api.chart.getArtistCountDistribution.prefetch(metricsInput),
+    api.chart.getGenreDistribution.prefetch(metricsInput),
+    api.chart.getExplicitDistribution.prefetch(metricsInput),
+    api.chart.getTrackLengthDistribution.prefetch(metricsInput),
+    api.chart.getReleaseDecadeDistribution.prefetch(metricsInput),
+    api.chart.getReleaseYearDistribution.prefetch(metricsInput),
   ]);
 
   return (
