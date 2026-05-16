@@ -37,7 +37,7 @@ export function AppCredit({
     >
       <div className="mb-1 flex items-center gap-1.5">
         <a
-          href={APP_REPO_URL}
+          href={`${APP_REPO_URL}/releases/tag/${versionLabel}`}
           target="_blank"
           rel="noreferrer"
           className="hover:text-foreground font-mono tracking-tight transition-colors"
