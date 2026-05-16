@@ -24,6 +24,72 @@ function getSQLPlayedAt(timezone: string) {
   return `("playedAt" AT TIME ZONE 'UTC' AT TIME ZONE '${timezone}')`;
 }
 
+const DAY_OF_WEEK_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+
+const TRACK_LENGTH_BUCKETS = [
+  "Under 2 min",
+  "2–4 min",
+  "4–6 min",
+  "6+ min",
+] as const;
+
+type DistributionRow = {
+  name: string;
+  count: number;
+  duration: number;
+};
+
+function toDistributionResponse(rows: DistributionRow[]) {
+  return rows.map((row) => ({
+    name: row.name,
+    value: row.count,
+    duration: row.duration,
+  }));
+}
+
+function collapseTopDistribution(
+  rows: DistributionRow[],
+  limit: number,
+  otherLabel = "Other",
+) {
+  const sorted = [...rows].sort((a, b) => b.duration - a.duration);
+  if (sorted.length <= limit) return sorted;
+  const top = sorted.slice(0, limit);
+  const rest = sorted.slice(limit);
+  top.push({
+    name: otherLabel,
+    count: rest.reduce((sum, row) => sum + row.count, 0),
+    duration: rest.reduce((sum, row) => sum + row.duration, 0),
+  });
+  return top;
+}
+
+function orderDistributionRows(
+  rows: DistributionRow[],
+  order: readonly string[],
+) {
+  const byName = new Map(rows.map((row) => [row.name, row]));
+  return order
+    .map((name) => byName.get(name))
+    .filter((row): row is DistributionRow => row != null);
+}
+
+function getTrackReleaseYearJoinSql() {
+  return Prisma.sql`
+    LEFT JOIN album ON track."albumId" = album."id"
+    LEFT JOIN LATERAL (
+      SELECT
+        CASE
+          WHEN album."releaseDate" ~ '^[0-9]{4}'
+            THEN SUBSTRING(album."releaseDate" FROM 1 FOR 4)::int
+          WHEN track."releaseDate" ~ '^[0-9]{4}'
+            THEN SUBSTRING(track."releaseDate" FROM 1 FOR 4)::int
+          ELSE NULL
+        END AS year
+    ) AS release_year ON TRUE
+  `;
+}
+
 type TimeListenedPrismaRow = {
   duration: number;
   date: string;
@@ -895,5 +961,257 @@ export const chartRouter = createTRPCRouter({
         value: row.count,
         duration: row.duration,
       }));
+    }),
+  getDayOfWeekDistribution: protectedProcedure
+    .input(periodSchema)
+    .query(async ({ ctx, input }) => {
+      const { start, end } = getPeriods(input.period, input.from, input.to);
+      const timezone = ctx.session.user.timezone;
+      const playedAt = Prisma.raw(getSQLPlayedAt(timezone));
+      const result = await tryCatch(
+        ctx.db.$queryRaw<
+          { day: number; count: number; duration: number }[]
+        >(
+          Prisma.sql`
+            SELECT
+              EXTRACT(ISODOW FROM ${playedAt})::int AS day,
+              COUNT(*)::float8 AS count,
+              COALESCE(SUM(playback."duration"), 0)::float8 AS duration
+            FROM playback
+            WHERE ${getSelectedPeriodSql(timezone, start, end)}
+              AND playback."userId" = ${ctx.session.user.id}
+            GROUP BY EXTRACT(ISODOW FROM ${playedAt})::int
+            ORDER BY day ASC
+          `,
+        ),
+      );
+
+      if (result.error) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to get day of week distribution",
+        });
+      }
+
+      const rows = result.data;
+      const totalDuration = rows.reduce((acc, row) => acc + row.duration, 0);
+      const totalCount = rows.reduce((acc, row) => acc + row.count, 0);
+      const byDay = new Map(rows.map((row) => [row.day, row]));
+
+      const data = DAY_OF_WEEK_LABELS.map((label, index) => {
+        const day = index + 1;
+        const row = byDay.get(day);
+        const duration = row?.duration ?? 0;
+        return {
+          date: label,
+          duration,
+          count: row?.count ?? 0,
+          percentage: totalDuration > 0 ? (duration / totalDuration) * 100 : 0,
+        };
+      });
+
+      return { data, totalDuration, totalCount };
+    }),
+  getGenreDistribution: protectedProcedure
+    .input(periodSchema)
+    .query(async ({ ctx, input }) => {
+      const { start, end } = getPeriods(input.period, input.from, input.to);
+      const result = await tryCatch(
+        ctx.db.$queryRaw<DistributionRow[]>(
+          Prisma.sql`
+            SELECT
+              genre."name" AS name,
+              COUNT(*)::float8 AS count,
+              COALESCE(SUM(playback."duration"), 0)::float8 AS duration
+            FROM playback
+            JOIN track ON playback."trackId" = track."id"
+            JOIN artist_track ON track."id" = artist_track."trackId"
+              AND artist_track."role" = 'primary'
+            JOIN artist_genre ON artist_genre."artistId" = artist_track."artistId"
+            JOIN genre ON genre."id" = artist_genre."genreId"
+            WHERE ${getSelectedPeriodSql(ctx.session.user.timezone, start, end)}
+              AND playback."userId" = ${ctx.session.user.id}
+            GROUP BY genre."id", genre."name"
+            ORDER BY duration DESC
+          `,
+        ),
+      );
+
+      if (result.error) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to get genre distribution",
+        });
+      }
+
+      return toDistributionResponse(
+        collapseTopDistribution(result.data, 8),
+      );
+    }),
+  getExplicitDistribution: protectedProcedure
+    .input(periodSchema)
+    .query(async ({ ctx, input }) => {
+      const { start, end } = getPeriods(input.period, input.from, input.to);
+      const result = await tryCatch(
+        ctx.db.$queryRaw<DistributionRow[]>(
+          Prisma.sql`
+            SELECT
+              CASE
+                WHEN track."explicit" THEN 'Explicit'
+                ELSE 'Clean'
+              END AS name,
+              COUNT(*)::float8 AS count,
+              COALESCE(SUM(playback."duration"), 0)::float8 AS duration
+            FROM playback
+            JOIN track ON playback."trackId" = track."id"
+            WHERE ${getSelectedPeriodSql(ctx.session.user.timezone, start, end)}
+              AND playback."userId" = ${ctx.session.user.id}
+            GROUP BY track."explicit"
+            ORDER BY duration DESC
+          `,
+        ),
+      );
+
+      if (result.error) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to get explicit distribution",
+        });
+      }
+
+      return toDistributionResponse(
+        orderDistributionRows(result.data, ["Clean", "Explicit"]),
+      );
+    }),
+  getTrackLengthDistribution: protectedProcedure
+    .input(periodSchema)
+    .query(async ({ ctx, input }) => {
+      const { start, end } = getPeriods(input.period, input.from, input.to);
+      const result = await tryCatch(
+        ctx.db.$queryRaw<DistributionRow[]>(
+          Prisma.sql`
+            SELECT
+              CASE
+                WHEN track."duration" < 120000 THEN 'Under 2 min'
+                WHEN track."duration" < 240000 THEN '2–4 min'
+                WHEN track."duration" < 360000 THEN '4–6 min'
+                ELSE '6+ min'
+              END AS name,
+              COUNT(*)::float8 AS count,
+              COALESCE(SUM(playback."duration"), 0)::float8 AS duration
+            FROM playback
+            JOIN track ON playback."trackId" = track."id"
+            WHERE ${getSelectedPeriodSql(ctx.session.user.timezone, start, end)}
+              AND playback."userId" = ${ctx.session.user.id}
+            GROUP BY
+              CASE
+                WHEN track."duration" < 120000 THEN 'Under 2 min'
+                WHEN track."duration" < 240000 THEN '2–4 min'
+                WHEN track."duration" < 360000 THEN '4–6 min'
+                ELSE '6+ min'
+              END
+          `,
+        ),
+      );
+
+      if (result.error) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to get track length distribution",
+        });
+      }
+
+      return toDistributionResponse(
+        orderDistributionRows(result.data, TRACK_LENGTH_BUCKETS),
+      );
+    }),
+  getReleaseDecadeDistribution: protectedProcedure
+    .input(periodSchema)
+    .query(async ({ ctx, input }) => {
+      const { start, end } = getPeriods(input.period, input.from, input.to);
+      const result = await tryCatch(
+        ctx.db.$queryRaw<DistributionRow[]>(
+          Prisma.sql`
+            SELECT
+              CASE
+                WHEN release_year.year IS NULL THEN 'Unknown'
+                ELSE CONCAT(((release_year.year / 10) * 10)::text, 's')
+              END AS name,
+              COUNT(*)::float8 AS count,
+              COALESCE(SUM(playback."duration"), 0)::float8 AS duration
+            FROM playback
+            JOIN track ON playback."trackId" = track."id"
+            ${getTrackReleaseYearJoinSql()}
+            WHERE ${getSelectedPeriodSql(ctx.session.user.timezone, start, end)}
+              AND playback."userId" = ${ctx.session.user.id}
+            GROUP BY
+              CASE
+                WHEN release_year.year IS NULL THEN 'Unknown'
+                ELSE CONCAT(((release_year.year / 10) * 10)::text, 's')
+              END
+            ORDER BY duration DESC
+          `,
+        ),
+      );
+
+      if (result.error) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to get release decade distribution",
+        });
+      }
+
+      const known = result.data
+        .filter((row) => row.name !== "Unknown")
+        .sort((a, b) => a.name.localeCompare(b.name));
+      const unknown = result.data.filter((row) => row.name === "Unknown");
+
+      return toDistributionResponse([...known, ...unknown]);
+    }),
+  getReleaseYearDistribution: protectedProcedure
+    .input(periodSchema)
+    .query(async ({ ctx, input }) => {
+      const { start, end } = getPeriods(input.period, input.from, input.to);
+      const result = await tryCatch(
+        ctx.db.$queryRaw<
+          { year: number; count: number; duration: number }[]
+        >(
+          Prisma.sql`
+            SELECT
+              release_year.year AS year,
+              COUNT(*)::float8 AS count,
+              COALESCE(SUM(playback."duration"), 0)::float8 AS duration
+            FROM playback
+            JOIN track ON playback."trackId" = track."id"
+            ${getTrackReleaseYearJoinSql()}
+            WHERE ${getSelectedPeriodSql(ctx.session.user.timezone, start, end)}
+              AND playback."userId" = ${ctx.session.user.id}
+              AND release_year.year IS NOT NULL
+            GROUP BY release_year.year
+            ORDER BY release_year.year ASC
+          `,
+        ),
+      );
+
+      if (result.error) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to get release year distribution",
+        });
+      }
+
+      const rows = result.data;
+      const totalDuration = rows.reduce((acc, row) => acc + row.duration, 0);
+      const totalCount = rows.reduce((acc, row) => acc + row.count, 0);
+
+      const data = rows.map((row) => ({
+        year: String(row.year),
+        duration: row.duration,
+        count: row.count,
+        percentage:
+          totalDuration > 0 ? (row.duration / totalDuration) * 100 : 0,
+      }));
+
+      return { data, totalDuration, totalCount };
     }),
 });

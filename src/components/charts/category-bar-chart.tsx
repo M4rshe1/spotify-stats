@@ -33,6 +33,7 @@ export function CategoryBarChart<T extends CategoryRecord>({
   margin = DEFAULT_CHART_MARGIN,
   barRadius = 6,
   accessibilityLayer = true,
+  categoryAxisInterval,
 }: {
   data: T[];
   categoryKey: string;
@@ -53,6 +54,7 @@ export function CategoryBarChart<T extends CategoryRecord>({
   margin?: typeof DEFAULT_CHART_MARGIN;
   barRadius?: number;
   accessibilityLayer?: boolean;
+  categoryAxisInterval?: number | "preserveStart" | "preserveEnd" | "preserveStartEnd";
 }) {
   const numericValues = data.map((d) => Number(d[valueKey]));
   const yMax =
@@ -75,6 +77,7 @@ export function CategoryBarChart<T extends CategoryRecord>({
         tickLine={false}
         axisLine={false}
         tickMargin={8}
+        interval={categoryAxisInterval}
         tickFormatter={(value) =>
           formatCategoryTick?.(String(value)) ?? String(value)
         }

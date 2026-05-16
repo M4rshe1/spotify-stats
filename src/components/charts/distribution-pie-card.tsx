@@ -29,18 +29,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { chartColorAt } from "@/lib/consts/chart-colors";
 import { duration as formatDuration, formatPercent } from "@/lib/utils";
-
-const PIE_COLORS = [
-  "var(--chart-1)",
-  "var(--chart-2)",
-  "var(--chart-3)",
-  "var(--chart-4)",
-  "var(--chart-5)",
-  "var(--chart-6)",
-  "var(--chart-7)",
-  "var(--chart-8)",
-];
 
 export type DistributionDatum = {
   name: string;
@@ -57,7 +47,7 @@ export function toChartData(
   return rows.map((row, index) => ({
     ...row,
     percentage: totalDuration > 0 ? (row.duration / totalDuration) * 100 : 0,
-    fill: PIE_COLORS[index % PIE_COLORS.length] ?? "var(--chart-1)",
+    fill: chartColorAt(index),
   }));
 }
 
@@ -82,7 +72,7 @@ export function toChartConfig(
         </span>
       ),
 
-      color: PIE_COLORS[index % PIE_COLORS.length] ?? "var(--chart-1)",
+      color: chartColorAt(index),
     };
   });
 
