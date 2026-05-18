@@ -1,43 +1,33 @@
+import {
+  createAlbums,
+  createArtists,
+  createPlaybacks,
+  createPlaylists,
+  createTracks,
+  getIdFromUri,
+} from "worker/lib/create";
 import { logger } from "@/lib/logger";
 import { tryCatch } from "@/lib/try-catch";
 import { db } from "@/server/db";
 import getSpotifyApi from "@/server/spotify";
-import {
-  createArtists,
-  createAlbums,
-  createTracks,
-  createPlaybacks,
-  addToCreationQueues,
-  cleanQueues,
-  createPlaylists,
-  getIdFromUri,
-} from "@/lib/spotify";
+import { getQueueManager } from "./queue";
 
 function enqueueTrackDependencies(track: {
   id: string;
   artists: { id: string }[];
   album: { id: string; artists: { id: string }[]; genres?: string[] };
 }) {
-  track.artists.forEach((artist) => addToCreationQueues("artists", artist.id));
-  track.album.artists.forEach((artist) =>
-    addToCreationQueues("artists", artist.id),
-  );
-  track.album.genres?.forEach((genre) => addToCreationQueues("genres", genre));
-  addToCreationQueues("albums", track.album.id);
-  addToCreationQueues("tracks", track.id);
+  const queues = getQueueManager();
+  track.artists.forEach((artist) => queues.artists.add(artist.id));
+  track.album.artists.forEach((artist) => queues.artists.add(artist.id));
+  track.album.genres?.forEach((genre) => queues.genres.add(genre));
+  queues.albums.add(track.album.id);
+  queues.tracks.add(track.id);
 }
 
-async function intervalAction(): Promise<void> {
-  try {
-    await fetchPlaybacks();
-  } catch (error) {
-    logger.error(error);
-  }
-}
-
-async function fetchPlaybacks() {
+export async function fetchPlaybacks() {
   logger.info("Fetching playback stats");
-  cleanQueues();
+  const queues = getQueueManager();
   const users = await tryCatch(
     db.user.findMany({
       where: {
@@ -67,7 +57,6 @@ async function fetchPlaybacks() {
     const lastPlayedAtMs = user.playbacks[0]?.playedAt?.getTime() ?? 0;
     const spotify = getSpotifyApi(user.id);
     const recentlyPlayed = await spotify.player.getRecentlyPlayedTracks(50);
-
     if (!recentlyPlayed) {
       logger.error("Recently played tracks not found");
       continue;
@@ -82,19 +71,19 @@ async function fetchPlaybacks() {
       },
       "Found filtered playbacks",
     );
-    filteredPlaybacks.forEach((playback) =>
-      enqueueTrackDependencies(playback.track),
-    );
+    filteredPlaybacks.forEach((playback) => {
+      enqueueTrackDependencies(playback.track);
+      if (playback.context?.uri?.startsWith("spotify:playlist:")) {
+        const playlistId = getIdFromUri(playback.context.uri);
+        if (playlistId) {
+          queues.playlists.add(playlistId);
+        }
+      }
+    });
     const state = await tryCatch(spotify.player.getPlaybackState());
     if (state.error) {
       logger.error("Playback state not found");
       continue;
-    }
-    if (state.data?.context?.uri.startsWith("spotify:playlist:")) {
-      addToCreationQueues(
-        "playlists",
-        getIdFromUri(state.data.context.uri) ?? "",
-      );
     }
     await createArtists(spotify);
     await createAlbums(spotify);
@@ -109,6 +98,3 @@ async function fetchPlaybacks() {
   }
   logger.info("Playback stats fetched");
 }
-
-setInterval(intervalAction, 1000 * 60 * 1);
-intervalAction();

@@ -4,16 +4,15 @@ import { z } from "zod";
 import { getMasterDataQueue } from "@/server/queues/master-data";
 import { getSettings, setSettings } from "@/lib/settings";
 import { createTRPCRouter, adminProcedure } from "../trpc";
-import { rebuildMasterDataQueuesFromExistingTracks } from "@/lib/spotify-master-data";
 import getSpotifyApi from "@/server/spotify";
 import {
-  addToCreationQueues,
-  cleanQueues,
   createTracks,
   createArtists,
   createAlbums,
   createPlaylists,
-} from "@/lib/spotify";
+} from "worker/lib/create";
+import { tryCatch } from "@/lib/try-catch";
+import { getQueueManager } from "worker/lib/queue";
 
 export const adminRouter = createTRPCRouter({
   getSettings: adminProcedure.query(async () => {
@@ -96,21 +95,34 @@ export const adminRouter = createTRPCRouter({
     )
     .mutation(async ({ ctx, input }) => {
       const { id, type } = input;
+
       const spotify = getSpotifyApi(ctx.session.user.id);
-      cleanQueues();
+      const queues = getQueueManager();
       if (type === "artist") {
-        addToCreationQueues("artists", id.toString());
+        const result = await tryCatch(
+          ctx.db.artist.findFirst({ where: { id } }),
+        );
+        result.data ? queues.artists.add(result.data.spotifyId) : null;
       } else if (type === "album") {
-        addToCreationQueues("albums", id.toString());
+        const result = await tryCatch(
+          ctx.db.album.findFirst({ where: { id } }),
+        );
+        result.data ? queues.albums.add(result.data.spotifyId) : null;
       } else if (type === "track") {
-        addToCreationQueues("tracks", id.toString());
+        const result = await tryCatch(
+          ctx.db.track.findFirst({ where: { id } }),
+        );
+        result.data ? queues.tracks.add(result.data.spotifyId) : null;
       } else if (type === "playlist") {
-        addToCreationQueues("playlists", id.toString());
+        const result = await tryCatch(
+          ctx.db.playlist.findFirst({ where: { id } }),
+        );
+        result.data ? queues.playlists.add(result.data.spotifyId) : null;
       }
-      await createArtists(spotify);
-      await createAlbums(spotify);
-      await createTracks(spotify);
-      await createPlaylists(spotify);
+      await createArtists(spotify, true);
+      await createAlbums(spotify, true);
+      await createTracks(spotify, true);
+      await createPlaylists(spotify, true);
       return { success: true };
     }),
 });

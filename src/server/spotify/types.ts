@@ -1181,7 +1181,7 @@ export interface RecentlyPlayedTracksPage {
 export interface PlayHistory {
   track: Track;
   played_at: string;
-  context: Context;
+  context?: Context | null;
 }
 
 export interface Queue {

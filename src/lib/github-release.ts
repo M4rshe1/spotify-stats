@@ -2,21 +2,21 @@ import "server-only";
 import pkg from "../../package.json";
 import { APP_REPO_URL, APP_VERSION } from "@/lib/consts/app";
 import { logger } from "@/lib/logger";
-import { subDays } from "date-fns";
+import { subHours } from "date-fns";
 
 const RELEASES_API_URL =
   "https://api.github.com/repos/M4rshe1/spotify-stats/releases/latest";
 const RELEASE_FALLBACK_URL = `${APP_REPO_URL}/releases/latest`;
 const REVALIDATE_SECONDS = 60 * 60;
 
-const LATEST_RELEASE_VERSION = {
+let LATEST_RELEASE_VERSION = {
   version: pkg.version,
   htmlUrl: `${APP_REPO_URL}/releases/latest`,
   publishedAt: new Date().toISOString(),
   isNewer: true,
 };
 
-const LAST_UPDATED_AT = subDays(new Date(), 1);
+const LAST_UPDATED_AT = subHours(new Date(), 1);
 const UPDATE_INTERVAL = 1000 * REVALIDATE_SECONDS;
 
 export type LatestReleaseInfo = {
@@ -110,10 +110,10 @@ export async function getLatestRelease(): Promise<LatestReleaseInfo | null> {
     const version = tag.replace(/^v/i, "");
     if (!parseSemver(version)) return null;
 
-    const LATEST_RELEASE_VERSION = {
+    LATEST_RELEASE_VERSION = {
       version,
       htmlUrl: payload.html_url?.trim() || RELEASE_FALLBACK_URL,
-      publishedAt: payload.published_at ?? null,
+      publishedAt: payload.published_at ?? new Date().toISOString(),
       isNewer: isVersionNewer(version, APP_VERSION),
     };
     LAST_UPDATED_AT.setTime(new Date().getTime());

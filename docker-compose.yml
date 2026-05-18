@@ -39,21 +39,9 @@ services:
     networks:
       - backend
 
-  worker-stats:
+  worker:
     <<: *app-base
-    command: bun run worker:stats
-    depends_on:
-      - postgres
-      - redis
-    networks:
-      - backend
-
-  worker-cruncher:
-    <<: *app-base
-    command: bun run worker:cruncher
-    environment:
-      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/spotify
-      - REDIS_URL=redis://redis:6379
+    command: bun run worker
     depends_on:
       - postgres
       - redis

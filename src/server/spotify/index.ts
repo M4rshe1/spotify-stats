@@ -1,5 +1,6 @@
 import { logger } from "@/lib/logger";
 import { env } from "@/env";
+import { ioRedis } from "@/server/cache";
 import { db } from "@/server/db";
 import { tryCatch } from "@/lib/try-catch";
 import type { AccessToken } from "./types";
@@ -9,14 +10,48 @@ import { ArtistEndpoint } from "./endpoints/artist";
 import { AlbumEndpoint } from "./endpoints/album";
 import { TrackEndpoint } from "./endpoints/track";
 import { PlaylistEndpoint } from "./endpoints/playlist";
+import { getSpotifyRateLimiter, type SpotifyRateLimiter } from "./rate-limiter";
 
 export { SpotifyHttpError } from "./endpoints/endpoint";
 
 const REFRESH_TOKEN_BEFORE_EXPIRATION = 1000 * 60 * 5; // 5 minutes
+const REFRESH_LOCK_TTL_SEC = 30;
+const REFRESH_WAIT_MAX_MS = 25_000;
+const REFRESH_WAIT_INTERVAL_MS = 500;
+
+const accessTokenByUserId = new Map<string, AccessToken>();
+const accessTokenLoadByUserId = new Map<string, Promise<AccessToken>>();
+
+function isAccessTokenFresh(token: AccessToken): boolean {
+  return Boolean(
+    token.expires &&
+      token.expires > Date.now() + REFRESH_TOKEN_BEFORE_EXPIRATION,
+  );
+}
+
+function accountToAccessToken(account: {
+  accessToken: string | null;
+  accessTokenExpiresAt: Date | null;
+  refreshToken: string | null;
+}): AccessToken | null {
+  if (!account.accessToken || !account.accessTokenExpiresAt) {
+    return null;
+  }
+  return {
+    access_token: account.accessToken,
+    token_type: "Bearer",
+    expires_in: Math.floor(
+      (account.accessTokenExpiresAt.getTime() - Date.now()) / 1000,
+    ),
+    refresh_token: account.refreshToken ?? "",
+    expires: account.accessTokenExpiresAt.getTime(),
+  };
+}
 
 export class Spotify {
   private readonly userId: string;
-  private lastLastAccessToken: AccessToken | null = null;
+
+  public readonly rateLimiter: SpotifyRateLimiter;
 
   public readonly player: PlayerEndpoint;
   public readonly user: UserEndpoint;
@@ -31,6 +66,7 @@ export class Spotify {
 
   constructor(userId: string) {
     this.userId = userId;
+    this.rateLimiter = getSpotifyRateLimiter();
     this.player = new PlayerEndpoint(this);
     this.user = new UserEndpoint(this);
     this.artists = new ArtistEndpoint(this);
@@ -44,18 +80,40 @@ export class Spotify {
   }
 
   public async getAccessToken(): Promise<AccessToken> {
-    if (
-      this.lastLastAccessToken &&
-      this.lastLastAccessToken.expires &&
-      this.lastLastAccessToken.expires >
-        Date.now() + REFRESH_TOKEN_BEFORE_EXPIRATION
-    ) {
-      return this.lastLastAccessToken;
+    const cached = accessTokenByUserId.get(this.userId);
+    if (cached && isAccessTokenFresh(cached)) {
+      return cached;
     }
-    return this.getOrCreateAccessToken();
+
+    const inFlight = accessTokenLoadByUserId.get(this.userId);
+    if (inFlight) {
+      return inFlight;
+    }
+
+    const loadPromise = this.loadAccessToken();
+    accessTokenLoadByUserId.set(this.userId, loadPromise);
+
+    try {
+      const token = await loadPromise;
+      if (token.access_token) {
+        accessTokenByUserId.set(this.userId, token);
+      }
+      return token;
+    } finally {
+      if (accessTokenLoadByUserId.get(this.userId) === loadPromise) {
+        accessTokenLoadByUserId.delete(this.userId);
+      }
+    }
   }
 
-  private async getOrCreateAccessToken(): Promise<AccessToken> {
+  private cacheAccessToken(token: AccessToken): AccessToken {
+    if (token.access_token) {
+      accessTokenByUserId.set(this.userId, token);
+    }
+    return token;
+  }
+
+  private async loadAccessToken(): Promise<AccessToken> {
     const result = await tryCatch(
       db.account.findFirst({
         where: { userId: this.userId, providerId: "spotify" },
@@ -82,17 +140,27 @@ export class Spotify {
     ) {
       return this.refreshToken(account?.refreshToken ?? undefined);
     }
-    const token: AccessToken = {
-      access_token: account.accessToken ?? "",
-      token_type: "Bearer",
-      expires_in: Math.floor(
-        (account.accessTokenExpiresAt.getTime() - Date.now()) / 1000,
-      ),
-      refresh_token: account.refreshToken ?? "",
-      expires: account.accessTokenExpiresAt.getTime(),
-    };
-    this.lastLastAccessToken = token;
-    return token;
+    const token = accountToAccessToken(account);
+    if (!token) {
+      return {} as AccessToken;
+    }
+    return this.cacheAccessToken(token);
+  }
+
+  private async readFreshAccessTokenFromDb(): Promise<AccessToken | null> {
+    const result = await tryCatch(
+      db.account.findFirst({
+        where: { userId: this.userId, providerId: "spotify" },
+      }),
+    );
+    if (result.error || !result.data) {
+      return null;
+    }
+    const token = accountToAccessToken(result.data);
+    if (!token || !isAccessTokenFresh(token)) {
+      return null;
+    }
+    return this.cacheAccessToken(token);
   }
 
   private async refreshToken(refresh_token?: string): Promise<AccessToken> {
@@ -101,6 +169,16 @@ export class Spotify {
       return {} as AccessToken;
     }
 
+    return withRefreshLock(
+      this.userId,
+      () => this.requestRefreshedAccessToken(refresh_token),
+      () => this.readFreshAccessTokenFromDb(),
+    );
+  }
+
+  private async requestRefreshedAccessToken(
+    refresh_token: string,
+  ): Promise<AccessToken> {
     try {
       const params = new URLSearchParams();
       params.append("grant_type", "refresh_token");
@@ -154,8 +232,7 @@ export class Spotify {
         expires: expiresAt.getTime(),
         refresh_token: data.refresh_token || refresh_token,
       };
-      this.lastLastAccessToken = token;
-      return token;
+      return this.cacheAccessToken(token);
     } catch (err) {
       logger.error(
         {
@@ -172,4 +249,39 @@ export type SpotifyApi = Spotify;
 
 export default function getSpotifyApi(userId: string) {
   return new Spotify(userId);
+}
+
+async function withRefreshLock<T>(
+  userId: string,
+  refresh: () => Promise<T>,
+  waitForFreshToken: () => Promise<T | null>,
+): Promise<T> {
+  const redis = ioRedis();
+  const lockKey = `spotify:token-refresh:${userId}`;
+  const acquired = await redis.set(lockKey, "1", "EX", REFRESH_LOCK_TTL_SEC, "NX");
+
+  if (acquired === null) {
+    const deadline = Date.now() + REFRESH_WAIT_MAX_MS;
+    while (Date.now() < deadline) {
+      await new Promise((resolve) =>
+        setTimeout(resolve, REFRESH_WAIT_INTERVAL_MS),
+      );
+      const waited = await waitForFreshToken();
+      if (waited) {
+        return waited;
+      }
+    }
+    logger.warn(
+      { userId },
+      "[Spotify] Timed out waiting for token refresh in another process",
+    );
+  }
+
+  try {
+    return await refresh();
+  } finally {
+    if (acquired !== null) {
+      await redis.del(lockKey).catch(() => undefined);
+    }
+  }
 }

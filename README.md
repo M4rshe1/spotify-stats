@@ -155,7 +155,7 @@ If an upload fails, check that each file is valid JSON and the **top-level value
 3. Copy `.env.example` → `.env` and set all required variables for [`src/env.js`](./src/env.js).
 4. Apply migrations: `bun run db:migrate` (or `db:generate` during schema work).
 5. Run the app: `bun run dev`
-6. In separate terminals, run `bun run worker:stats` and `bun run worker:cruncher` so imports and background jobs complete.
+6. Run the background worker: `bun run worker` (imports, catalog sync, and playback stats polling).
 
 ## Contributing & issues
 
