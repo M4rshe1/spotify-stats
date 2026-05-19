@@ -22,9 +22,9 @@ export function parseRetryAfterMs(headers: Headers): number | null {
     return null;
   }
 
-  const ms = Number(raw);
-  if (!Number.isNaN(ms) && ms >= 0) {
-    return ms;
+  const seconds = Number(raw);
+  if (!Number.isNaN(seconds) && seconds >= 0) {
+    return seconds * 1000;
   }
 
   return 30000;
