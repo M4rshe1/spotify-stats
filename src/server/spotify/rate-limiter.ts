@@ -49,15 +49,21 @@ export class SpotifyRateLimiter {
       try {
         return await fn();
       } catch (error) {
-        if (!isRetryableSpotifyError(error) || attempt >= MAX_SPOTIFY_RETRIES - 1) {
+        if (
+          !isRetryableSpotifyError(error) ||
+          attempt >= MAX_SPOTIFY_RETRIES - 1
+        ) {
           throw error;
         }
 
-        const delayMs = computeBackoffDelayMs(attempt, error.headers);
+        const [delayMs, retryAfter] = computeBackoffDelayMs(
+          attempt,
+          error.headers,
+        );
         attempt += 1;
 
         logger.warn(
-          { status: error.status, attempt, delayMs},
+          { status: error.status, attempt, delayMs, retryAfter },
           "Spotify API rate limited or unavailable, retrying",
         );
 
