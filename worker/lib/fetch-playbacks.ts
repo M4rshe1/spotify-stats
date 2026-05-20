@@ -28,6 +28,7 @@ function enqueueTrackDependencies(track: {
 export async function fetchPlaybacks() {
   logger.info("Fetching playback stats");
   const queues = getQueueManager();
+  queues.clear();
   const users = await tryCatch(
     db.user.findMany({
       where: {
