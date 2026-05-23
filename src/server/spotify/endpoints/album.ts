@@ -7,15 +7,7 @@ export class AlbumEndpoint extends Endpoint {
     super(spotify);
   }
 
-  /**
-   * February 2026: batch `GET /albums` removed; fetches each id via `GET /albums/{id}`.
-   */
-  async get(id: string): Promise<Album>;
-  async get(ids: string[]): Promise<Album[]>;
-  async get(id: string | string[]): Promise<Album | Album[]> {
-    if (Array.isArray(id)) {
-      return Promise.all(id.map((id) => this.get(id)));
-    }
+  async get(id: string): Promise<Album> {
     return this.getJson<Album>(`albums/${encodeURIComponent(id)}`);
   }
 }

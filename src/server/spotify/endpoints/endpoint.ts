@@ -28,38 +28,6 @@ async function readJsonBody(res: Response): Promise<unknown> {
   }
 }
 
-async function retryOnRateLimit<T>(
-  fn: () => Promise<T>,
-  maxRetries = 3,
-  retryDelay = 1000,
-): Promise<T> {
-  let attempt = 0;
-  let lastError: unknown;
-  while (attempt <= maxRetries) {
-    try {
-      return await fn();
-    } catch (error) {
-      if (error instanceof SpotifyHttpError && error.status === 429) {
-        const retryAfter = error.headers.get("retry-after");
-        const delay =
-          retryAfter !== null
-            ? Math.max(parseInt(retryAfter, 10) * 1000, retryDelay)
-            : retryDelay;
-        logger.warn(
-          { attempt, delay, error: error.message },
-          "Spotify rate limited; retrying after delay",
-        );
-        await new Promise((resolve) => setTimeout(resolve, delay));
-        attempt++;
-        lastError = error;
-      } else {
-        throw error;
-      }
-    }
-  }
-  throw lastError;
-}
-
 export class Endpoint {
   constructor(protected readonly spotify: Spotify) {}
 
@@ -81,77 +49,34 @@ export class Endpoint {
     query?: Record<string, string | number | undefined>,
   ): Promise<T> {
     const qs = this.buildQuery(query);
-    return retryOnRateLimit<T>(() =>
+    return this.spotify.rateLimiter.schedule<T>(() =>
       this.requestJson<T>("GET", `${path}${qs}`),
     );
   }
 
   protected async postVoid(path: string): Promise<void> {
-    await retryOnRateLimit<void>(async () => {
-      const token = (await this.spotify.getAccessToken()).access_token;
-      if (!token) {
-        throw new SpotifyHttpError(
-          "Missing Spotify access token",
-          401,
-          null,
-          new Headers(),
-        );
-      }
-
-      const response = await fetch(`https://api.spotify.com/v1/${path}`, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      if (response.status === 429) {
-        throw new SpotifyHttpError(
-          "Spotify rate limited",
-          429,
-          null,
-          response.headers,
-        );
-      }
-
-      if (!response.ok) {
-        const body = await readJsonBody(response);
-        logger.error(
-          { status: response.status, body, path },
-          "Spotify API error",
-        );
-        throw new SpotifyHttpError(
-          `Spotify API ${response.status}: ${path}`,
-          response.status,
-          body,
-          response.headers,
-        );
-      }
-    });
+    await this.spotify.rateLimiter.schedule(() => this.requestVoid("POST", path));
   }
 
-  protected async requestJson<T>(method: "GET", path: string): Promise<T> {
-    const token = (await this.spotify.getAccessToken()).access_token;
-    if (!token) {
-      throw new SpotifyHttpError(
-        "Missing Spotify access token",
-        401,
-        null,
-        new Headers(),
+  protected async requestVoid(method: "POST", path: string): Promise<void> {
+    const response = await this.fetchSpotify(method, path);
+    if (!response.ok) {
+      const body = await readJsonBody(response);
+      logger.error(
+        { status: response.status, body, path },
+        "Spotify API error",
       );
-    }
-
-    const response = await fetch(`https://api.spotify.com/v1/${path}`, {
-      method,
-      headers: { Authorization: `Bearer ${token}` },
-    });
-
-    if (response.status === 429) {
       throw new SpotifyHttpError(
-        "Spotify rate limited",
-        429,
-        null,
+        `Spotify API ${response.status}: ${path}`,
+        response.status,
+        body,
         response.headers,
       );
     }
+  }
+
+  protected async requestJson<T>(method: "GET", path: string): Promise<T> {
+    const response = await this.fetchSpotify(method, path);
 
     if (!response.ok) {
       const body = await readJsonBody(response);
@@ -187,5 +112,25 @@ export class Endpoint {
         response.headers,
       );
     }
+  }
+
+  private async fetchSpotify(
+    method: "GET" | "POST",
+    path: string,
+  ): Promise<Response> {
+    const token = (await this.spotify.getAccessToken()).access_token;
+    if (!token) {
+      throw new SpotifyHttpError(
+        "Missing Spotify access token",
+        401,
+        null,
+        new Headers(),
+      );
+    }
+
+    return fetch(`https://api.spotify.com/v1/${path}`, {
+      method,
+      headers: { Authorization: `Bearer ${token}` },
+    });
   }
 }

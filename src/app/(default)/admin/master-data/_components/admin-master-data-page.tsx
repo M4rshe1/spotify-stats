@@ -111,7 +111,7 @@ export function AdminMasterDataPageClient() {
 
   const enqueueRefetch = api.admin.enqueueMasterDataRefetch.useMutation({
     onSuccess: ({ jobId }) => {
-      toast.success("Catalog sync queued for the cruncher worker", {
+      toast.success("Catalog sync queued for the worker", {
         description: jobId ? `Job id: ${jobId}` : undefined,
       });
       void utils.admin.getMasterDataStats.invalidate();

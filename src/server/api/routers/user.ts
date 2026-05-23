@@ -143,7 +143,6 @@ export const userRouter = createTRPCRouter({
         ctx.session.user.id,
         "FAVORITE_PERIODS",
       );
-      console.log(favoritePeriods);
       if (!favoritePeriods) {
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",

@@ -35,6 +35,10 @@ export class PlayerEndpoint extends Endpoint {
   }
 
   async getPlaybackState(): Promise<PlaybackState> {
+    return this.spotify.rateLimiter.schedule(() => this.fetchPlaybackState());
+  }
+
+  private async fetchPlaybackState(): Promise<PlaybackState> {
     const token = (await this.spotify.getAccessToken()).access_token;
     if (!token) {
       return idlePlaybackState();
@@ -47,15 +51,6 @@ export class PlayerEndpoint extends Endpoint {
 
     if (response.status === 204) {
       return idlePlaybackState();
-    }
-
-    if (response.status === 429) {
-      throw new SpotifyHttpError(
-        "Spotify rate limited",
-        429,
-        null,
-        response.headers,
-      );
     }
 
     if (!response.ok) {

@@ -7,15 +7,7 @@ export class PlaylistEndpoint extends Endpoint {
     super(spotify);
   }
 
-  /**
-   * February 2026: batch `GET /playlists` removed; fetches each id via `GET /playlists/{id}`.
-   */
-  async get(id: string): Promise<Playlist>;
-  async get(ids: string[]): Promise<Playlist[]>;
-  async get(id: string | string[]): Promise<Playlist | Playlist[]> {
-    if (Array.isArray(id)) {
-      return Promise.all(id.map((id) => this.get(id)));
-    }
+  async get(id: string): Promise<Playlist> {
     return this.getJson<Playlist>(
       `playlists/${encodeURIComponent(id)}`,
     ) as Promise<Playlist>;

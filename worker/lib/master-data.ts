@@ -3,45 +3,44 @@ import type { SpotifyApi } from "@/server/spotify";
 import { logger } from "@/lib/logger";
 import { tryCatch } from "@/lib/try-catch";
 import {
-  addToCreationQueues,
-  Batches,
-  cleanQueues,
   createAlbums,
   createArtists,
   createGenres,
   createTracks,
-} from "@/lib/spotify";
+} from "worker/lib/create";
 import { db } from "@/server/db";
+import { getQueueManager } from "./queue";
 
 export async function hydrateCreationQueuesFromSpotifyTrackCatalog(
   spotify: SpotifyApi,
 ): Promise<void> {
-  const batches = new Batches().fromQueue("tracks");
-  for (const batch of batches) {
-    const tracksData = await spotify.tracks.get(batch);
-    if (!tracksData) {
-      logger.error("Tracks not found");
+  const queues = getQueueManager();
+  for (const id of queues.tracks.toArray()) {
+    const trackData = await tryCatch(spotify.tracks.get(id));
+    if (trackData.error) {
+      logger.error("Track not found");
       return;
     }
-    for (const track of tracksData) {
-      addToCreationQueues("albums", track.album.id);
-      track.artists.forEach((artist) => {
-        addToCreationQueues("artists", artist.id);
-      });
-      track.album.artists.forEach((artist) => {
-        addToCreationQueues("artists", artist.id);
-      });
-      track.album.genres?.forEach((genre) => {
-        addToCreationQueues("genres", genre);
-      });
-    }
+    const track = trackData.data;
+
+    queues.albums.add(track.album.id);
+    track.artists.forEach((artist) => {
+      queues.artists.add(artist.id);
+    });
+    track.album.artists.forEach((artist) => {
+      queues.artists.add(artist.id);
+    });
+    track.album.genres?.forEach((genre) => {
+      queues.genres.add(genre);
+    });
   }
 }
 
 export async function rebuildMasterDataQueuesFromExistingTracks(
   spotify: SpotifyApi,
 ): Promise<void> {
-  cleanQueues();
+  const queues = getQueueManager();
+  queues.clear();
 
   const rows = await tryCatch(
     db.track.findMany({
@@ -55,7 +54,7 @@ export async function rebuildMasterDataQueuesFromExistingTracks(
   }
 
   for (const row of rows.data) {
-    addToCreationQueues("tracks", row.spotifyId);
+    queues.tracks.add(row.spotifyId);
   }
 
   await hydrateCreationQueuesFromSpotifyTrackCatalog(spotify);
