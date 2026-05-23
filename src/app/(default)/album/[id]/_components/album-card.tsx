@@ -10,6 +10,7 @@ import { authClient } from "@/server/better-auth/client";
 import { Button } from "@/components/ui/button";
 import { providerPeriodToQueryInput } from "@/lib/provider-period-query-input";
 import type { ProviderPeriod } from "@/lib/consts/periods";
+import { toast } from "sonner";
 
 const AlbumCard = ({ id, period }: { id: number; period: ProviderPeriod }) => {
   const periodInput = providerPeriodToQueryInput(period);
@@ -17,7 +18,15 @@ const AlbumCard = ({ id, period }: { id: number; period: ProviderPeriod }) => {
     id,
     ...periodInput,
   });
-  const { mutate: refreshAlbum } = api.admin.refreshMasterData.useMutation();
+  const { mutate: refreshAlbum } = api.admin.refreshMasterData.useMutation({
+    onSuccess: () => {
+      utils.invalidate();
+      toast.success("Album refreshed successfully");
+    },
+    onError: () => {
+      toast.error("Failed to refresh album");
+    },
+  });
   const { data: session } = authClient.useSession();
   const utils = api.useUtils();
 

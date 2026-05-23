@@ -10,12 +10,24 @@ import { Button } from "@/components/ui/button";
 import { authClient } from "@/server/better-auth/client";
 import { providerPeriodToQueryInput } from "@/lib/provider-period-query-input";
 import type { ProviderPeriod } from "@/lib/consts/periods";
+import { toast } from "sonner";
 
 const TrackCard = ({ id, period }: { id: number; period: ProviderPeriod }) => {
   const periodInput = providerPeriodToQueryInput(period);
-  const { data: track, isLoading } = api.track.get.useQuery({ id, ...periodInput });
+  const { data: track, isLoading } = api.track.get.useQuery({
+    id,
+    ...periodInput,
+  });
   const { mutate: playTrack } = api.control.play.useMutation();
-  const { mutate: refreshTrack } = api.admin.refreshMasterData.useMutation();
+  const { mutate: refreshTrack } = api.admin.refreshMasterData.useMutation({
+    onSuccess: () => {
+      utils.invalidate();
+      toast.success("Track refreshed successfully");
+    },
+    onError: () => {
+      toast.error("Failed to refresh track");
+    },
+  });
   const { data: session } = authClient.useSession();
   const utils = api.useUtils();
 
@@ -115,10 +127,7 @@ const TrackCard = ({ id, period }: { id: number; period: ProviderPeriod }) => {
                 Play
               </Button>
               {session?.user.role === "admin" && (
-                <Button
-                  variant="outline"
-                  onClick={handleRefreshTrack}
-                >
+                <Button variant="outline" onClick={handleRefreshTrack}>
                   Refresh
                 </Button>
               )}

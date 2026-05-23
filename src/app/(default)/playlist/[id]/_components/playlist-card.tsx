@@ -9,6 +9,7 @@ import { authClient } from "@/server/better-auth/client";
 import { Button } from "@/components/ui/button";
 import type { ProviderPeriod } from "@/lib/consts/periods";
 import { providerPeriodToQueryInput } from "@/lib/provider-period-query-input";
+import { toast } from "sonner";
 
 const PlaylistCard = ({
   id,
@@ -22,7 +23,15 @@ const PlaylistCard = ({
     id,
     ...periodInput,
   });
-  const { mutate: refreshPlaylist } = api.admin.refreshMasterData.useMutation();
+  const { mutate: refreshPlaylist } = api.admin.refreshMasterData.useMutation({
+    onSuccess: () => {
+      utils.invalidate();
+      toast.success("Playlist refreshed successfully");
+    },
+    onError: () => {
+      toast.error("Failed to refresh playlist");
+    },
+  });
   const { data: session } = authClient.useSession();
   const utils = api.useUtils();
 
