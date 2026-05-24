@@ -1,4 +1,4 @@
-import { ArrowUpCircle } from "lucide-react";
+import { ArrowUpCircle, GitBranchIcon } from "lucide-react";
 import Link from "next/link";
 
 import {
@@ -40,9 +40,10 @@ export function AppCredit({
           href={`${APP_REPO_URL}/releases/tag/${versionLabel}`}
           target="_blank"
           rel="noreferrer"
-          className="hover:text-foreground font-mono tracking-tight transition-colors"
+          className="hover:text-foreground inline-flex items-center gap-1 font-mono tracking-tight transition-colors"
           aria-label={`Spotify Stats version ${APP_VERSION}`}
         >
+          <GitBranchIcon className="size-2.5 shrink-0" />
           {versionLabel}
         </a>
         {latestRelease?.isNewer && latestRelease ? (
