@@ -26,9 +26,9 @@ type TopType = TopListEntityType;
 
 const meta: Record<TopType, { title: string; empty: string; error: string }> = {
   tracks: {
-    title: "Top songs",
-    empty: "No songs found in this time range.",
-    error: "Failed to load top songs.",
+    title: "Top tracks",
+    empty: "No tracks found in this time range.",
+    error: "Failed to load top tracks.",
   },
   artists: {
     title: "Top artists",
@@ -64,7 +64,7 @@ export default function TopEntityPage({ type }: { type: TopType }) {
   const periodInput = providerPeriodToQueryInput(selectedPeriod);
   const { mutate: playTrack } = api.control.play.useMutation();
 
-  const songsQuery = api.top.getTopTracks.useQuery(
+  const tracksQuery = api.top.getTopTracks.useQuery(
     {
       ...periodInput,
       sortBy,
@@ -116,7 +116,7 @@ export default function TopEntityPage({ type }: { type: TopType }) {
   );
   const query =
     type === "tracks"
-      ? songsQuery
+      ? tracksQuery
       : type === "artists"
         ? artistsQuery
         : type === "albums"

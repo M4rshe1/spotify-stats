@@ -61,7 +61,7 @@ export const topRouter = createTRPCRouter({
       if (totalsResult.error) {
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
-          message: "Failed to get top songs totals",
+          message: "Failed to get top tracks totals",
         });
       }
 
@@ -102,7 +102,7 @@ export const topRouter = createTRPCRouter({
       if (rows.error) {
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
-          message: "Failed to get top songs",
+          message: "Failed to get top tracks",
         });
       }
 

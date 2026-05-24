@@ -7,7 +7,7 @@
 
 # Spotify Stats
 
-**Personal Spotify listening stats** — see how you have changed over the years and discover new patterns in your music taste. Effortlessly track your favorite genres, artists, and songs, analyze trends and listening habits, and visualize your evolution as a Spotify user over time.
+**Personal Spotify listening stats** — see how you have changed over the years and discover new patterns in your music taste. Effortlessly track your favorite genres, artists, and tracks, analyze trends and listening habits, and visualize your evolution as a Spotify user over time.
 
 [![Version](https://flat.badgen.net/github/release/m4rshe1/spotify-stats)](https://github.com/M4rshe1/spotify-stats/releases/latest)
 [![Bun](https://img.shields.io/badge/runtime-bun-000000?logo=bun)](https://bun.sh)
