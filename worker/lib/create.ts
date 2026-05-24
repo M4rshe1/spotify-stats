@@ -432,11 +432,10 @@ export async function createPlaybacks(
     if (!track.data) continue;
 
     const { context, contextUri, contextId } = resolvePlaybackContext(
-      playback.context,
+      state.context,
       favoritePlaylist,
     );
-    const { device, platform, originalPlatform } =
-      resolvePlaybackDevice(state);
+    const { device, platform, originalPlatform } = resolvePlaybackDevice(state);
 
     const createdPlayback = await tryCatch(
       db.playback.upsert({
