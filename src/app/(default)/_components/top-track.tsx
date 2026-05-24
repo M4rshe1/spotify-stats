@@ -5,11 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Loading } from "@/components/ui/loading";
 import type { ProviderPeriod } from "@/lib/consts/periods";
 import { providerPeriodToQueryInput } from "@/lib/provider-period-query-input";
-import {
-  TOP_CARD_ENTITY_NAME_MAX,
-  duration,
-  truncateText,
-} from "@/lib/utils";
+import { TOP_CARD_ENTITY_NAME_MAX, duration, truncateText } from "@/lib/utils";
 import { api } from "@/trpc/react";
 import { MusicIcon, PlayIcon } from "lucide-react";
 import Link from "next/link";
@@ -25,9 +21,9 @@ export default function TopTrack({ period }: { period: ProviderPeriod }) {
   if (!topTrack) {
     return (
       <NoDataCard
-        title="Best song"
+        title="Best track"
         icon={<MusicIcon />}
-        emptyTitle="No track data"
+        emptyTitle="No track data found"
         description="We couldn't find any tracks for this period. Try a different time range."
       />
     );
