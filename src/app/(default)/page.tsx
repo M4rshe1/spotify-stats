@@ -24,6 +24,7 @@ export default withAuth(async () => {
     }),
     api.dashboard.getTopTrack.prefetch(metricsInput),
     api.dashboard.getTopArtist.prefetch(metricsInput),
+    api.dashboard.getDiscoveredOnThisDayLastYear.prefetch({ limit: 20 }),
     api.chart.getTimeListened.prefetch(metricsInput),
     api.chart.getTimeDistribution.prefetch(metricsInput),
   ]);

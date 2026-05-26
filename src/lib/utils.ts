@@ -48,7 +48,14 @@ class Duration {
     return this.durationMs % 1_000;
   }
 
-  private formatNumber(number: number, short: boolean, level: 1 | 2 | 3 = 1) {
+  private formatNumber(
+    number: number | undefined | null,
+    short: boolean,
+    level: 1 | 2 | 3 = 1,
+  ) {
+    if (number === undefined || number === null) {
+      return "0";
+    }
     return short ? formatNumber(number, level) : number.toLocaleString();
   }
 

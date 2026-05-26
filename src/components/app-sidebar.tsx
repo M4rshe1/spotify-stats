@@ -3,19 +3,16 @@
 import * as React from "react";
 import {
   BarChart3,
-  BookOpen,
+  Calendar,
   CircleUser,
   Clock,
   Disc3,
   GitBranch,
-  GraduationCap,
   Heart,
   Home,
   ListMusic,
   MessageSquare,
   Music2,
-  Rocket,
-  ScrollText,
   Settings,
   Shield,
   Tags,
@@ -62,6 +59,16 @@ const MainNav = [
         url: "/all-stats",
         icon: BarChart3,
       },
+      {
+        title: "Wrapped",
+        url: "/wrapped",
+        icon: Calendar,
+      },
+      {
+        title: "Affinity",
+        url: "/affinity",
+        icon: Heart,
+      },
     ],
   },
   {
@@ -97,35 +104,6 @@ const MainNav = [
       },
     ],
   },
-  {
-    title: "Affinity",
-    url: "/affinity",
-    icon: Heart,
-    isActive: true,
-    items: [
-      {
-        title: "Introduction",
-        url: "#",
-        icon: BookOpen,
-      },
-      {
-        title: "Get Started",
-        url: "#",
-        icon: Rocket,
-      },
-      {
-        title: "Tutorials",
-        url: "#",
-        icon: GraduationCap,
-      },
-      {
-        title: "Changelog",
-        url: "#",
-        icon: ScrollText,
-      },
-    ],
-  },
-
   {
     title: "User",
     url: "/user/account",

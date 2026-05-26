@@ -1,12 +1,14 @@
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 import { TRPCError } from "@trpc/server";
+import { TZDate } from "@date-fns/tz/date";
+import { endOfDay, format, startOfDay, subYears } from "date-fns";
 import { getPeriods } from "@/lib/periods";
 import { tryCatch } from "@/lib/try-catch";
 import { Prisma } from "generated/prisma";
 import { periodSchema, rowToArtists } from "@/server/api/lib";
 import { getSelectedPeriodSql } from "@/server/api/sql-snippets";
 import z from "zod";
-import type { PlaybackRow } from "../types/sql-rows";
+import type { FirstLastPlayed, PlaybackRow } from "../types/sql-rows";
 
 export const dashboardRouter = createTRPCRouter({
   getTracksMetric: protectedProcedure
@@ -403,6 +405,53 @@ export const dashboardRouter = createTRPCRouter({
                 cursorId: last.id,
               }
             : null,
+      };
+    }),
+  getDiscoveredOnThisDayLastYear: protectedProcedure
+    .input(z.object({ limit: z.number().int().min(1).max(50).default(20) }))
+    .query(async ({ ctx, input }) => {
+      const userId = ctx.session.user.id;
+      const timezone = ctx.session.user.timezone;
+      const now = new TZDate(Date.now(), timezone);
+      const anniversaryStart = startOfDay(subYears(now, 1));
+      const anniversaryEnd = endOfDay(subYears(now, 1));
+
+      const rows = await tryCatch(
+        ctx.db.$queryRaw<FirstLastPlayed[]>(
+          Prisma.sql`
+            WITH first_playback AS (
+              SELECT
+                playback."trackId",
+                MIN(playback."playedAt") AS "firstPlayedAt"
+              FROM playback
+              WHERE playback."userId" = ${userId}
+              GROUP BY playback."trackId"
+            )
+            SELECT
+              first_playback."firstPlayedAt" AS "playedAt",
+              track."id" AS "trackId",
+              track."name" AS "trackName",
+              track."image" AS "trackImage"
+            FROM first_playback
+            JOIN track ON first_playback."trackId" = track."id"
+            WHERE timezone(${timezone}, first_playback."firstPlayedAt") >= timezone(${timezone}, ${anniversaryStart})
+              AND timezone(${timezone}, first_playback."firstPlayedAt") <= timezone(${timezone}, ${anniversaryEnd})
+            ORDER BY first_playback."firstPlayedAt" ASC
+            LIMIT ${input.limit}
+          `,
+        ),
+      );
+
+      if (rows.error) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to get tracks discovered on this day last year",
+        });
+      }
+
+      return {
+        anniversaryDate: format(anniversaryStart, "MMMM d, yyyy"),
+        items: rows.data ?? [],
       };
     }),
 });
