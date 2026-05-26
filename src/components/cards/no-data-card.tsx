@@ -13,11 +13,13 @@ export function NoDataCard({
   icon,
   emptyTitle,
   description,
+  className = "h-64",
 }: {
   title: string;
   icon: ReactNode;
   emptyTitle: string;
   description: ReactNode;
+  className?: string;
 }) {
   return (
     <Card>
@@ -25,7 +27,7 @@ export function NoDataCard({
         <CardTitle>{title}</CardTitle>
       </CardHeader>
       <CardContent>
-        <Empty className="h-64">
+        <Empty className={className}>
           <EmptyHeader>
             <EmptyMedia variant="icon">{icon}</EmptyMedia>
             <EmptyTitle>{emptyTitle}</EmptyTitle>
