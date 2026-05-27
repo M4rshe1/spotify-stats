@@ -58,8 +58,23 @@ export class Endpoint {
     await this.spotify.rateLimiter.schedule(() => this.requestVoid("POST", path));
   }
 
-  protected async requestVoid(method: "POST", path: string): Promise<void> {
-    const response = await this.fetchSpotify(method, path);
+  protected async putJsonVoid(
+    path: string,
+    body: Record<string, unknown>,
+    query?: Record<string, string | number | undefined>,
+  ): Promise<void> {
+    const qs = this.buildQuery(query);
+    await this.spotify.rateLimiter.schedule(() =>
+      this.requestVoid("PUT", `${path}${qs}`, body),
+    );
+  }
+
+  protected async requestVoid(
+    method: "POST" | "PUT",
+    path: string,
+    body?: Record<string, unknown>,
+  ): Promise<void> {
+    const response = await this.fetchSpotify(method, path, body);
     if (!response.ok) {
       const body = await readJsonBody(response);
       logger.error(
@@ -115,8 +130,9 @@ export class Endpoint {
   }
 
   private async fetchSpotify(
-    method: "GET" | "POST",
+    method: "GET" | "POST" | "PUT",
     path: string,
+    body?: Record<string, unknown>,
   ): Promise<Response> {
     const token = (await this.spotify.getAccessToken()).access_token;
     if (!token) {
@@ -130,7 +146,11 @@ export class Endpoint {
 
     return fetch(`https://api.spotify.com/v1/${path}`, {
       method,
-      headers: { Authorization: `Bearer ${token}` },
+      headers: {
+        Authorization: `Bearer ${token}`,
+        ...(body ? { "Content-Type": "application/json" } : {}),
+      },
+      body: body ? JSON.stringify(body) : undefined,
     });
   }
 }

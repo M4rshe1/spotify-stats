@@ -1,6 +1,7 @@
 "use client";
 
 import { format, formatDistanceToNowStrict } from "date-fns";
+import type { MouseEvent } from "react";
 import Link from "next/link";
 import { PlayIcon } from "lucide-react";
 
@@ -24,7 +25,7 @@ export function PlaybackHistoryItem({
   onPlay,
 }: {
   item: PlaybackHistoryItemData;
-  onPlay: (trackId: number) => void;
+  onPlay: (trackId: number, event: MouseEvent<HTMLButtonElement>) => void;
 }) {
   return (
     <div className="bg-muted/30 relative isolate overflow-hidden rounded-md border">
@@ -51,7 +52,7 @@ export function PlaybackHistoryItem({
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                onPlay(item.trackId);
+                onPlay(item.trackId, e);
               }}
             >
               <PlayIcon className="size-3.5 fill-current" />

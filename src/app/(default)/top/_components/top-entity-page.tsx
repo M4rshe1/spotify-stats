@@ -19,7 +19,7 @@ import { Spinner } from "@/components/ui/spinner";
 import { providerPeriodToQueryInput } from "@/lib/provider-period-query-input";
 import { usePeriod } from "@/providers/period-provider";
 import { api } from "@/trpc/react";
-import { toast } from "sonner";
+import { usePlayTrack } from "@/lib/play";
 
 type SortBy = "count" | "duration";
 type TopType = TopListEntityType;
@@ -62,7 +62,7 @@ export default function TopEntityPage({ type }: { type: TopType }) {
   } | null>(null);
   const { selectedPeriod } = usePeriod();
   const periodInput = providerPeriodToQueryInput(selectedPeriod);
-  const { mutate: playTrack } = api.control.play.useMutation();
+  const { playTrack } = usePlayTrack();
 
   const tracksQuery = api.top.getTopTracks.useQuery(
     {
@@ -212,19 +212,7 @@ export default function TopEntityPage({ type }: { type: TopType }) {
                     item={item}
                     countPercentage={countPercentage}
                     durationPercentage={durationPercentage}
-                    onPlay={
-                      type === "tracks"
-                        ? (trackId) =>
-                            playTrack(
-                              { trackId },
-                              {
-                                onSuccess: () => toast.success("Track played"),
-                                onError: () =>
-                                  toast.error("Failed to play track"),
-                              },
-                            )
-                        : undefined
-                    }
+                    onPlay={type === "tracks" ? playTrack : undefined}
                   />
                 );
               })

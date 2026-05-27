@@ -4,6 +4,7 @@ import { Music2Icon, PlayIcon } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { CoverTintBackdrop } from "@/components/cards/cover-tint-backdrop";
 import { duration, truncateText, TOP_CARD_ENTITY_NAME_MAX } from "@/lib/utils";
+import { usePlayTrack } from "@/lib/play";
 import { api } from "@/trpc/react";
 import { Loading } from "@/components/ui/loading";
 import { Button } from "@/components/ui/button";
@@ -18,7 +19,7 @@ const TrackCard = ({ id, period }: { id: number; period: ProviderPeriod }) => {
     id,
     ...periodInput,
   });
-  const { mutate: playTrack } = api.control.play.useMutation();
+  const { playTrack } = usePlayTrack();
   const { mutate: refreshTrack } = api.admin.refreshMasterData.useMutation({
     onSuccess: () => {
       utils.invalidate();
@@ -34,10 +35,6 @@ const TrackCard = ({ id, period }: { id: number; period: ProviderPeriod }) => {
   function handleRefreshTrack() {
     refreshTrack({ type: "track", id });
     utils.invalidate();
-  }
-
-  function handlePlayTrack() {
-    playTrack({ trackId: track?.id ?? 0 });
   }
 
   if (isLoading) {
@@ -122,7 +119,10 @@ const TrackCard = ({ id, period }: { id: number; period: ProviderPeriod }) => {
             </div>
             <div className="flex items-center gap-2"></div>
             <div className="flex items-center justify-between gap-2">
-              <Button variant="outline" onClick={handlePlayTrack}>
+              <Button
+                variant="outline"
+                onClick={(e) => playTrack(track.id, e)}
+              >
                 <PlayIcon size={16} />
                 Play
               </Button>

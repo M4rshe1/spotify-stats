@@ -20,9 +20,9 @@ import {
 } from "@/components/ui/select";
 import { providerPeriodToQueryInput } from "@/lib/provider-period-query-input";
 import { usePeriod } from "@/providers/period-provider";
+import { usePlayTrack } from "@/lib/play";
 import { api } from "@/trpc/react";
 import { Music2Icon } from "lucide-react";
-import { toast } from "sonner";
 
 type SortBy = "count" | "duration";
 
@@ -38,7 +38,7 @@ const TopTracks = ({ id }: { id: number }) => {
       ...periodInput,
     });
 
-  const { mutate: playTrack } = api.control.play.useMutation();
+  const { playTrack } = usePlayTrack();
 
   if (isLoadingTopTracks) {
     return <Loading />;
@@ -90,15 +90,7 @@ const TopTracks = ({ id }: { id: number }) => {
               item={track}
               countPercentage={countPercentage}
               durationPercentage={durationPercentage}
-              onPlay={(trackId) =>
-                playTrack(
-                  { trackId },
-                  {
-                    onSuccess: () => toast.success("Track played"),
-                    onError: () => toast.error("Failed to play track"),
-                  },
-                )
-              }
+              onPlay={playTrack}
             />
           );
         })}

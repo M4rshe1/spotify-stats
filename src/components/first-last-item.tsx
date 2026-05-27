@@ -1,6 +1,7 @@
 "use client";
 
 import { format, isSameDay } from "date-fns";
+import type { MouseEvent } from "react";
 import Link from "next/link";
 import { CoverTintBackdrop } from "@/components/cards/cover-tint-backdrop";
 import { Button } from "./ui/button";
@@ -30,7 +31,7 @@ export function FirstLastTrackRow({
 }: {
   kind: "first" | "last";
   row: FirstLastTrackPlaybackRow;
-  onPlay?: (trackId: number) => void;
+  onPlay?: (trackId: number, event: MouseEvent<HTMLButtonElement>) => void;
 }) {
   const playedAt = row.playedAt ? new Date(row.playedAt) : null;
   const trackId = row.trackId;
@@ -57,7 +58,7 @@ export function FirstLastTrackRow({
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
-                  onPlay(trackId);
+                  onPlay(trackId, e);
                 }}
               >
                 <PlayIcon className="size-3.5 fill-current" />
