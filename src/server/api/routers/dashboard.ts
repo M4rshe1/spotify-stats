@@ -408,13 +408,18 @@ export const dashboardRouter = createTRPCRouter({
       };
     }),
   getDiscoveredOnThisDayLastYear: protectedProcedure
-    .input(z.object({ limit: z.number().int().min(1).max(50).default(20) }))
+    .input(
+      z.object({
+        limit: z.number().int().min(1).max(50).default(20),
+        yearsAgo: z.number().int().min(1).max(10).default(1),
+      }),
+    )
     .query(async ({ ctx, input }) => {
       const userId = ctx.session.user.id;
       const timezone = ctx.session.user.timezone;
       const now = new TZDate(Date.now(), timezone);
-      const anniversaryStart = startOfDay(subYears(now, 1));
-      const anniversaryEnd = endOfDay(subYears(now, 1));
+      const anniversaryStart = startOfDay(subYears(now, input.yearsAgo));
+      const anniversaryEnd = endOfDay(subYears(now, input.yearsAgo));
 
       const rows = await tryCatch(
         ctx.db.$queryRaw<FirstLastPlayed[]>(
