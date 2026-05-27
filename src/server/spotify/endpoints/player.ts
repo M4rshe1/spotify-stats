@@ -80,4 +80,13 @@ export class PlayerEndpoint extends Endpoint {
     await this.addItemToPlaybackQueue(uri);
     await this.skipToNext();
   }
+
+  /** Start playback of a track immediately on the active device. */
+  async startPlayback(uri: string, deviceId?: string): Promise<void> {
+    await this.putJsonVoid(
+      "me/player/play",
+      { uris: [uri] },
+      deviceId ? { device_id: deviceId } : undefined,
+    );
+  }
 }

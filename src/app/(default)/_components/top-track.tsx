@@ -6,15 +6,15 @@ import { Loading } from "@/components/ui/loading";
 import type { ProviderPeriod } from "@/lib/consts/periods";
 import { providerPeriodToQueryInput } from "@/lib/provider-period-query-input";
 import { TOP_CARD_ENTITY_NAME_MAX, duration, truncateText } from "@/lib/utils";
+import { usePlayTrack } from "@/lib/play";
 import { api } from "@/trpc/react";
 import { MusicIcon, PlayIcon } from "lucide-react";
 import Link from "next/link";
-import { toast } from "sonner";
 
 export default function TopTrack({ period }: { period: ProviderPeriod }) {
   const { data: topTrack, isLoading: isLoadingTopTrack } =
     api.dashboard.getTopTrack.useQuery(providerPeriodToQueryInput(period));
-  const { mutate: playTrack } = api.control.play.useMutation();
+  const { playTrack } = usePlayTrack();
   if (isLoadingTopTrack) {
     return <Loading />;
   }
@@ -26,20 +26,6 @@ export default function TopTrack({ period }: { period: ProviderPeriod }) {
         emptyTitle="No track data found"
         description="We couldn't find any tracks for this period. Try a different time range."
       />
-    );
-  }
-
-  function handlePlayTrack() {
-    playTrack(
-      { trackId: topTrack?.track?.id ?? 0 },
-      {
-        onSuccess: () => {
-          toast.success("Track played");
-        },
-        onError: () => {
-          toast.error("Failed to play track");
-        },
-      },
     );
   }
 
@@ -103,7 +89,10 @@ export default function TopTrack({ period }: { period: ProviderPeriod }) {
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <Button variant="outline" onClick={handlePlayTrack}>
+                <Button
+                  variant="outline"
+                  onClick={(e) => playTrack(topTrack.track?.id ?? 0, e)}
+                >
                   <PlayIcon size={16} />
                   Play
                 </Button>

@@ -7,9 +7,9 @@ import {
 } from "@/components/playback-history-item";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loading } from "@/components/ui/loading";
+import { usePlayTrack } from "@/lib/play";
 import { api } from "@/trpc/react";
 import { HistoryIcon } from "lucide-react";
-import { toast } from "sonner";
 
 export function RecentPlaysCard({
   plays,
@@ -20,7 +20,7 @@ export function RecentPlaysCard({
   isLoading: boolean;
   emptyDescription: string;
 }) {
-  const { mutate: playTrack } = api.control.play.useMutation();
+  const { playTrack } = usePlayTrack();
 
   if (isLoading) {
     return <Loading />;
@@ -48,15 +48,7 @@ export function RecentPlaysCard({
             <PlaybackHistoryItem
               key={item.id}
               item={item}
-              onPlay={(trackId) =>
-                playTrack(
-                  { trackId },
-                  {
-                    onSuccess: () => toast.success("Track played"),
-                    onError: () => toast.error("Failed to play track"),
-                  },
-                )
-              }
+              onPlay={playTrack}
             />
           ))}
         </div>

@@ -1,5 +1,6 @@
 "use client";
 
+import type { MouseEvent } from "react";
 import { CoverTintBackdrop } from "@/components/cards/cover-tint-backdrop";
 import { Button } from "@/components/ui/button";
 import { getGenreColor } from "@/lib/consts/genres";
@@ -59,7 +60,7 @@ export function TopListItem({
   item: TopListItemData;
   countPercentage: number;
   durationPercentage: number;
-  onPlay?: (trackId: number) => void;
+  onPlay?: (trackId: number, event: MouseEvent<HTMLButtonElement>) => void;
 }) {
   const href = getHref(type, item.id);
   const content = (
@@ -92,7 +93,7 @@ export function TopListItem({
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
-                  onPlay(item.id);
+                  onPlay(item.id, e);
                 }}
               >
                 <PlayIcon className="size-3.5 fill-current" />

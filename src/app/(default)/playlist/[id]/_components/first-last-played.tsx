@@ -4,17 +4,14 @@ import { NoDataCard } from "@/components/cards/no-data-card";
 import { FirstLastTrackRow } from "@/components/first-last-item";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loading } from "@/components/ui/loading";
+import { usePlayTrack } from "@/lib/play";
 import { api } from "@/trpc/react";
 import { ClockIcon } from "lucide-react";
 
 const FirstLastPlayed = ({ id }: { id: number }) => {
   const { data: firstLastPlayed, isLoading: isLoadingFirstLastPlayed } =
     api.playlist.firstLastPlayed.useQuery({ id });
-  const { mutate: playTrack } = api.control.play.useMutation();
-
-  function handlePlayTrack(trackId: number) {
-    playTrack({ trackId });
-  }
+  const { playTrack } = usePlayTrack();
 
   if (isLoadingFirstLastPlayed) {
     return <Loading />;
@@ -55,14 +52,14 @@ const FirstLastPlayed = ({ id }: { id: number }) => {
           <FirstLastTrackRow
             kind="first"
             row={firstLastPlayed.firstPlayed}
-            onPlay={handlePlayTrack}
+            onPlay={playTrack}
           />
         ) : null}
         {hasLast && firstLastPlayed.lastPlayed ? (
           <FirstLastTrackRow
             kind="last"
             row={firstLastPlayed.lastPlayed}
-            onPlay={handlePlayTrack}
+            onPlay={playTrack}
           />
         ) : null}
       </CardContent>

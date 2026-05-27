@@ -4,6 +4,7 @@ import { FirstLastTrackRow } from "@/components/first-last-item";
 import { NoDataCard } from "@/components/cards/no-data-card";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loading } from "@/components/ui/loading";
+import { usePlayTrack } from "@/lib/play";
 import { api } from "@/trpc/react";
 import {
   ChevronLeftIcon,
@@ -11,7 +12,6 @@ import {
   RefreshCcwIcon,
   SparklesIcon,
 } from "lucide-react";
-import { toast } from "sonner";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 
@@ -22,7 +22,7 @@ export default function DiscoveredYearAgo() {
       limit: 20,
       yearsAgo,
     });
-  const { mutate: playTrack } = api.control.play.useMutation();
+  const { playTrack } = usePlayTrack();
 
   function handlePreviousYear() {
     setYearsAgo((prev) => prev + 1);
@@ -75,15 +75,7 @@ export default function DiscoveredYearAgo() {
                   key={row.trackId ?? row.playedAt?.toString()}
                   kind="first"
                   row={row}
-                  onPlay={(trackId) =>
-                    playTrack(
-                      { trackId },
-                      {
-                        onSuccess: () => toast.success("Track played"),
-                        onError: () => toast.error("Failed to play track"),
-                      },
-                    )
-                  }
+                  onPlay={playTrack}
                 />
               ))}
             </div>

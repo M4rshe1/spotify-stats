@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { toast } from "sonner";
 import type { ProviderPeriod } from "@/lib/consts/periods";
+import { usePlayTrack } from "@/lib/play";
 import { providerPeriodToQueryInput } from "@/lib/provider-period-query-input";
 import { api } from "@/trpc/react";
 import {
@@ -28,7 +28,7 @@ export default function RecentlyPlayed({ period }: { period: ProviderPeriod }) {
       cursorPlayedAt: cursor?.cursorPlayedAt,
       cursorId: cursor?.cursorId,
     });
-  const { mutate: playTrack } = api.control.play.useMutation();
+  const { playTrack } = usePlayTrack();
 
   const hasNextPage = Boolean(data?.nextCursor);
 
@@ -119,15 +119,7 @@ export default function RecentlyPlayed({ period }: { period: ProviderPeriod }) {
               <PlaybackHistoryItem
                 key={`${item.id}-${index}`}
                 item={item}
-                onPlay={(trackId) =>
-                  playTrack(
-                    { trackId },
-                    {
-                      onSuccess: () => toast.success("Track played"),
-                      onError: () => toast.error("Failed to play track"),
-                    },
-                  )
-                }
+                onPlay={playTrack}
               />
             ))}
 
