@@ -75,7 +75,7 @@ const Page = withAuth(async ({ params }: { params: { id: string } }) => {
           { label: playlist.name, href: `/playlist/${playlist.id}` },
         ]}
       />
-      <ClientPage id={id} />
+      <ClientPage id={numericId} />
     </div>
   );
 });

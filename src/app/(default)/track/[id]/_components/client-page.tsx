@@ -9,24 +9,23 @@ import { TrackRecentPlays } from "@/components/recent-plays";
 import TrackCard from "./track-card";
 import FirstLastPlayed from "./first-last-played";
 
-const ClientPage = ({ id }: { id: string }) => {
-  const numericId = parseInt(id, 10);
+const ClientPage = ({ id }: { id: number }) => {
   const { selectedPeriod } = usePeriod();
 
   return (
     <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-      <TrackCard id={numericId} period={selectedPeriod} />
+      <TrackCard id={id} period={selectedPeriod} />
       <div className="h-fit">
-        <FirstLastPlayed id={numericId} />
+        <FirstLastPlayed id={id} />
       </div>
       <div className="h-72">
-        <TrackTimeListened trackId={numericId} period={selectedPeriod} />
+        <TrackTimeListened trackId={id} period={selectedPeriod} />
       </div>
       <div className="h-72">
-        <TrackTimeDistribution trackId={numericId} period={selectedPeriod} />
+        <TrackTimeDistribution trackId={id} period={selectedPeriod} />
       </div>
       <div className="h-fit lg:col-span-2">
-        <TrackRecentPlays id={numericId} />
+        <TrackRecentPlays id={id} />
       </div>
     </div>
   );

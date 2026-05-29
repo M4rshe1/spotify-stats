@@ -172,7 +172,8 @@ export function TopListItem({
       ) : null}
       <div className="space-y-0.5 text-right text-xs">
         <p>
-          {item.count.toLocaleString()} plays ({formatPercent(countPercentage)})
+          {item.count.toLocaleString()} {item.count === 1 ? "play" : "plays"} (
+          {formatPercent(countPercentage)})
         </p>
         <p className="text-muted-foreground">
           {duration(item.duration).toBestDurationString(false)} (

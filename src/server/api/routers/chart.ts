@@ -123,6 +123,9 @@ function fillUpGrouping(
   grouping: PeriodGrouping,
   data: { date: string; duration: number; count: number }[],
 ) {
+  if (data.length === 0) {
+    return [];
+  }
   if (grouping === "hour") {
     const lowestHour = Math.min(...data.map((r) => parseInt(r.date, 10)));
     const highestHour = Math.max(...data.map((r) => parseInt(r.date, 10)));
@@ -969,9 +972,7 @@ export const chartRouter = createTRPCRouter({
       const timezone = ctx.session.user.timezone;
       const playedAt = Prisma.raw(getSQLPlayedAt(timezone));
       const result = await tryCatch(
-        ctx.db.$queryRaw<
-          { day: number; count: number; duration: number }[]
-        >(
+        ctx.db.$queryRaw<{ day: number; count: number; duration: number }[]>(
           Prisma.sql`
             SELECT
               EXTRACT(ISODOW FROM ${playedAt})::int AS day,
@@ -1044,9 +1045,7 @@ export const chartRouter = createTRPCRouter({
         });
       }
 
-      return toDistributionResponse(
-        collapseTopDistribution(result.data, 8),
-      );
+      return toDistributionResponse(collapseTopDistribution(result.data, 8));
     }),
   getExplicitDistribution: protectedProcedure
     .input(periodSchema)
@@ -1173,9 +1172,7 @@ export const chartRouter = createTRPCRouter({
     .query(async ({ ctx, input }) => {
       const { start, end } = getPeriods(input.period, input.from, input.to);
       const result = await tryCatch(
-        ctx.db.$queryRaw<
-          { year: number; count: number; duration: number }[]
-        >(
+        ctx.db.$queryRaw<{ year: number; count: number; duration: number }[]>(
           Prisma.sql`
             SELECT
               release_year.year AS year,

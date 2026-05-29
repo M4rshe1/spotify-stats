@@ -72,7 +72,7 @@ const Page = withAuth(async ({ params }: { params: { id: string } }) => {
           { label: genre.name, href: `/genre/${genre.id}` },
         ]}
       />
-      <ClientPage id={id} />
+      <ClientPage id={numericId} />
     </div>
   );
 });

@@ -11,30 +11,29 @@ import FirstLastPlayed from "./first-last-played";
 import TopAlbums from "./top-albums";
 import TopTracks from "./top-tracks";
 
-const ClientPage = ({ id }: { id: string }) => {
-  const numericId = parseInt(id, 10);
+const ClientPage = ({ id }: { id: number }) => {
   const { selectedPeriod } = usePeriod();
 
   return (
     <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-      <ArtistCard id={numericId} period={selectedPeriod} />
+      <ArtistCard id={id} period={selectedPeriod} />
       <div className="h-fit">
-        <FirstLastPlayed id={numericId} />
+        <FirstLastPlayed id={id} />
       </div>
       <div className="h-72">
-        <ArtistTimeListened artistId={numericId} period={selectedPeriod} />
+        <ArtistTimeListened artistId={id} period={selectedPeriod} />
       </div>
       <div className="h-72">
-        <ArtistTimeDistribution artistId={numericId} period={selectedPeriod} />
+        <ArtistTimeDistribution artistId={id} period={selectedPeriod} />
       </div>
       <div className="h-fit">
-        <TopTracks id={numericId} />
+        <TopTracks id={id} />
       </div>
       <div className="h-fit">
-        <TopAlbums id={numericId} />
+        <TopAlbums id={id} />
       </div>
       <div className="h-fit lg:col-span-2">
-        <ArtistRecentPlays id={numericId} />
+        <ArtistRecentPlays id={id} />
       </div>
     </div>
   );

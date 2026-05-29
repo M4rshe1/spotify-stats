@@ -67,7 +67,7 @@ const Page = withAuth(async ({ params }: { params: { id: string } }) => {
           { label: artist.name, href: `/artist/${artist.id}` },
         ]}
       />
-      <ClientPage id={id} />
+      <ClientPage id={numericId} />
     </div>
   );
 });
