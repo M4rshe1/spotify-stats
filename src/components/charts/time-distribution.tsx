@@ -8,6 +8,8 @@ import { api } from "@/trpc/react";
 
 import { CategoryBarChart } from "./category-bar-chart";
 import { SeriesChartCard } from "./series-chart-card";
+import { NoDataCard } from "../cards/no-data-card";
+import { ClockIcon } from "lucide-react";
 
 type HourDatum = {
   date: string;
@@ -25,16 +27,26 @@ export function TimeDistribution({ period }: { period: ProviderPeriod }) {
     return <Loading />;
   }
 
-  const data: HourDatum[] =
-    Array.isArray(result?.data) && result.data.length > 0
-      ? result.data
-      : [{ date: "00", duration: 0, count: 0, percentage: 0 }];
+  const data: HourDatum[] = Array.isArray(result?.data)
+    ? result.data
+    : [{ date: "00", duration: 0, count: 0, percentage: 0 }];
 
   const maxPercentage = Math.max(
     0,
     ...(result?.data?.map((d) => d.percentage) ?? []),
   );
   const yAxisMax = maxPercentage > 0 ? Math.ceil(maxPercentage * 1.1) : 1;
+
+  if (data.length === 0) {
+    return (
+      <NoDataCard
+        title="Listening by hour"
+        icon={<ClockIcon />}
+        emptyTitle="No data"
+        description="No listening history for this period."
+      />
+    );
+  }
 
   return (
     <SeriesChartCard

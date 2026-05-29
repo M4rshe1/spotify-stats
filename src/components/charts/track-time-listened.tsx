@@ -11,6 +11,8 @@ import { api } from "@/trpc/react";
 
 import { CategoryAreaChart } from "./category-area-chart";
 import { SeriesChartCard } from "./series-chart-card";
+import { NoDataCard } from "../cards/no-data-card";
+import { ClockIcon } from "lucide-react";
 
 export function TrackTimeListened({
   trackId,
@@ -40,10 +42,7 @@ export function TrackTimeListened({
 
   const grouping = tracks?.grouping;
 
-  const data =
-    Array.isArray(tracks?.data) && tracks.data.length > 0
-      ? tracks.data
-      : [{ date: "", duration: 0 }];
+  const data = Array.isArray(tracks?.data) ? tracks.data : [];
 
   function formatCategoryTick(value: string) {
     switch (grouping) {
@@ -71,6 +70,17 @@ export function TrackTimeListened({
       default:
         return label;
     }
+  }
+
+  if (data.length === 0) {
+    return (
+      <NoDataCard
+        title="Time listened"
+        icon={<ClockIcon />}
+        emptyTitle="No data"
+        description="No listening history for this track in this period."
+      />
+    );
   }
 
   return (

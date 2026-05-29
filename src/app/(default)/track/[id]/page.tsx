@@ -57,7 +57,7 @@ const Page = withAuth(async ({ params }: { params: { id: string } }) => {
           { label: track.name, href: `/track/${track.id}` },
         ]}
       />
-      <ClientPage id={id} />
+      <ClientPage id={numericId} />
     </div>
   );
 });
