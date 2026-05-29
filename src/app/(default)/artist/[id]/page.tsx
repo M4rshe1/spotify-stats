@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { PageBreadcrumbs } from "@/components/page-breadcrumbs";
 import { getPreferredMetricsInput } from "@/lib/get-preferred-metrics-input";
 import { withAuth } from "@/lib/hoc-pages";
-import { api } from "@/trpc/server";
+import { api, HydrateClient } from "@/trpc/server";
 import ClientPage from "./_components/client-page";
 
 export async function generateMetadata(props: {
@@ -67,7 +67,9 @@ const Page = withAuth(async ({ params }: { params: { id: string } }) => {
           { label: artist.name, href: `/artist/${artist.id}` },
         ]}
       />
-      <ClientPage id={numericId} />
+      <HydrateClient>
+        <ClientPage id={numericId} />
+      </HydrateClient>
     </div>
   );
 });
