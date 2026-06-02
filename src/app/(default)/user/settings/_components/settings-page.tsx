@@ -4,7 +4,7 @@ import * as React from "react";
 import { CalendarIcon, ChevronsUpDownIcon, GlobeIcon } from "lucide-react";
 import { toast } from "sonner";
 
-import { ThemeSwitcherRow } from "@/components/theme-switcher";
+import { ThemeSettings } from "./theme-settings";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -86,11 +86,12 @@ export default function SettingsPage() {
         <CardHeader>
           <CardTitle>Appearance</CardTitle>
           <CardDescription>
-            Theme applies on this device and matches your sidebar controls.
+            Choose light or dark mode and a color theme. Preferences are saved
+            on this device.
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <ThemeSwitcherRow />
+          <ThemeSettings />
         </CardContent>
       </Card>
 

@@ -65,7 +65,11 @@ export async function createQueuedMasterDataFromSpotify(
   spotify: SpotifyApi,
 ): Promise<void> {
   await createGenres();
+  logger.info("Updated genres");
   await createArtists(spotify);
+  logger.info("Updated artists");
   await createAlbums(spotify);
+  logger.info("Updated albums");
   await createTracks(spotify);
+  logger.info("Updated tracks");
 }

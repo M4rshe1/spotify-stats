@@ -4,7 +4,6 @@ import { LoginForm } from "@/app/auth/login/login-form";
 import { LoginHero } from "@/app/auth/login/login-hero";
 import { RegistrationClosedView } from "@/app/auth/login/registration-closed-view";
 import { AppCredit } from "@/components/app-credit";
-import { ThemeSwitcherRow } from "@/components/theme-switcher";
 import { getLatestRelease } from "@/lib/github-release";
 import { isGoogleAuthConfigured } from "@/lib/google-auth";
 import { getSettings } from "@/lib/settings";
@@ -45,9 +44,6 @@ const Page = withAuth(async () => {
         }}
         aria-hidden
       />
-      <div className="absolute top-4 right-4 z-10">
-        <ThemeSwitcherRow />
-      </div>
 
       {registrationClosed ? (
         <div className="relative flex min-h-screen flex-col items-center justify-center px-4 py-20">
