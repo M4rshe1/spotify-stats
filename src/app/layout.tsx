@@ -7,6 +7,7 @@ import { TRPCReactProvider } from "@/trpc/react";
 import { cn } from "@/lib/utils";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "@/components/ui/sonner";
+import { ColorThemeScript } from "@/components/color-theme-script";
 import { ThemeProvider } from "@/providers/theme-provider";
 
 const jetbrainsMono = JetBrains_Mono({
@@ -48,6 +49,9 @@ export default function RootLayout({
       suppressHydrationWarning
       className={cn(geist.variable, "font-mono", jetbrainsMono.variable)}
     >
+      <head>
+        <ColorThemeScript />
+      </head>
       <body>
         <TRPCReactProvider>
           <ThemeProvider>

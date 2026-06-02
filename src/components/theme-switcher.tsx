@@ -6,12 +6,9 @@ import { useTheme } from "next-themes";
 
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import {
-  SidebarGroup,
-  SidebarGroupContent,
-} from "@/components/ui/sidebar";
+import { SidebarGroup, SidebarGroupContent } from "@/components/ui/sidebar";
 
-const options = [
+export const themeOptions = [
   { value: "light" as const, label: "Light theme", Icon: Sun },
   { value: "dark" as const, label: "Dark theme", Icon: Moon },
   { value: "system" as const, label: "System theme", Icon: Monitor },
@@ -30,10 +27,10 @@ export function ThemeSwitcherRow({ className }: { className?: string }) {
   return (
     <div
       role="group"
-      aria-label="Theme"
+      aria-label="Color mode"
       className={cn("inline-flex items-center gap-1", className)}
     >
-      {options.map(({ value, label, Icon }) => {
+      {themeOptions.map(({ value, label, Icon }) => {
         const isActive = active === value;
         return (
           <Button

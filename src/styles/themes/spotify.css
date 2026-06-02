@@ -1,0 +1,81 @@
+/* Spotify — light UI / classic dark player */
+
+[data-theme="spotify"] {
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.18 0 0);
+  --card: oklch(0.97 0 0);
+  --card-foreground: oklch(0.18 0 0);
+  --popover: oklch(0.97 0 0);
+  --popover-foreground: oklch(0.18 0 0);
+  --primary: oklch(0.72 0.19 152);
+  --primary-foreground: oklch(0.15 0.04 152);
+  --secondary: oklch(0.94 0.01 152);
+  --secondary-foreground: oklch(0.22 0 0);
+  --muted: oklch(0.94 0.008 152);
+  --muted-foreground: oklch(0.48 0 0);
+  --accent: oklch(0.92 0.03 152);
+  --accent-foreground: oklch(0.2 0.05 152);
+  --border: oklch(0.88 0.01 152);
+  --input: oklch(0.88 0.01 152);
+  --ring: oklch(0.72 0.19 152);
+  --sidebar: oklch(0.12 0.02 152);
+  --sidebar-foreground: oklch(0.95 0.01 152);
+  --sidebar-primary: oklch(0.72 0.19 152);
+  --sidebar-primary-foreground: oklch(0.15 0.04 152);
+  --sidebar-accent: oklch(0.22 0.025 152);
+  --sidebar-accent-foreground: oklch(0.95 0.01 152);
+  --sidebar-border: oklch(0.28 0.02 152);
+  --sidebar-ring: oklch(0.72 0.19 152);
+  --info: oklch(0.9 0.06 240);
+  --info-foreground: oklch(0.32 0.1 240);
+  --warning: oklch(0.9 0.08 85);
+  --warning-foreground: oklch(0.35 0.1 75);
+  --success: oklch(0.88 0.08 152);
+  --success-foreground: oklch(0.28 0.1 152);
+  --destructive: oklch(0.58 0.22 25);
+  --chart-1: oklch(0.72 0.19 152);
+  --chart-2: oklch(0.65 0.14 200);
+  --chart-3: oklch(0.7 0.16 85);
+  --chart-4: oklch(0.62 0.18 25);
+  --chart-5: oklch(0.58 0.16 290);
+}
+
+.dark[data-theme="spotify"] {
+  --background: oklch(0.18 0.008 152);
+  --foreground: oklch(0.98 0 0);
+  --card: oklch(0.21 0.01 152);
+  --card-foreground: oklch(0.98 0 0);
+  --popover: oklch(0.21 0.01 152);
+  --popover-foreground: oklch(0.98 0 0);
+  --primary: oklch(0.72 0.19 152);
+  --primary-foreground: oklch(0.15 0.04 152);
+  --secondary: oklch(0.28 0.012 152);
+  --secondary-foreground: oklch(0.98 0 0);
+  --muted: oklch(0.28 0.012 152);
+  --muted-foreground: oklch(0.72 0 0);
+  --accent: oklch(0.28 0.012 152);
+  --accent-foreground: oklch(0.98 0 0);
+  --border: oklch(0.98 0 0 / 10%);
+  --input: oklch(0.98 0 0 / 14%);
+  --ring: oklch(0.72 0.19 152);
+  --sidebar: oklch(0 0 0);
+  --sidebar-foreground: oklch(0.75 0 0);
+  --sidebar-primary: oklch(0.72 0.19 152);
+  --sidebar-primary-foreground: oklch(0.15 0.04 152);
+  --sidebar-accent: oklch(0.28 0.012 152);
+  --sidebar-accent-foreground: oklch(0.98 0 0);
+  --sidebar-border: oklch(0.98 0 0 / 8%);
+  --sidebar-ring: oklch(0.72 0.19 152);
+  --info: oklch(0.65 0.12 240);
+  --info-foreground: oklch(0.98 0 0);
+  --warning: oklch(0.78 0.14 85);
+  --warning-foreground: oklch(0.15 0 0);
+  --success: oklch(0.72 0.19 152);
+  --success-foreground: oklch(0.15 0.04 152);
+  --destructive: oklch(0.65 0.2 25);
+  --chart-1: oklch(0.72 0.19 152);
+  --chart-2: oklch(0.68 0.14 200);
+  --chart-3: oklch(0.75 0.14 85);
+  --chart-4: oklch(0.65 0.18 25);
+  --chart-5: oklch(0.62 0.14 290);
+}
