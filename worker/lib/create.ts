@@ -389,9 +389,9 @@ export async function createPlaylists(
     }
     const upsertedPlaylist = await tryCatch(
       db.playlist.upsert({
-        where: { spotifyId: getIdFromUri(playlistId) ?? "" },
+        where: { spotifyId: playlistId },
         create: {
-          spotifyId: getIdFromUri(playlistId) ?? "",
+          spotifyId: playlistId,
           name: playlistData.data.name,
           type: "playlist",
           image: playlistData.data.images[0]?.url,
