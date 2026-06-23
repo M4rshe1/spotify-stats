@@ -1,13 +1,32 @@
-/**
- * Run `build` or `dev` with `SKIP_ENV_VALIDATION` to skip env validation. This is especially useful
- * for Docker builds.
- */
 import "./src/env.js";
 
 /** @type {import("next").NextConfig} */
 const config = {
   eslint: {
     ignoreDuringBuilds: true,
+  },
+  images: {
+    localPatterns: [
+      {
+        pathname: "/**",
+        search: "",
+      },
+      {
+        pathname: "/api/image",
+      },
+    ],
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "i.scdn.co",
+        pathname: "/image/**",
+      },
+      {
+        protocol: "https",
+        hostname: "image-cdn-ak.spotifycdn.com",
+        pathname: "/image/**",
+      },
+    ],
   },
 };
 

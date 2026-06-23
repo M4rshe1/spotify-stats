@@ -13,6 +13,7 @@ import { getGenreColor } from "@/lib/consts/genres";
 import type { ProviderPeriod } from "@/lib/consts/periods";
 import { usePeriod } from "@/providers/period-provider";
 import { providerPeriodToQueryInput } from "@/lib/provider-period-query-input";
+import { CoverTintBackdrop } from "@/components/cards/cover-tint-backdrop";
 
 const GenreCard = ({ id, period }: { id: number; period: ProviderPeriod }) => {
   const { selectedPeriod } = usePeriod();
@@ -40,6 +41,11 @@ const GenreCard = ({ id, period }: { id: number; period: ProviderPeriod }) => {
 
   return (
     <Card className="relative isolate">
+      <CoverTintBackdrop
+        colorOverride={genreColor?.bgx}
+        coverUrl={""}
+        fillsContainer
+      />
       <CardContent>
         <div className="grid grid-cols-2 gap-4">
           <div

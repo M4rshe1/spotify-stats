@@ -2,6 +2,7 @@
 
 import type { MouseEvent } from "react";
 import { CoverTintBackdrop } from "@/components/cards/cover-tint-backdrop";
+import { ProxyImage } from "@/components/proxy-image";
 import { Button } from "@/components/ui/button";
 import { getGenreColor } from "@/lib/consts/genres";
 import { cn, duration, formatPercent } from "@/lib/utils";
@@ -72,16 +73,20 @@ export function TopListItem({
         <div className="group relative h-12 w-12 shrink-0 overflow-hidden rounded-sm">
           {href ? (
             <Link href={href} className="block">
-              <img
+              <ProxyImage
                 src={item.image}
                 alt={item.name}
+                width={48}
+                height={48}
                 className="h-12 w-12 object-cover"
               />
             </Link>
           ) : (
-            <img
+            <ProxyImage
               src={item.image}
               alt={item.name}
+              width={48}
+              height={48}
               className="h-12 w-12 object-cover"
             />
           )}

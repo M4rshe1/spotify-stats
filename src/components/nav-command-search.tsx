@@ -11,6 +11,7 @@ import {
   Users,
 } from "lucide-react";
 
+import { ProxyImage } from "@/components/proxy-image";
 import {
   Command,
   CommandDialog,
@@ -197,9 +198,11 @@ export function NavCommandSearch({
                     onSelect={() => go(`/track/${t.id}`)}
                   >
                     {t.image ? (
-                      <img
+                      <ProxyImage
                         src={t.image}
                         alt=""
+                        width={28}
+                        height={28}
                         className="size-7 shrink-0 rounded-sm object-cover"
                       />
                     ) : (
@@ -225,9 +228,11 @@ export function NavCommandSearch({
                     onSelect={() => go(`/album/${a.id}`)}
                   >
                     {a.image ? (
-                      <img
+                      <ProxyImage
                         src={a.image}
                         alt=""
+                        width={28}
+                        height={28}
                         className="size-7 shrink-0 rounded-sm object-cover"
                       />
                     ) : (
@@ -248,9 +253,11 @@ export function NavCommandSearch({
                     onSelect={() => go(`/artist/${a.id}`)}
                   >
                     {a.image ? (
-                      <img
+                      <ProxyImage
                         src={a.image}
                         alt=""
+                        width={28}
+                        height={28}
                         className="size-7 shrink-0 rounded-sm object-cover"
                       />
                     ) : (

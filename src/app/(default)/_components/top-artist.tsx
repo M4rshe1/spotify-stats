@@ -1,4 +1,5 @@
 import { CoverTintBackdrop } from "@/components/cards/cover-tint-backdrop";
+import { ProxyImage } from "@/components/proxy-image";
 import { NoDataCard } from "@/components/cards/no-data-card";
 import { Card, CardContent } from "@/components/ui/card";
 import { Loading } from "@/components/ui/loading";
@@ -35,18 +36,17 @@ export default function TopArtist({ period }: { period: ProviderPeriod }) {
       <CardContent className="relative z-10">
         <div className="flex flex-col items-start gap-2">
           <div className="grid grid-cols-2 gap-4">
-            <div className="bg-muted relative h-77 max-w-full overflow-hidden rounded-md">
-              {artistImage ? (
-                <img
-                  src={artistImage}
-                  alt={artistName}
-                  className="h-48 h-full w-full object-cover"
-                />
-              ) : (
-                <div className="bg-muted-foreground text-muted flex h-full w-full items-center justify-center rounded-md text-lg">
-                  ?
-                </div>
-              )}
+            <div className="bg-muted relative h-77 w-full max-w-full overflow-hidden rounded-md">
+              <ProxyImage
+                src={artistImage}
+                alt={artistName}
+                className="h-full w-full object-cover"
+                fallback={
+                  <div className="bg-muted-foreground text-muted flex h-full w-full items-center justify-center rounded-md text-lg">
+                    ?
+                  </div>
+                }
+              />
             </div>
             <div className="grid h-full min-w-0 grid-cols-1 grid-rows-[1fr_auto_1fr] justify-between">
               <Link
@@ -70,7 +70,7 @@ export default function TopArtist({ period }: { period: ProviderPeriod }) {
                 </div>
                 <div className="flex flex-wrap items-baseline gap-x-1.5 gap-y-0">
                   <span className="text-lg font-semibold tracking-tight tabular-nums">
-                    {duration(topArtist.duration).toBestDurationString()}
+                    {duration(topArtist.duration).toMinutes().toLocaleString()}
                   </span>
                   <span className="text-muted-foreground text-sm">minutes</span>
                 </div>
