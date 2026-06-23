@@ -25,7 +25,7 @@ import type { VariantProps } from "class-variance-authority";
 
 const SIDEBAR_NAV_OPEN_KEY = "sidebar-nav-collapsible-open";
 
-type NavMainItem = {
+export type NavMainItem = {
   title: string;
   url: string;
   icon: LucideIcon;

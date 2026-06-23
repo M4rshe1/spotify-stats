@@ -25,7 +25,7 @@ import Image from "next/image";
 
 import { AppCredit } from "@/components/app-credit";
 import { NavCommandSearch } from "@/components/nav-command-search";
-import { NavMain } from "@/components/nav-main";
+import { NavMain, type NavMainItem } from "@/components/nav-main";
 import { NavSecondary } from "@/components/nav-secondary";
 import { NavUser } from "@/components/nav-user";
 import { ThemeSwitcher } from "@/components/theme-switcher";
@@ -42,7 +42,7 @@ import { adminSubNavItems } from "@/lib/consts/admin-nav";
 import type { LatestReleaseInfo } from "@/lib/github-release";
 import type { User } from "@/server/better-auth/config";
 
-const MainNav = [
+const MainNav: NavMainItem[] = [
   {
     title: "Dashboard",
     url: "/",
@@ -150,19 +150,19 @@ const SecondaryNav = [
   },
 ];
 
-export function getMainNav(user: User | null) {
-  const nav = MainNav.map((item) => item);
+export function getMainNav(user: User | null): NavMainItem[] {
+  const nav: NavMainItem[] = [...MainNav];
   if (user?.role === "admin") {
     nav.push({
       title: "Admin",
       url: "/admin",
       icon: Shield,
       isActive: true,
-      items: adminSubNavItems.map(({ title, url, icon, tag }) => ({
-        title,
-        url,
-        icon,
-        tag,
+      items: adminSubNavItems.map((item) => ({
+        title: item.title,
+        url: item.url,
+        icon: item.icon,
+        tag: item.tag,
       })),
     });
   }
