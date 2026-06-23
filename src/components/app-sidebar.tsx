@@ -60,11 +60,19 @@ const MainNav = [
         icon: BarChart3,
       },
       {
+        tag: {
+          title: "SOON",
+          variant: "outline",
+        },
         title: "Wrapped",
         url: "/wrapped",
         icon: Calendar,
       },
       {
+        tag: {
+          title: "SOON",
+          variant: "outline",
+        },
         title: "Affinity",
         url: "/affinity",
         icon: Heart,
@@ -150,10 +158,11 @@ export function getMainNav(user: User | null) {
       url: "/admin",
       icon: Shield,
       isActive: true,
-      items: adminSubNavItems.map(({ title, url, icon }) => ({
+      items: adminSubNavItems.map(({ title, url, icon, tag }) => ({
         title,
         url,
         icon,
+        tag,
       })),
     });
   }

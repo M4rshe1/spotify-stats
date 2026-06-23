@@ -20,6 +20,8 @@ import {
   SidebarMenuSubItem,
 } from "@/components/ui/sidebar";
 import Link from "next/link";
+import { Badge, badgeVariants } from "./ui/badge";
+import type { VariantProps } from "class-variance-authority";
 
 const SIDEBAR_NAV_OPEN_KEY = "sidebar-nav-collapsible-open";
 
@@ -32,6 +34,10 @@ type NavMainItem = {
     title: string;
     url: string;
     icon?: LucideIcon;
+    tag?: {
+      title: string;
+      variant: VariantProps<typeof badgeVariants>["variant"];
+    };
   }[];
 };
 
@@ -131,6 +137,11 @@ function NavMainSection({ item }: { item: NavMainItem }) {
                       <Link href={subItem.url}>
                         {subItem.icon ? <subItem.icon /> : null}
                         <span>{subItem.title}</span>
+                        {subItem.tag ? (
+                          <Badge variant={subItem.tag.variant}>
+                            {subItem.tag.title}
+                          </Badge>
+                        ) : null}
                       </Link>
                     </SidebarMenuSubButton>
                   </SidebarMenuSubItem>
