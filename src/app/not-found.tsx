@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 
 export default function NotFound() {
   return (
-    <main className="from-primary/[0.1] via-background to-chart-2/18 dark:from-muted/35 dark:via-background dark:to-primary/12 relative flex min-h-screen flex-col items-center justify-center overflow-x-hidden bg-gradient-to-br px-4 py-20">
+    <main className="from-primary/10 via-background to-chart-2/18 dark:from-muted/35 dark:via-background dark:to-primary/12 relative flex min-h-screen flex-col items-center justify-center overflow-x-hidden bg-linear-to-br px-4 py-20">
       <div
         className="pointer-events-none absolute inset-0 opacity-[0.35] dark:opacity-[0.25]"
         style={{

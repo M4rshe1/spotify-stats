@@ -1,5 +1,6 @@
 "use client";
 
+import { ProxyImage } from "@/components/proxy-image";
 import { toast } from "sonner";
 
 export type PlayedTrackInfo = {
@@ -24,14 +25,17 @@ function formatDescription(track: PlayedTrackInfo) {
 
 function TrackCoverIcon({ image }: { image: string | null }) {
   return (
-    <div className="bg-muted size-full shrink-0 overflow-hidden rounded-sm border border-border/60">
-      {image ? (
-        <img src={image} alt="" className="size-full object-cover" />
-      ) : (
-        <div className="text-muted-foreground flex size-full items-center justify-center text-sm">
-          ?
-        </div>
-      )}
+    <div className="bg-muted relative size-full shrink-0 overflow-hidden rounded-sm border border-border/60">
+      <ProxyImage
+        src={image}
+        alt=""
+        className="h-full w-full object-cover"
+        fallback={
+          <div className="text-muted-foreground flex size-full items-center justify-center text-sm">
+            ?
+          </div>
+        }
+      />
     </div>
   );
 }

@@ -10,6 +10,7 @@ import { duration } from "@/lib/utils";
 import { api } from "@/trpc/react";
 import Link from "next/link";
 import { CoverTintBackdrop } from "@/components/cards/cover-tint-backdrop";
+import { ProxyImage } from "@/components/proxy-image";
 
 function formatTrackDuration(durationMs: number) {
   const totalSeconds = Math.floor(durationMs / 1000);
@@ -125,17 +126,18 @@ export default function LongestSessionPage() {
                             <span className="text-muted-foreground w-5 shrink-0 text-xs">
                               {trackIndex + 1}
                             </span>
-                            {track.image ? (
-                              <img
-                                src={track.image}
-                                alt={track.title}
-                                className="h-9 w-9 rounded object-cover"
-                              />
-                            ) : (
-                              <div className="bg-muted text-muted-foreground flex h-9 w-9 items-center justify-center rounded text-[10px]">
-                                No img
-                              </div>
-                            )}
+                            <ProxyImage
+                              src={track.image}
+                              alt={track.title}
+                              width={36}
+                              height={36}
+                              className="h-9 w-9 rounded object-cover"
+                              fallback={
+                                <div className="bg-muted text-muted-foreground flex h-9 w-9 items-center justify-center rounded text-[10px]">
+                                  No img
+                                </div>
+                              }
+                            />
                             <div className="min-w-0 flex-1">
                               <Link
                                 href={`/track/${track.trackId}`}

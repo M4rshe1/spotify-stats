@@ -1,4 +1,5 @@
 import { CoverTintBackdrop } from "@/components/cards/cover-tint-backdrop";
+import { ProxyImage } from "@/components/proxy-image";
 import { NoDataCard } from "@/components/cards/no-data-card";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -40,18 +41,17 @@ export default function TopTrack({ period }: { period: ProviderPeriod }) {
       <CardContent className="relative z-10">
         <div className="flex flex-col items-start gap-2">
           <div className="grid grid-cols-2 gap-4">
-            <div className="bg-muted relative h-77 max-w-full overflow-hidden rounded-md">
-              {albumImage ? (
-                <img
-                  src={albumImage}
-                  alt={trackName}
-                  className="h-48 h-full w-full object-cover"
-                />
-              ) : (
-                <div className="bg-muted-foreground text-muted flex h-full w-full items-center justify-center rounded-md text-lg">
-                  ?
-                </div>
-              )}
+            <div className="bg-muted relative h-77 w-full max-w-full overflow-hidden rounded-md">
+              <ProxyImage
+                src={albumImage}
+                alt={trackName}
+                className="h-full w-full object-cover"
+                fallback={
+                  <div className="bg-muted-foreground text-muted flex h-full w-full items-center justify-center rounded-md text-lg">
+                    ?
+                  </div>
+                }
+              />
             </div>
             <div className="flex h-full min-w-0 flex-1 flex-col justify-between">
               <div className="min-w-0">

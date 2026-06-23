@@ -6,6 +6,7 @@ import Link from "next/link";
 import { PlayIcon } from "lucide-react";
 
 import { CoverTintBackdrop } from "@/components/cards/cover-tint-backdrop";
+import { ProxyImage } from "@/components/proxy-image";
 import { Button } from "@/components/ui/button";
 import type { RouterOutputs } from "@/trpc/react";
 import { duration } from "@/lib/utils";
@@ -33,17 +34,18 @@ export function PlaybackHistoryItem({
       <div className="relative z-10 grid min-w-0 grid-cols-[3rem_35%_auto] items-center gap-x-4 px-4 py-3 lg:grid-cols-[3rem_35%__auto_auto] xl:grid-cols-[3rem_30%_18%_17%_auto_auto]">
         <div className="group relative h-12 w-12 shrink-0 overflow-hidden rounded-sm">
           <Link href={`/track/${item.trackId}`} className="block">
-            {item.image ? (
-              <img
-                src={item.image}
-                alt={item.title}
-                className="h-12 w-12 object-cover"
-              />
-            ) : (
-              <div className="bg-muted text-muted-foreground flex h-12 w-12 items-center justify-center text-xs">
-                No img
-              </div>
-            )}
+            <ProxyImage
+              src={item.image}
+              alt={item.title}
+              width={48}
+              height={48}
+              className="h-12 w-12 object-cover"
+              fallback={
+                <div className="bg-muted text-muted-foreground flex h-12 w-12 items-center justify-center text-xs">
+                  No img
+                </div>
+              }
+            />
           </Link>
           <div className="absolute inset-0 flex items-center justify-center bg-black/45 opacity-0 transition-opacity group-hover:opacity-100">
             <Button
@@ -100,13 +102,15 @@ export function PlaybackHistoryItem({
               className="flex items-center gap-1 underline-offset-2 hover:underline"
               title={item.playlist.name ?? undefined}
             >
-              {item.playlist.image && (
-                <img
-                  src={item.playlist.image ?? ""}
+              {item.playlist.image ? (
+                <ProxyImage
+                  src={item.playlist.image}
                   alt={item.playlist.name ?? ""}
+                  width={16}
+                  height={16}
                   className="size-4 rounded-xs object-cover"
                 />
-              )}
+              ) : null}
               {item.playlist.name}
             </Link>
           ) : (

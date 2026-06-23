@@ -4,6 +4,7 @@ import { format, isSameDay } from "date-fns";
 import type { MouseEvent } from "react";
 import Link from "next/link";
 import { CoverTintBackdrop } from "@/components/cards/cover-tint-backdrop";
+import { ProxyImage } from "@/components/proxy-image";
 import { Button } from "./ui/button";
 import { PlayIcon } from "lucide-react";
 
@@ -65,17 +66,18 @@ export function FirstLastTrackRow({
               </Button>
             </div>
           ) : null}
-          {image ? (
-            <img
-              src={image}
-              alt={title}
-              className="size-12 rounded-sm object-cover"
-            />
-          ) : (
-            <div className="bg-muted text-muted-foreground flex size-12 items-center justify-center rounded-sm text-[10px]">
-              No img
-            </div>
-          )}
+          <ProxyImage
+            src={image}
+            alt={title}
+            width={48}
+            height={48}
+            className="size-12 rounded-sm object-cover"
+            fallback={
+              <div className="bg-muted text-muted-foreground flex size-12 items-center justify-center rounded-sm text-[10px]">
+                No img
+              </div>
+            }
+          />
         </Link>
         <div className="flex min-w-0 flex-1 flex-col justify-center gap-0.5">
           <Link

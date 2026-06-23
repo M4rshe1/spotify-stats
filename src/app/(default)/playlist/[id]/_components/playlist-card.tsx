@@ -2,6 +2,7 @@ import { NoDataCard } from "@/components/cards/no-data-card";
 import { ListMusicIcon } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { CoverTintBackdrop } from "@/components/cards/cover-tint-backdrop";
+import { ProxyImage } from "@/components/proxy-image";
 import { duration, truncateText, TOP_CARD_ENTITY_NAME_MAX } from "@/lib/utils";
 import { api } from "@/trpc/react";
 import { Loading } from "@/components/ui/loading";
@@ -60,17 +61,16 @@ const PlaylistCard = ({
       <CardContent>
         <div className="grid grid-cols-2 gap-4">
           <div className="bg-muted relative aspect-square w-full max-w-full overflow-hidden rounded-md">
-            {playlist.image ? (
-              <img
-                src={playlist.image}
-                alt={playlist.name}
-                className="h-full w-full object-cover"
-              />
-            ) : (
-              <div className="bg-muted-foreground text-muted flex h-full w-full items-center justify-center rounded-md text-lg">
-                ?
-              </div>
-            )}
+            <ProxyImage
+              src={playlist.image}
+              alt={playlist.name}
+              className="h-full w-full object-cover"
+              fallback={
+                <div className="bg-muted-foreground text-muted flex h-full w-full items-center justify-center rounded-md text-lg">
+                  ?
+                </div>
+              }
+            />
           </div>
           <div className="grid h-full min-w-0 grid-cols-1 grid-rows-[1fr_auto_1fr] justify-between">
             <div>
