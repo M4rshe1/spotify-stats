@@ -1,12 +1,7 @@
 import type { LucideIcon } from "lucide-react";
-import {
-  BarChart3,
-  Database,
-  Disc3,
-  Settings,
-  Upload,
-  Users,
-} from "lucide-react";
+import { BarChart3, Database, Disc3, Settings, Users } from "lucide-react";
+import { badgeVariants } from "@/components/ui/badge";
+import type { VariantProps } from "class-variance-authority";
 
 export type AdminSubNavItem = {
   title: string;
@@ -14,6 +9,10 @@ export type AdminSubNavItem = {
   description: string;
   icon: LucideIcon;
   iconClassName: string;
+  tag?: {
+    title: string;
+    variant: VariantProps<typeof badgeVariants>["variant"];
+  };
 };
 
 export const adminSubNavItems: AdminSubNavItem[] = [
@@ -39,6 +38,10 @@ export const adminSubNavItems: AdminSubNavItem[] = [
     iconClassName: "text-emerald-600 dark:text-emerald-400",
   },
   {
+    tag: {
+      title: "SOON",
+      variant: "outline",
+    },
     title: "Statistics",
     url: "/admin/statistics",
     description: "Aggregate usage and reporting.",
