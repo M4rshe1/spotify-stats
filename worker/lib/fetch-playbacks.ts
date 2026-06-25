@@ -86,6 +86,12 @@ export async function fetchPlaybacks() {
       logger.error("Playback state not found");
       continue;
     }
+    if (state.data.context?.uri?.startsWith("spotify:playlist:")) {
+      const playlistId = getIdFromUri(state.data.context.uri);
+      if (playlistId) {
+        queues.playlists.add(playlistId);
+      }
+    }
     await createArtists(spotify);
     await createAlbums(spotify);
     await createTracks(spotify);
