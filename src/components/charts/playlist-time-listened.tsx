@@ -46,6 +46,7 @@ export function PlaylistTimeListened({
       : [{ date: "", duration: 0 }];
 
   function formatCategoryTick(value: string) {
+    if (!value) return "";
     switch (grouping) {
       case "hour":
         return `${value}:00`;
@@ -61,6 +62,7 @@ export function PlaylistTimeListened({
   }
 
   function formatTooltipCategory(label: string) {
+    if (!label) return "";
     switch (grouping) {
       case "day":
         return format(new Date(label), "EE, d. MMM");

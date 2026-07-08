@@ -2,6 +2,7 @@ import type { ComponentType } from "react";
 import type { Session } from "@/server/better-auth/config";
 import { getSession } from "@/server/better-auth/server";
 import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
 
 // Helper to do a server-side redirect by throwing the right response.
 function redirectTo(url: string) {
@@ -39,11 +40,11 @@ export const withAuth = <P extends object>(
     ]);
 
     if (!session && !reverse) {
-      redirectTo("/auth/login");
+      redirect("/auth/login");
     }
 
     if (session && reverse) {
-      redirectTo("/");
+      redirect("/");
     }
 
     return (

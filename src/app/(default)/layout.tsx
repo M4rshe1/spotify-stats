@@ -6,6 +6,7 @@ import Header from "@/components/header";
 import { getLatestRelease } from "@/lib/github-release";
 import { getSession } from "@/server/better-auth/server";
 import { api } from "@/trpc/server";
+import { redirect } from "next/navigation";
 
 export default async function Layout({
   children,
@@ -13,10 +14,13 @@ export default async function Layout({
   children: React.ReactNode;
 }) {
   const [session, initialPreferredPeriod, latestRelease] = await Promise.all([
-    getSession(),
-    api.user.getPreferredPeriod(),
-    getLatestRelease(),
+    getSession().catch(() => null),
+    api.user.getPreferredPeriod().catch(() => null),
+    getLatestRelease().catch(() => null),
   ]);
+  if (!session || !initialPreferredPeriod || !latestRelease) {
+    redirect("/auth/login");
+  }
   return (
     <SidebarProvider>
       <PeriodProvider initialPreferredSnapshot={initialPreferredPeriod}>
