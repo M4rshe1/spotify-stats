@@ -1,8 +1,8 @@
 /* Spotify — light UI / classic dark player */
 
-[data-theme="spotify"] {
+.light[data-theme="spotify"] {
   --background: oklch(1 0 0);
-  --foreground: oklch(0.18 0 0);
+  --foreground: oklch(80.15% 0 0);
   --card: oklch(0.97 0 0);
   --card-foreground: oklch(0.18 0 0);
   --popover: oklch(0.97 0 0);
@@ -11,8 +11,8 @@
   --primary-foreground: oklch(0.15 0.04 152);
   --secondary: oklch(0.94 0.01 152);
   --secondary-foreground: oklch(0.22 0 0);
-  --muted: oklch(0.94 0.008 152);
-  --muted-foreground: oklch(0.48 0 0);
+  --muted: oklch(27.27% 0 0);
+  --muted-foreground: oklch(57.61% 0 0);
   --accent: oklch(0.92 0.03 152);
   --accent-foreground: oklch(0.2 0.05 152);
   --border: oklch(0.88 0.01 152);

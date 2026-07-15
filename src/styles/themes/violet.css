@@ -1,4 +1,4 @@
-[data-theme="violet"] {
+.light[data-theme="violet"] {
   --background: oklch(0.93 0.042 290);
   --foreground: oklch(0.22 0.05 290);
   --card: oklch(0.96 0.034 290);

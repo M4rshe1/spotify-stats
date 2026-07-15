@@ -1,4 +1,4 @@
-[data-theme="forest"] {
+.light[data-theme="forest"] {
   --background: oklch(0.93 0.04 145);
   --foreground: oklch(0.22 0.05 145);
   --card: oklch(0.96 0.032 145);
