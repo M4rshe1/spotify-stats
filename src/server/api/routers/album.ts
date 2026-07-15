@@ -182,8 +182,11 @@ export const albumRouter = createTRPCRouter({
     }),
 
   firstLastPlayed: protectedProcedure
-    .input(z.object({ id: z.number() }))
+    .input(periodSchema.extend({ id: z.number() }))
     .query(async ({ ctx, input }) => {
+      const { start, end } = getPeriods(input.period, input.from, input.to);
+      const timezone = ctx.session.user.timezone;
+
       const firstRes = await ctx.db.$queryRaw<
         {
           playedAt: Date | null;
@@ -195,7 +198,10 @@ export const albumRouter = createTRPCRouter({
         SELECT playback."playedAt", track."id" AS "trackId", track."name" AS "trackName", track."image" AS "trackImage"
         FROM playback
         JOIN track ON playback."trackId" = track."id"
-        WHERE track."albumId" = ${input.id} AND playback."userId" = ${ctx.session.user.id}
+        WHERE track."albumId" = ${input.id}
+          AND playback."userId" = ${ctx.session.user.id}
+          AND timezone(${timezone}, playback."playedAt") >= timezone(${timezone}, ${start})
+          AND timezone(${timezone}, playback."playedAt") <= timezone(${timezone}, ${end})
         ORDER BY playback."playedAt" ASC
         LIMIT 1
       `);
@@ -211,7 +217,10 @@ export const albumRouter = createTRPCRouter({
         SELECT playback."playedAt", track."id" AS "trackId", track."name" AS "trackName", track."image" AS "trackImage"
         FROM playback
         JOIN track ON playback."trackId" = track."id"
-        WHERE track."albumId" = ${input.id} AND playback."userId" = ${ctx.session.user.id}
+        WHERE track."albumId" = ${input.id}
+          AND playback."userId" = ${ctx.session.user.id}
+          AND timezone(${timezone}, playback."playedAt") >= timezone(${timezone}, ${start})
+          AND timezone(${timezone}, playback."playedAt") <= timezone(${timezone}, ${end})
         ORDER BY playback."playedAt" DESC
         LIMIT 1
       `);

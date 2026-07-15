@@ -38,7 +38,7 @@ const Page = withAuth(async ({ params }: { params: { id: string } }) => {
   const periodInput = await getPreferredMetricsInput();
   const album = await api.album.get({ id: numericId, ...periodInput });
 
-  void api.album.firstLastPlayed.prefetch({ id: numericId });
+  void api.album.firstLastPlayed.prefetch({ id: numericId, ...periodInput });
   void api.album.recentPlaybacks.prefetch({ id: numericId });
   void api.album.getTopTracks.prefetch({
     id: numericId,

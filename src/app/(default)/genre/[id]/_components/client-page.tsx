@@ -18,7 +18,7 @@ const ClientPage = ({ id }: { id: number }) => {
     <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
       <GenreCard id={id} period={selectedPeriod} />
       <div className="h-fit">
-        <FirstLastPlayed id={id} />
+        <FirstLastPlayed id={id} period={selectedPeriod} />
       </div>
       <div className="h-72">
         <GenreTimeListened genreId={id} period={selectedPeriod} />
