@@ -1,6 +1,6 @@
 /* Catppuccin — Latte (light) / Mocha (dark) */
 
-[data-theme="catppuccin"] {
+.light[data-theme="catppuccin"] {
   --background: oklch(0.94 0.022 275);
   --foreground: oklch(0.38 0.03 275);
   --card: oklch(0.96 0.018 275);

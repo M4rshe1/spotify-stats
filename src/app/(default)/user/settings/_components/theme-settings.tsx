@@ -92,7 +92,7 @@ function ThemePreviewCard({
         disabled && "pointer-events-none opacity-60",
       )}
     >
-      <div data-theme={themeId} className={cn(isDark && "dark")}>
+      <div data-theme={themeId} className={cn(isDark ? "dark" : "light")}>
         <ThemePreviewMock isDark={isDark} />
       </div>
 

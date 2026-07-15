@@ -1,4 +1,4 @@
-[data-theme="ocean"] {
+.light[data-theme="ocean"] {
   --background: oklch(0.93 0.045 248);
   --foreground: oklch(0.22 0.05 248);
   --card: oklch(0.96 0.035 248);

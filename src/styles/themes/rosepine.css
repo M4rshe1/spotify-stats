@@ -1,6 +1,6 @@
 /* Rose Pine — Dawn (light) / Moon (dark) */
 
-[data-theme="rosepine"] {
+.light[data-theme="rosepine"] {
   --background: oklch(0.96 0.028 75);
   --foreground: oklch(0.38 0.04 285);
   --card: oklch(0.98 0.022 80);
