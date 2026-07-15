@@ -182,8 +182,11 @@ export const playlistRouter = createTRPCRouter({
     }),
 
   firstLastPlayed: protectedProcedure
-    .input(z.object({ id: z.number() }))
+    .input(periodSchema.extend({ id: z.number() }))
     .query(async ({ ctx, input }) => {
+      const { start, end } = getPeriods(input.period, input.from, input.to);
+      const timezone = ctx.session.user.timezone;
+
       const firstRes = await ctx.db.$queryRaw<
         {
           playedAt: Date | null;
@@ -197,6 +200,8 @@ export const playlistRouter = createTRPCRouter({
         JOIN track ON playback."trackId" = track."id"
         ${playlistPlaybackJoin(input.id)}
           AND playback."userId" = ${ctx.session.user.id}
+          AND timezone(${timezone}, playback."playedAt") >= timezone(${timezone}, ${start})
+          AND timezone(${timezone}, playback."playedAt") <= timezone(${timezone}, ${end})
         ORDER BY playback."playedAt" ASC
         LIMIT 1
       `);
@@ -214,6 +219,8 @@ export const playlistRouter = createTRPCRouter({
         JOIN track ON playback."trackId" = track."id"
         ${playlistPlaybackJoin(input.id)}
           AND playback."userId" = ${ctx.session.user.id}
+          AND timezone(${timezone}, playback."playedAt") >= timezone(${timezone}, ${start})
+          AND timezone(${timezone}, playback."playedAt") <= timezone(${timezone}, ${end})
         ORDER BY playback."playedAt" DESC
         LIMIT 1
       `);

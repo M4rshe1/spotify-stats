@@ -38,7 +38,7 @@ const Page = withAuth(async ({ params }: { params: { id: string } }) => {
   const periodInput = await getPreferredMetricsInput();
   const genre = await api.genre.get({ id: numericId, period: periodInput });
 
-  void api.genre.firstLastPlayed.prefetch({ id: numericId });
+  void api.genre.firstLastPlayed.prefetch({ id: numericId, ...periodInput });
   void api.genre.recentPlaybacks.prefetch({ id: numericId });
   void api.genre.getTopTracks.prefetch({
     id: numericId,

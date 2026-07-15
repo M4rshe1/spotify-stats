@@ -38,7 +38,7 @@ const Page = withAuth(async ({ params }: { params: { id: string } }) => {
   const periodInput = await getPreferredMetricsInput();
   const track = await api.track.get({ id: numericId, ...periodInput });
 
-  void api.track.firstLastPlayed.prefetch({ id: numericId });
+  void api.track.firstLastPlayed.prefetch({ id: numericId, ...periodInput });
   void api.track.recentPlaybacks.prefetch({ id: numericId });
   void api.chart.getTrackTimeListened.prefetch({
     trackId: numericId,
