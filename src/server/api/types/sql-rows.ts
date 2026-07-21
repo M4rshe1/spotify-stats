@@ -58,3 +58,44 @@ export type FirstLastPlayed = {
   trackName: string | null;
   trackImage: string | null;
 };
+
+export type FirstListenTrackRow = {
+  id: number;
+  name: string;
+  image: string | null;
+  duration: number;
+  playedAt: Date;
+  artistNames: string[] | null;
+  artistIds: number[] | null;
+  artistRoles: string[] | null;
+};
+
+export type FirstListenArtistRow = {
+  id: number;
+  name: string;
+  image: string | null;
+  playedAt: Date;
+};
+
+export type FirstListenAlbumRow = {
+  id: number | null;
+  name: string;
+  image: string | null;
+  playedAt: Date;
+  artistNames: string[] | null;
+  artistIds: number[] | null;
+  artistRoles: string[] | null;
+};
+
+export type FirstListenGenreRow = {
+  id: number;
+  name: string;
+  playedAt: Date;
+};
+
+export type FirstListenPlaylistRow = {
+  id: number;
+  name: string;
+  image: string | null;
+  playedAt: Date;
+};

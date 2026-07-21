@@ -1,0 +1,102 @@
+import type { Metadata } from "next";
+import Link from "next/link";
+import {
+  ChevronRight,
+  Disc3,
+  ListMusic,
+  Music2,
+  Tags,
+  Users,
+  type LucideIcon,
+} from "lucide-react";
+import { PageBreadcrumbs } from "@/components/page-breadcrumbs";
+import { withAuth } from "@/lib/hoc-pages";
+import { Card, CardContent } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
+
+const firstListenSections: {
+  href: string;
+  title: string;
+  icon: LucideIcon;
+  iconClassName?: string;
+}[] = [
+  {
+    href: "/first-listen/tracks",
+    title: "Tracks",
+    icon: Music2,
+    iconClassName: "text-sky-600 dark:text-sky-400",
+  },
+  {
+    href: "/first-listen/artists",
+    title: "Artists",
+    icon: Users,
+    iconClassName: "text-violet-600 dark:text-violet-400",
+  },
+  {
+    href: "/first-listen/albums",
+    title: "Albums",
+    icon: Disc3,
+    iconClassName: "text-amber-600 dark:text-amber-400",
+  },
+  {
+    href: "/first-listen/genres",
+    title: "Genres",
+    icon: Tags,
+    iconClassName: "text-emerald-600 dark:text-emerald-400",
+  },
+  {
+    href: "/first-listen/playlists",
+    title: "Playlists",
+    icon: ListMusic,
+    iconClassName: "text-fuchsia-600 dark:text-fuchsia-400",
+  },
+];
+
+export const metadata: Metadata = {
+  title: "First Listen",
+  description:
+    "Jump to your first listen tracks, artists, albums, genres, or playlists.",
+};
+
+export default withAuth(async () => {
+  return (
+    <div className="space-y-6">
+      <PageBreadcrumbs
+        trail={[{ label: "First Listen", href: "/first-listen" }]}
+      />
+      <h1 className="text-lg font-semibold tracking-tight">First Listen</h1>
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {firstListenSections.map((section) => (
+          <Link
+            key={section.href}
+            href={section.href}
+            className="group focus-visible:ring-ring focus-visible:ring-offset-background block focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
+          >
+            <Card
+              size="sm"
+              className="hover:bg-muted/40 h-full transition-colors"
+            >
+              <CardContent className="flex items-center gap-3 pt-3 pb-3">
+                <div
+                  className={cn(
+                    "bg-muted/80 ring-foreground/10 flex size-11 shrink-0 items-center justify-center ring-1",
+                    section.iconClassName,
+                  )}
+                >
+                  <section.icon className="size-5" strokeWidth={1.75} />
+                </div>
+                <span className="font-heading min-w-0 flex-1 text-sm font-medium">
+                  {section.title}
+                </span>
+                <ChevronRight
+                  className="text-muted-foreground size-4 shrink-0 transition-transform group-hover:translate-x-0.5"
+                  aria-hidden
+                />
+              </CardContent>
+            </Card>
+          </Link>
+        ))}
+      </div>
+    </div>
+  );
+});
