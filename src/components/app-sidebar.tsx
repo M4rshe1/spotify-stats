@@ -113,6 +113,39 @@ const MainNav: NavMainItem[] = [
     ],
   },
   {
+    title: "First Listen",
+    icon: Clock,
+    url: "/first-listen",
+    isActive: true,
+    items: [
+      {
+        title: "FTL Tracks",
+        url: "/first-listen/tracks",
+        icon: Music2,
+      },
+      {
+        title: "FTL Artists",
+        url: "/first-listen/artists",
+        icon: Users,
+      },
+      {
+        title: "FTL Albums",
+        url: "/first-listen/albums",
+        icon: Disc3,
+      },
+      {
+        title: "FTL Genres",
+        url: "/first-listen/genres",
+        icon: Tags,
+      },
+      {
+        title: "FTL Playlists",
+        url: "/first-listen/playlists",
+        icon: ListMusic,
+      },
+    ],
+  },
+  {
     title: "User",
     url: "/user/account",
     icon: UserRound,
