@@ -7,9 +7,9 @@ import { api, HydrateClient } from "@/trpc/server";
 import FirstListenPage from "../_components/first-listen-page";
 
 export const metadata: Metadata = {
-  title: "First listen genres",
+  title: "First time listened genres",
   description:
-    "Your first listened genres for the selected period, sorted by the first listening time.",
+    "Your first time listened genres for the selected period, sorted by the first listening time.",
 };
 
 export default withAuth(async () => {
@@ -22,8 +22,8 @@ export default withAuth(async () => {
     <>
       <PageBreadcrumbs
         trail={[
-          { label: "First Listen", href: "/first-listen" },
-          { label: "First Listen Genres", href: "/first-listen/genres" },
+          { label: "First Time Listened", href: "/first-listen" },
+          { label: "Genres", href: "/first-listen/genres" },
         ]}
       />
       <HydrateClient>
