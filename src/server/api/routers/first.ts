@@ -169,7 +169,7 @@ export const firstRouter = createTRPCRouter({
             genre."name",
             MIN(playback."playedAt") AS "playedAt"
           FROM playback
-          JOIN track ON playback."trackId" = track."id"
+          JOIN track ON playback."track Id" = track."id"
           JOIN artist_track ON track."id" = artist_track."trackId" AND artist_track."role" = 'primary'
           JOIN artist_genre ON artist_genre."artistId" = artist_track."artistId"
           JOIN genre ON genre."id" = artist_genre."genreId"

@@ -113,7 +113,7 @@ const MainNav: NavMainItem[] = [
     ],
   },
   {
-    title: "First Listen",
+    title: "First Time Listened",
     icon: Clock,
     url: "/first-listen",
     isActive: true,

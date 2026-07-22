@@ -18,29 +18,29 @@ const meta: Record<
   { title: string; empty: string; error: string }
 > = {
   tracks: {
-    title: "First listen tracks",
+    title: "First time listened tracks",
     empty: "No tracks found in this time range.",
-    error: "Failed to load first listen tracks.",
+    error: "Failed to load first time listened tracks.",
   },
   artists: {
-    title: "First listen artists",
+    title: "First time listened artists",
     empty: "No artists found in this time range.",
-    error: "Failed to load first listen artists.",
+    error: "Failed to load first time listened artists.",
   },
   albums: {
-    title: "First listen albums",
+    title: "First time listened albums",
     empty: "No albums found in this time range.",
-    error: "Failed to load first listen albums.",
+    error: "Failed to load first time listened albums.",
   },
   genres: {
-    title: "First listen genres",
+    title: "First time listened genres",
     empty: "No genres found in this time range.",
-    error: "Failed to load first listen genres.",
+    error: "Failed to load first time listened genres.",
   },
   playlists: {
-    title: "First listen playlists",
+    title: "First time listened playlists",
     empty: "No playlists found in this time range.",
-    error: "Failed to load first listen playlists.",
+    error: "Failed to load first time listened playlists.",
   },
 };
 

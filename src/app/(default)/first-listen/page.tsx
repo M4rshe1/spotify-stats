@@ -53,7 +53,7 @@ const firstListenSections: {
 ];
 
 export const metadata: Metadata = {
-  title: "First Listen",
+  title: "First Time Listened",
   description:
     "Jump to your first listen tracks, artists, albums, genres, or playlists.",
 };
@@ -62,9 +62,11 @@ export default withAuth(async () => {
   return (
     <div className="space-y-6">
       <PageBreadcrumbs
-        trail={[{ label: "First Listen", href: "/first-listen" }]}
+        trail={[{ label: "First Time Listened", href: "/first-listen" }]}
       />
-      <h1 className="text-lg font-semibold tracking-tight">First Listen</h1>
+      <h1 className="text-lg font-semibold tracking-tight">
+        First Time Listened
+      </h1>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {firstListenSections.map((section) => (
           <Link
