@@ -136,6 +136,31 @@ export const userRouter = createTRPCRouter({
     };
   }),
 
+  getSessionGapSeconds: protectedProcedure.query(async ({ ctx }) => {
+    const settings = await getSettingsForUser(ctx.session.user.id);
+    const gap =
+      typeof settings.SESSION_GAP_SECONDS === "number" &&
+      Number.isFinite(settings.SESSION_GAP_SECONDS)
+        ? Math.max(1, Math.floor(settings.SESSION_GAP_SECONDS))
+        : (userSettings.SESSION_GAP_SECONDS.defaultValue as number);
+    return { seconds: gap };
+  }),
+
+  setSessionGapSeconds: protectedProcedure
+    .input(
+      z.object({
+        seconds: z.number().int().min(1).max(10_800),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      await setSettingForUser(
+        ctx.session.user.id,
+        "SESSION_GAP_SECONDS",
+        String(input.seconds),
+      );
+      return { seconds: input.seconds };
+    }),
+
   toggleFavoritePeriod: protectedProcedure
     .input(z.object({ period: periodEnum }))
     .mutation(async ({ ctx, input }) => {
