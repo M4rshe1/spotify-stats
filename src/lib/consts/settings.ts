@@ -66,4 +66,11 @@ export const userSettings = {
     description:
       "JSON array of up to 5 period keys the user marked as favorites",
   },
+  SESSION_GAP_SECONDS: {
+    key: "SESSION_GAP_SECONDS",
+    defaultValue: 300,
+    type: "number",
+    description:
+      "Maximum gap in seconds between plays for them to count as the same listening session",
+  },
 } satisfies Record<string, Setting>;

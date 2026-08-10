@@ -41,8 +41,8 @@ function toRecord(settings: DbSetting[], defs: Record<string, Setting>) {
         record[setting.key] = setting.value;
     }
   });
-  for (const [key, value] of Object.entries(settingDefs)) {
-    if (!record[key]) {
+  for (const [key, value] of Object.entries(defs)) {
+    if (!(key in record)) {
       record[key] = value.defaultValue;
     }
   }

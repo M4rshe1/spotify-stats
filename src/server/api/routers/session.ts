@@ -5,6 +5,8 @@ import { tryCatch } from "@/lib/try-catch";
 import { Prisma } from "generated/prisma";
 import { TRPCError } from "@trpc/server";
 import z from "zod";
+import { getSettingsForUser } from "@/lib/settings";
+import { userSettings } from "@/lib/consts/settings";
 
 export const sessionRouter = createTRPCRouter({
   getLongestSessions: protectedProcedure
@@ -13,6 +15,12 @@ export const sessionRouter = createTRPCRouter({
       const { start, end } = getPeriods(input.period, input.from, input.to);
       const timezone = ctx.session.user.timezone;
       const userId = ctx.session.user.id;
+      const settings = await getSettingsForUser(userId);
+      const sessionGapSeconds =
+        typeof settings.SESSION_GAP_SECONDS === "number" &&
+        Number.isFinite(settings.SESSION_GAP_SECONDS)
+          ? Math.max(1, Math.floor(settings.SESSION_GAP_SECONDS))
+          : (userSettings.SESSION_GAP_SECONDS.defaultValue as number);
 
       const sessionsResult = await tryCatch(
         ctx.db.$queryRaw<
@@ -24,6 +32,8 @@ export const sessionRouter = createTRPCRouter({
             plays: number;
             uniqueTracks: number;
           }[]
+        // Two playbacks are part of the same session if the gap between the end of
+        // the previous play and the start of the next is within SESSION_GAP_SECONDS.
         >(Prisma.sql`
           WITH ordered AS (
             SELECT
@@ -42,11 +52,13 @@ export const sessionRouter = createTRPCRouter({
               ordered.*,
               CASE
                 WHEN LAG(ordered."endedAt") OVER (ORDER BY ordered."playedAt", ordered."id") IS NULL THEN 1
-                WHEN ordered."playedAt" - LAG(ordered."endedAt") OVER (ORDER BY ordered."playedAt", ordered."id") > INTERVAL '30 minutes' THEN 1
+                WHEN ordered."playedAt" - LAG(ordered."endedAt") OVER (ORDER BY ordered."playedAt", ordered."id")
+                  > (${sessionGapSeconds} * INTERVAL '1 second') THEN 1
                 ELSE 0
               END AS "newSession"
             FROM ordered
           ),
+
           grouped AS (
             SELECT
               *,

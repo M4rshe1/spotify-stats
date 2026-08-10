@@ -1,7 +1,12 @@
 "use client";
 
 import * as React from "react";
-import { CalendarIcon, ChevronsUpDownIcon, GlobeIcon } from "lucide-react";
+import {
+  CalendarIcon,
+  ChevronsUpDownIcon,
+  GlobeIcon,
+  TimerIcon,
+} from "lucide-react";
 import { toast } from "sonner";
 
 import { ThemeSettings } from "./theme-settings";
@@ -21,6 +26,8 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Popover,
   PopoverContent,
@@ -28,6 +35,7 @@ import {
 } from "@/components/ui/popover";
 import { periods } from "@/lib/consts/periods";
 import type { ProviderPeriod } from "@/lib/consts/periods";
+import { userSettings } from "@/lib/consts/settings";
 import { cn } from "@/lib/utils";
 import { usePeriod } from "@/providers/period-provider";
 import { api } from "@/trpc/react";
@@ -73,6 +81,42 @@ export default function SettingsPage() {
 
   const currentTz = timezoneQuery.data?.timezone ?? "UTC";
 
+  const defaultSessionGap = userSettings.SESSION_GAP_SECONDS
+    .defaultValue as number;
+  const sessionGapQuery = api.user.getSessionGapSeconds.useQuery();
+  const [sessionGapInput, setSessionGapInput] = React.useState(
+    String(defaultSessionGap),
+  );
+
+  React.useEffect(() => {
+    if (sessionGapQuery.data?.seconds != null) {
+      setSessionGapInput(String(sessionGapQuery.data.seconds));
+    }
+  }, [sessionGapQuery.data?.seconds]);
+
+  const setSessionGap = api.user.setSessionGapSeconds.useMutation({
+    onSuccess: (data) => {
+      setSessionGapInput(String(data.seconds));
+      toast.success("Session gap updated");
+    },
+    onError: (err) => {
+      toast.error(err.message ?? "Could not update session gap");
+    },
+    onSettled: () => {
+      void utils.user.getSessionGapSeconds.invalidate();
+      void utils.session.getLongestSessions.invalidate();
+    },
+  });
+
+  const parsedSessionGap = Number.parseInt(sessionGapInput, 10);
+  const savedSessionGap =
+    sessionGapQuery.data?.seconds ?? defaultSessionGap;
+  const canSaveSessionGap =
+    Number.isInteger(parsedSessionGap) &&
+    parsedSessionGap >= 1 &&
+    parsedSessionGap <= 10_800 &&
+    parsedSessionGap !== savedSessionGap;
+
   return (
     <div className="mx-auto flex w-full max-w-2xl flex-col gap-6">
       <div>
@@ -115,6 +159,51 @@ export default function SettingsPage() {
           >
             <CalendarIcon className="size-4" />
             Change default period
+          </Button>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <TimerIcon className="size-4" />
+            Listening session gap
+          </CardTitle>
+          <CardDescription>
+            Plays within this many seconds of each other count as the same
+            continuous listening session. Default is {defaultSessionGap}{" "}
+            seconds (5 minutes).
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-3 sm:flex-row sm:items-end">
+          <div className="flex w-full max-w-xs flex-col gap-2">
+            <Label htmlFor="session-gap-seconds">Gap (seconds)</Label>
+            <Input
+              id="session-gap-seconds"
+              type="number"
+              min={1}
+              max={10800}
+              step={1}
+              inputMode="numeric"
+              disabled={sessionGapQuery.isLoading || setSessionGap.isPending}
+              value={sessionGapInput}
+              onChange={(e) => setSessionGapInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && canSaveSessionGap) {
+                  setSessionGap.mutate({ seconds: parsedSessionGap });
+                }
+              }}
+              className="h-10"
+            />
+          </div>
+          <Button
+            type="button"
+            disabled={!canSaveSessionGap || setSessionGap.isPending}
+            onClick={() =>
+              setSessionGap.mutate({ seconds: parsedSessionGap })
+            }
+          >
+            Save
           </Button>
         </CardContent>
       </Card>
