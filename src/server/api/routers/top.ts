@@ -11,6 +11,15 @@ import {
   getSelectedPeriodSql,
   getTrackArtistsLateralSql,
 } from "../sql-snippets";
+import {
+  getPreviousRanks,
+  previousAlbumRankSelect,
+  previousArtistRankSelect,
+  previousGenreRankSelect,
+  previousPlaylistRankSelect,
+  previousTrackRankSelect,
+  withPreviousRanks,
+} from "../previous-ranks";
 const sortSchema = z.enum(["count", "duration"]);
 
 const topItemsSchema = periodSchema.extend({
@@ -24,7 +33,11 @@ export const topRouter = createTRPCRouter({
   getTopTracks: protectedProcedure
     .input(topItemsSchema)
     .query(async ({ ctx, input }) => {
-      const { start, end } = getPeriods(input.period, input.from, input.to);
+      const { start, end, previousStart } = getPeriods(
+        input.period,
+        input.from,
+        input.to,
+      );
       const timezone = ctx.session.user.timezone;
       const userId = ctx.session.user.id;
       const limit = input.limit;
@@ -113,16 +126,30 @@ export const topRouter = createTRPCRouter({
         totalCount: 0,
         totalDuration: 0,
       };
+      const mapped = items.map((row) => ({
+        id: row.id,
+        name: row.name,
+        image: row.image,
+        artists: rowToArtists(row),
+        duration: row.duration,
+        count: row.count,
+      }));
+      const { compareAvailable, ranks } = await getPreviousRanks(
+        {
+          db: ctx.db,
+          userId,
+          timezone,
+          previousStart,
+          currentStart: start,
+          sortBy: input.sortBy,
+          ids: mapped.map((item) => item.id),
+        },
+        previousTrackRankSelect,
+      );
 
       return {
-        items: items.map((row) => ({
-          id: row.id,
-          name: row.name,
-          image: row.image,
-          artists: rowToArtists(row),
-          duration: row.duration,
-          count: row.count,
-        })),
+        items: withPreviousRanks(mapped, ranks, compareAvailable),
+        compareAvailable,
         totalCount: totals.totalCount,
         totalDuration: totals.totalDuration,
         nextCursor:
@@ -138,7 +165,11 @@ export const topRouter = createTRPCRouter({
   getTopArtists: protectedProcedure
     .input(topItemsSchema)
     .query(async ({ ctx, input }) => {
-      const { start, end } = getPeriods(input.period, input.from, input.to);
+      const { start, end, previousStart } = getPeriods(
+        input.period,
+        input.from,
+        input.to,
+      );
       const timezone = ctx.session.user.timezone;
       const userId = ctx.session.user.id;
       const limit = input.limit;
@@ -221,15 +252,29 @@ export const topRouter = createTRPCRouter({
         totalCount: 0,
         totalDuration: 0,
       };
+      const mapped = items.map((row) => ({
+        id: row.id,
+        name: row.name,
+        image: row.image,
+        duration: row.duration,
+        count: row.count,
+      }));
+      const { compareAvailable, ranks } = await getPreviousRanks(
+        {
+          db: ctx.db,
+          userId,
+          timezone,
+          previousStart,
+          currentStart: start,
+          sortBy: input.sortBy,
+          ids: mapped.map((item) => item.id),
+        },
+        previousArtistRankSelect,
+      );
 
       return {
-        items: items.map((row) => ({
-          id: row.id,
-          name: row.name,
-          image: row.image,
-          duration: row.duration,
-          count: row.count,
-        })),
+        items: withPreviousRanks(mapped, ranks, compareAvailable),
+        compareAvailable,
         totalCount: totals.totalCount,
         totalDuration: totals.totalDuration,
         nextCursor:
@@ -245,7 +290,11 @@ export const topRouter = createTRPCRouter({
   getTopAlbums: protectedProcedure
     .input(topItemsSchema)
     .query(async ({ ctx, input }) => {
-      const { start, end } = getPeriods(input.period, input.from, input.to);
+      const { start, end, previousStart } = getPeriods(
+        input.period,
+        input.from,
+        input.to,
+      );
       const timezone = ctx.session.user.timezone;
       const userId = ctx.session.user.id;
       const limit = input.limit;
@@ -336,16 +385,30 @@ export const topRouter = createTRPCRouter({
         totalCount: 0,
         totalDuration: 0,
       };
+      const mapped = items.map((row) => ({
+        id: row.id ?? 0,
+        name: row.name,
+        image: row.image,
+        artists: rowToArtists(row),
+        duration: row.duration,
+        count: row.count,
+      }));
+      const { compareAvailable, ranks } = await getPreviousRanks(
+        {
+          db: ctx.db,
+          userId,
+          timezone,
+          previousStart,
+          currentStart: start,
+          sortBy: input.sortBy,
+          ids: mapped.map((item) => item.id),
+        },
+        previousAlbumRankSelect,
+      );
 
       return {
-        items: items.map((row) => ({
-          id: row.id ?? 0,
-          name: row.name,
-          image: row.image,
-          artists: rowToArtists(row),
-          duration: row.duration,
-          count: row.count,
-        })),
+        items: withPreviousRanks(mapped, ranks, compareAvailable),
+        compareAvailable,
         totalCount: totals.totalCount,
         totalDuration: totals.totalDuration,
         nextCursor:
@@ -361,7 +424,11 @@ export const topRouter = createTRPCRouter({
   getTopGenres: protectedProcedure
     .input(topItemsSchema)
     .query(async ({ ctx, input }) => {
-      const { start, end } = getPeriods(input.period, input.from, input.to);
+      const { start, end, previousStart } = getPeriods(
+        input.period,
+        input.from,
+        input.to,
+      );
       const timezone = ctx.session.user.timezone;
       const userId = ctx.session.user.id;
       const limit = input.limit;
@@ -444,15 +511,29 @@ export const topRouter = createTRPCRouter({
         totalCount: 0,
         totalDuration: 0,
       };
+      const mapped = items.map((row) => ({
+        id: row.id,
+        name: row.name,
+        image: null,
+        duration: row.duration,
+        count: row.count,
+      }));
+      const { compareAvailable, ranks } = await getPreviousRanks(
+        {
+          db: ctx.db,
+          userId,
+          timezone,
+          previousStart,
+          currentStart: start,
+          sortBy: input.sortBy,
+          ids: mapped.map((item) => item.id),
+        },
+        previousGenreRankSelect,
+      );
 
       return {
-        items: items.map((row) => ({
-          id: row.id,
-          name: row.name,
-          image: null,
-          duration: row.duration,
-          count: row.count,
-        })),
+        items: withPreviousRanks(mapped, ranks, compareAvailable),
+        compareAvailable,
         totalCount: totals.totalCount,
         totalDuration: totals.totalDuration,
         nextCursor:
@@ -468,7 +549,11 @@ export const topRouter = createTRPCRouter({
   getTopPlaylists: protectedProcedure
     .input(topItemsSchema)
     .query(async ({ ctx, input }) => {
-      const { start, end } = getPeriods(input.period, input.from, input.to);
+      const { start, end, previousStart } = getPeriods(
+        input.period,
+        input.from,
+        input.to,
+      );
       const timezone = ctx.session.user.timezone;
       const userId = ctx.session.user.id;
       const limit = input.limit;
@@ -546,14 +631,29 @@ export const topRouter = createTRPCRouter({
         totalCount: 0,
         totalDuration: 0,
       };
+      const mapped = items.map((row) => ({
+        id: row.id,
+        name: row.name,
+        image: row.image,
+        duration: row.duration,
+        count: row.count,
+      }));
+      const { compareAvailable, ranks } = await getPreviousRanks(
+        {
+          db: ctx.db,
+          userId,
+          timezone,
+          previousStart,
+          currentStart: start,
+          sortBy: input.sortBy,
+          ids: mapped.map((item) => item.id),
+        },
+        previousPlaylistRankSelect,
+      );
+
       return {
-        items: items.map((row) => ({
-          id: row.id,
-          name: row.name,
-          image: row.image,
-          duration: row.duration,
-          count: row.count,
-        })),
+        items: withPreviousRanks(mapped, ranks, compareAvailable),
+        compareAvailable,
         totalCount: totals.totalCount,
         totalDuration: totals.totalDuration,
         nextCursor:

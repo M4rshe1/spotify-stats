@@ -28,6 +28,7 @@ export default withAuth(async () => {
     api.chart.getTrackLengthDistribution.prefetch(metricsInput),
     api.chart.getReleaseDecadeDistribution.prefetch(metricsInput),
     api.chart.getReleaseYearDistribution.prefetch(metricsInput),
+    api.chart.getListeningCalendar.prefetch(metricsInput),
   ]);
 
   return (

@@ -27,6 +27,16 @@ function normalizeLabel(
   return trimmed ? trimmed : fallback;
 }
 
+function optionalText(value: string | null | undefined): string | null {
+  const trimmed = value?.trim();
+  if (!trimmed) return null;
+  return trimmed;
+}
+
+function optionalBoolean(value: boolean | null | undefined): boolean | null {
+  return value ?? null;
+}
+
 function resolvePlaybackContext(
   playbackContext: Context | null | undefined,
   favoritePlaylist?: Playlist | null,
@@ -314,9 +324,9 @@ export async function createTracks(
       type: track.type,
       explicit: track.explicit,
       duration: track.duration_ms,
-      disc_number: track.disc_number,
-      track_number: track.track_number,
-      is_local: track.is_local,
+      discNumber: track.disc_number,
+      trackNumber: track.track_number,
+      isLocal: track.is_local,
       href: track.href,
     };
     const upsertedTrack = await tryCatch(
@@ -533,6 +543,11 @@ export async function createHistory(
         context: "Unknown",
         platform: platform(item.platform),
         originalPlatform: normalizeLabel(item.platform),
+        skipped: optionalBoolean(item.skipped),
+        shuffle: optionalBoolean(item.shuffle),
+        reasonStart: optionalText(item.reason_start),
+        reasonEnd: optionalText(item.reason_end),
+        country: optionalText(item.conn_country)?.toUpperCase() ?? null,
         trackId: trackId,
         playedAt: item.ts,
       };

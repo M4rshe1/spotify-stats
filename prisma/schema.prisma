@@ -174,9 +174,9 @@ model Track {
   releaseDatePrecision String?
   explicit             Boolean
   duration             Int
-  disc_number          Int
-  track_number         Int
-  is_local             Boolean
+  discNumber           Int
+  trackNumber          Int
+  isLocal              Boolean
   href                 String
   createdAt            DateTime      @default(now())
   updatedAt            DateTime      @default(now()) @updatedAt
@@ -222,6 +222,11 @@ model Playback {
   contextId        String?
   platform         String
   originalPlatform String   @default("Unknown")
+  skipped          Boolean?
+  shuffle          Boolean?
+  reasonStart      String?
+  reasonEnd        String?
+  country          String?
   trackId          Int
   track            Track    @relation(fields: [trackId], references: [id], onDelete: Cascade)
   playedAt         DateTime
@@ -229,6 +234,7 @@ model Playback {
   updatedAt        DateTime @default(now()) @updatedAt
 
   @@unique([userId, playedAt])
+  @@index([userId, country])
   @@map("playback")
 }
 

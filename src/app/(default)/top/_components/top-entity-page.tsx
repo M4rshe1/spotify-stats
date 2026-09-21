@@ -212,6 +212,7 @@ export default function TopEntityPage({ type }: { type: TopType }) {
                     item={item}
                     countPercentage={countPercentage}
                     durationPercentage={durationPercentage}
+                    compareAvailable={data?.compareAvailable}
                     onPlay={type === "tracks" ? playTrack : undefined}
                   />
                 );

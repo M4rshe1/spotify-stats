@@ -27,6 +27,7 @@ export default withAuth(async () => {
     api.dashboard.getDiscoveredOnThisDayLastYear.prefetch({ limit: 20 }),
     api.chart.getTimeListened.prefetch(metricsInput),
     api.chart.getTimeDistribution.prefetch(metricsInput),
+    api.chart.getListeningCalendar.prefetch(metricsInput),
   ]);
 
   return (
