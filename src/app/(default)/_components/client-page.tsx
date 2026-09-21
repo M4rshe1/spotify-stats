@@ -8,6 +8,7 @@ import { TimeListened } from "@/components/charts/time-listened";
 import { TimeDistribution } from "@/components/charts/time-distribution";
 import RecentlyPlayed from "./recently-played";
 import DiscoveredYearAgo from "./discovered-year-ago";
+import { ListeningCalendarChart } from "@/components/charts/listening-calendar-chart";
 
 export default function ClientPage() {
   const { selectedPeriod } = usePeriod();
@@ -22,6 +23,9 @@ export default function ClientPage() {
         <TimeDistribution period={selectedPeriod} />
       </div>
       <TopTrack period={selectedPeriod} />
+      <div className="lg:col-span-full">
+        <ListeningCalendarChart period={selectedPeriod} />
+      </div>
       <div className="lg:col-span-full">
         <DiscoveredYearAgo />
       </div>

@@ -19,6 +19,11 @@ import {
   differenceInMonths,
   differenceInYears,
 } from "date-fns";
+import { TZDate } from "@date-fns/tz/date";
+import {
+  countryDisplayName,
+  playbackReasonLabel,
+} from "@/lib/consts/playback-reasons";
 
 function getSQLPlayedAt(timezone: string) {
   return `("playedAt" AT TIME ZONE 'UTC' AT TIME ZONE '${timezone}')`;
@@ -72,6 +77,20 @@ function orderDistributionRows(
   return order
     .map((name) => byName.get(name))
     .filter((row): row is DistributionRow => row != null);
+}
+
+const MAX_CALENDAR_DAYS = 371;
+
+function eachCalendarDay(start: Date, end: Date, timezone: string) {
+  let cursor = startOfDay(new TZDate(start, timezone));
+  const last = startOfDay(new TZDate(end, timezone));
+  if (cursor.getTime() > last.getTime()) return [];
+  const days: string[] = [];
+  while (cursor.getTime() <= last.getTime()) {
+    days.push(format(cursor, "yyyy-MM-dd"));
+    cursor = addDays(cursor, 1);
+  }
+  return days;
 }
 
 function getTrackReleaseYearJoinSql() {
@@ -1210,5 +1229,229 @@ export const chartRouter = createTRPCRouter({
       }));
 
       return { data, totalDuration, totalCount };
+    }),
+  getSkipDistribution: protectedProcedure
+    .input(periodSchema)
+    .query(async ({ ctx, input }) => {
+      const { start, end } = getPeriods(input.period, input.from, input.to);
+      const result = await tryCatch(
+        ctx.db.$queryRaw<DistributionRow[]>(
+          Prisma.sql`
+            SELECT
+              CASE
+                WHEN playback."skipped" THEN 'Skipped'
+                ELSE 'Completed'
+              END AS name,
+              COUNT(*)::float8 AS count,
+              COALESCE(SUM(playback."duration"), 0)::float8 AS duration
+            FROM playback
+            WHERE ${getSelectedPeriodSql(ctx.session.user.timezone, start, end)}
+              AND playback."userId" = ${ctx.session.user.id}
+              AND playback."skipped" IS NOT NULL
+            GROUP BY playback."skipped"
+          `,
+        ),
+      );
+
+      if (result.error) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to get skip distribution",
+        });
+      }
+
+      return toDistributionResponse(
+        orderDistributionRows(result.data, ["Completed", "Skipped"]),
+      );
+    }),
+  getShuffleDistribution: protectedProcedure
+    .input(periodSchema)
+    .query(async ({ ctx, input }) => {
+      const { start, end } = getPeriods(input.period, input.from, input.to);
+      const result = await tryCatch(
+        ctx.db.$queryRaw<DistributionRow[]>(
+          Prisma.sql`
+            SELECT
+              CASE
+                WHEN playback."shuffle" THEN 'Shuffle'
+                ELSE 'Sequential'
+              END AS name,
+              COUNT(*)::float8 AS count,
+              COALESCE(SUM(playback."duration"), 0)::float8 AS duration
+            FROM playback
+            WHERE ${getSelectedPeriodSql(ctx.session.user.timezone, start, end)}
+              AND playback."userId" = ${ctx.session.user.id}
+              AND playback."shuffle" IS NOT NULL
+            GROUP BY playback."shuffle"
+          `,
+        ),
+      );
+
+      if (result.error) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to get shuffle distribution",
+        });
+      }
+
+      return toDistributionResponse(
+        orderDistributionRows(result.data, ["Sequential", "Shuffle"]),
+      );
+    }),
+  getCountryDistribution: protectedProcedure
+    .input(periodSchema)
+    .query(async ({ ctx, input }) => {
+      const { start, end } = getPeriods(input.period, input.from, input.to);
+      const result = await tryCatch(
+        ctx.db.$queryRaw<DistributionRow[]>(
+          Prisma.sql`
+            SELECT
+              COALESCE(NULLIF(TRIM(playback."country"), ''), 'Unknown') AS name,
+              COUNT(*)::float8 AS count,
+              COALESCE(SUM(playback."duration"), 0)::float8 AS duration
+            FROM playback
+            WHERE ${getSelectedPeriodSql(ctx.session.user.timezone, start, end)}
+              AND playback."userId" = ${ctx.session.user.id}
+              AND playback."country" IS NOT NULL
+            GROUP BY COALESCE(NULLIF(TRIM(playback."country"), ''), 'Unknown')
+            ORDER BY duration DESC
+          `,
+        ),
+      );
+
+      if (result.error) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to get country distribution",
+        });
+      }
+
+      return toDistributionResponse(
+        collapseTopDistribution(
+          Array.from(
+            result.data
+              .reduce((merged, row) => {
+                const name = countryDisplayName(row.name);
+                const existing = merged.get(name);
+                if (existing) {
+                  existing.count += row.count;
+                  existing.duration += row.duration;
+                } else {
+                  merged.set(name, {
+                    name,
+                    count: row.count,
+                    duration: row.duration,
+                  });
+                }
+                return merged;
+              }, new Map<string, DistributionRow>())
+              .values(),
+          ),
+          8,
+        ),
+      );
+    }),
+  getReasonEndDistribution: protectedProcedure
+    .input(periodSchema)
+    .query(async ({ ctx, input }) => {
+      const { start, end } = getPeriods(input.period, input.from, input.to);
+      const result = await tryCatch(
+        ctx.db.$queryRaw<DistributionRow[]>(
+          Prisma.sql`
+            SELECT
+              COALESCE(NULLIF(TRIM(playback."reasonEnd"), ''), 'unknown') AS name,
+              COUNT(*)::float8 AS count,
+              COALESCE(SUM(playback."duration"), 0)::float8 AS duration
+            FROM playback
+            WHERE ${getSelectedPeriodSql(ctx.session.user.timezone, start, end)}
+              AND playback."userId" = ${ctx.session.user.id}
+              AND playback."reasonEnd" IS NOT NULL
+            GROUP BY COALESCE(NULLIF(TRIM(playback."reasonEnd"), ''), 'unknown')
+            ORDER BY duration DESC
+          `,
+        ),
+      );
+
+      if (result.error) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to get reason distribution",
+        });
+      }
+
+      return toDistributionResponse(
+        collapseTopDistribution(
+          result.data.map((row) => ({
+            ...row,
+            name: playbackReasonLabel(row.name),
+          })),
+          8,
+        ),
+      );
+    }),
+  getListeningCalendar: protectedProcedure
+    .input(periodSchema)
+    .query(async ({ ctx, input }) => {
+      const { start, end } = getPeriods(input.period, input.from, input.to);
+      if (!start || !end) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Period start and end are required",
+        });
+      }
+      const timezone = ctx.session.user.timezone;
+      const playedAt = Prisma.raw(getSQLPlayedAt(timezone));
+      const result = await tryCatch(
+        ctx.db.$queryRaw<{ date: string; count: number; duration: number }[]>(
+          Prisma.sql`
+            SELECT
+              TO_CHAR(${playedAt}, 'YYYY-MM-DD') AS date,
+              COUNT(*)::float8 AS count,
+              COALESCE(SUM(playback."duration"), 0)::float8 AS duration
+            FROM playback
+            WHERE ${getSelectedPeriodSql(timezone, start, end)}
+              AND playback."userId" = ${ctx.session.user.id}
+            GROUP BY TO_CHAR(${playedAt}, 'YYYY-MM-DD')
+            ORDER BY date ASC
+          `,
+        ),
+      );
+
+      if (result.error) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to get listening calendar",
+        });
+      }
+
+      const byDate = new Map(result.data.map((row) => [row.date, row]));
+      let days = eachCalendarDay(start, end, timezone);
+      let truncated = false;
+      if (days.length > MAX_CALENDAR_DAYS) {
+        days = days.slice(-MAX_CALENDAR_DAYS);
+        truncated = true;
+      }
+
+      const filled = days.map((date) => {
+        const row = byDate.get(date);
+        return {
+          date,
+          duration: row?.duration ?? 0,
+          count: row?.count ?? 0,
+        };
+      });
+      const totalDuration = filled.reduce((sum, day) => sum + day.duration, 0);
+      const totalCount = filled.reduce((sum, day) => sum + day.count, 0);
+      const activeDays = filled.filter((day) => day.count > 0).length;
+
+      return {
+        days: filled,
+        truncated,
+        start: filled[0]?.date ?? null,
+        end: filled[filled.length - 1]?.date ?? null,
+        totalDuration,
+        totalCount,
+        activeDays,
+      };
     }),
 });

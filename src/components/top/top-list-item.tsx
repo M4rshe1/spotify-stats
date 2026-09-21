@@ -4,9 +4,19 @@ import type { MouseEvent } from "react";
 import { CoverTintBackdrop } from "@/components/cards/cover-tint-backdrop";
 import { ProxyImage } from "@/components/proxy-image";
 import { Button } from "@/components/ui/button";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { getGenreColor } from "@/lib/consts/genres";
 import { cn, duration, formatPercent } from "@/lib/utils";
-import { PlayIcon } from "lucide-react";
+import {
+  MinusIcon,
+  PlayIcon,
+  TrendingDownIcon,
+  TrendingUpIcon,
+} from "lucide-react";
 import Link from "next/link";
 
 export type TopListEntityType =
@@ -39,6 +49,7 @@ export type TopListItemData = {
   image: string | null;
   duration: number;
   count: number;
+  previousRank?: number | null;
   album?: string;
   albumId?: number | null;
   artists?: {
@@ -48,12 +59,75 @@ export type TopListItemData = {
   }[];
 };
 
+function RankDelta({
+  rank,
+  previousRank,
+  compareAvailable,
+}: {
+  rank: number;
+  previousRank?: number | null;
+  compareAvailable?: boolean;
+}) {
+  if (!compareAvailable) return null;
+  if (previousRank == null) {
+    return (
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <span className="text-info cursor-default text-[10px] leading-none font-semibold">
+            NEW
+          </span>
+        </TooltipTrigger>
+        <TooltipContent>New vs the previous period</TooltipContent>
+      </Tooltip>
+    );
+  }
+
+  const delta = previousRank - rank;
+  if (delta === 0) {
+    return (
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <span className="text-muted-foreground inline-flex cursor-default items-center gap-0.5 text-[10px] leading-none">
+            <MinusIcon className="size-3" />
+          </span>
+        </TooltipTrigger>
+        <TooltipContent>No change (was #{previousRank})</TooltipContent>
+      </Tooltip>
+    );
+  }
+
+  const rose = delta > 0;
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <span
+          className={cn(
+            "inline-flex cursor-default items-center gap-0.5 text-[10px] leading-none font-semibold",
+            rose ? "text-success" : "text-destructive",
+          )}
+        >
+          {rose ? (
+            <TrendingUpIcon className="size-3" />
+          ) : (
+            <TrendingDownIcon className="size-3" />
+          )}
+          {Math.abs(delta)}
+        </span>
+      </TooltipTrigger>
+      <TooltipContent>
+        {rose ? "Up" : "Down"} {Math.abs(delta)} from #{previousRank}
+      </TooltipContent>
+    </Tooltip>
+  );
+}
+
 export function TopListItem({
   rank,
   type,
   item,
   countPercentage,
   durationPercentage,
+  compareAvailable,
   onPlay,
 }: {
   rank: number;
@@ -61,13 +135,21 @@ export function TopListItem({
   item: TopListItemData;
   countPercentage: number;
   durationPercentage: number;
+  compareAvailable?: boolean;
   onPlay?: (trackId: number, event: MouseEvent<HTMLButtonElement>) => void;
 }) {
   const href = getHref(type, item.id);
   const content = (
     <>
-      <div className="text-muted-foreground w-8 shrink-0 text-right text-xl font-semibold">
-        {rank}
+      <div className="flex w-12 shrink-0 flex-col items-end justify-center gap-0.5">
+        <div className="text-muted-foreground text-xl leading-none font-semibold">
+          {rank}
+        </div>
+        <RankDelta
+          rank={rank}
+          previousRank={item.previousRank}
+          compareAvailable={compareAvailable}
+        />
       </div>
       {item.image ? (
         <div className="group relative h-12 w-12 shrink-0 overflow-hidden rounded-sm">
