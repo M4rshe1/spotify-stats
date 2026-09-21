@@ -144,6 +144,22 @@ export function ListeningCalendarChart({ period }: { period: ProviderPeriod }) {
   );
   const labels = useMemo(() => monthLabels(weeks), [weeks]);
 
+  // Determine the date(s) with highest duration
+  const maxDuration = useMemo(() => {
+    if (!data?.days || data.days.length === 0) return 0;
+    return Math.max(...data.days.map((day) => day.duration));
+  }, [data?.days]);
+
+  // There might be multiple days with same max duration, collect those dates
+  const maxDurationDates = useMemo(() => {
+    if (!data?.days || maxDuration === 0) return new Set();
+    return new Set(
+      data.days
+        .filter((day) => day.duration === maxDuration)
+        .map((day) => day.date),
+    );
+  }, [data?.days, maxDuration]);
+
   if (isLoading) {
     return <Loading />;
   }
@@ -227,6 +243,8 @@ export function ListeningCalendarChart({ period }: { period: ProviderPeriod }) {
                     );
                   }
                   const level = intensityLevel(day.duration, thresholds);
+                  const isMax = maxDurationDates.has(day.date);
+
                   return (
                     <Tooltip key={day.date}>
                       <TooltipTrigger asChild>
@@ -236,6 +254,9 @@ export function ListeningCalendarChart({ period }: { period: ProviderPeriod }) {
                           className={cn(
                             "ring-foreground/10 h-full w-full rounded-[2px] ring-1",
                             LEVEL_CLASS[level],
+                            isMax
+                              ? "outline-accent-foreground z-10 outline outline-2 outline-offset-2"
+                              : "",
                           )}
                         />
                       </TooltipTrigger>
@@ -253,6 +274,11 @@ export function ListeningCalendarChart({ period }: { period: ProviderPeriod }) {
                             {day.count.toLocaleString()}{" "}
                             {day.count === 1 ? "play" : "plays"}
                           </span>
+                          {isMax && (
+                            <span className="font-bold text-yellow-600">
+                              Highest listening day
+                            </span>
+                          )}
                         </div>
                       </TooltipContent>
                     </Tooltip>
