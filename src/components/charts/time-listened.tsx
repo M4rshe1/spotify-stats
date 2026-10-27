@@ -12,6 +12,12 @@ import { api } from "@/trpc/react";
 import { CategoryAreaChart } from "./category-area-chart";
 import { SeriesChartCard } from "./series-chart-card";
 
+type TimeListenedDatum = {
+  date: string;
+  duration: number;
+  count: number;
+};
+
 export function TimeListened({ period }: { period: ProviderPeriod }) {
   const { data: tracks, isLoading: isLoadingTracks } =
     api.chart.getTimeListened.useQuery(providerPeriodToQueryInput(period));
@@ -22,10 +28,13 @@ export function TimeListened({ period }: { period: ProviderPeriod }) {
 
   const grouping = tracks?.grouping;
 
-  const data =
+  const data: TimeListenedDatum[] =
     Array.isArray(tracks?.data) && tracks.data.length > 0
       ? tracks.data
-      : [{ date: "", duration: 0 }];
+      : [{ date: "", duration: 0, count: 0 }];
+
+  const maxDuration = Math.max(0, ...data.map((d) => d.duration));
+  const yAxisMax = maxDuration > 0 ? Math.ceil(maxDuration * 1.1) : 1;
 
   function formatCategoryTick(value: string) {
     switch (grouping) {
@@ -71,10 +80,11 @@ export function TimeListened({ period }: { period: ProviderPeriod }) {
         },
       }}
     >
-      <CategoryAreaChart
-        data={data as { date: string; duration: number; count: number }[]}
+      <CategoryAreaChart<TimeListenedDatum>
+        data={data}
         categoryKey="date"
         valueKey="duration"
+        yDomainMax={yAxisMax}
         formatCategoryTick={formatCategoryTick}
         formatTooltipCategory={formatTooltipCategory}
         formatValueTick={(value) =>
