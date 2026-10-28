@@ -140,12 +140,12 @@ export function PlaybackHistoryItem({
           </div>
         </div>
         {/* Played at (time && relative) */}
-        <div className="flex w-full min-w-[7rem] items-center justify-end gap-1 text-xs whitespace-nowrap">
+        <div className="flex w-full min-w-[7rem] flex-col items-end justify-center gap-1 text-xs whitespace-nowrap">
           <div className="w-full text-right">
             {format(new Date(item.playedAt), "HH:mm")}{" "}
-            <span className="text-muted-foreground">
-              ({formatRelativePlayedAt(item.playedAt)})
-            </span>
+          </div>
+          <div className="text-muted-foreground">
+            ({formatRelativePlayedAt(item.playedAt)})
           </div>
         </div>
       </div>
