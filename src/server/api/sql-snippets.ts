@@ -43,3 +43,39 @@ export function getSelectedPeriodSql(
     )
 `;
 }
+
+/** One row per playback: true when a primary artist on `track` is in the genre. */
+export function getTrackInGenreSql(genreId: number) {
+  return Prisma.sql`EXISTS (
+    SELECT 1
+    FROM artist_track genre_at
+    JOIN artist_genre genre_ag
+      ON genre_ag."artistId" = genre_at."artistId"
+      AND genre_ag."genreId" = ${genreId}
+    WHERE genre_at."trackId" = track."id"
+      AND genre_at."role" = 'primary'
+  )`;
+}
+
+/** One row per playback: true when a primary artist on `album` is in the genre. */
+export function getAlbumInGenreSql(genreId: number) {
+  return Prisma.sql`EXISTS (
+    SELECT 1
+    FROM album_artist genre_aa
+    JOIN artist_genre genre_ag
+      ON genre_ag."artistId" = genre_aa."artistId"
+      AND genre_ag."genreId" = ${genreId}
+    WHERE genre_aa."albumId" = album."id"
+      AND genre_aa."role" = 'primary'
+  )`;
+}
+
+/** True when `artist` is tagged with the genre, without multiplying playback rows. */
+export function getArtistInGenreSql(genreId: number) {
+  return Prisma.sql`EXISTS (
+    SELECT 1
+    FROM artist_genre genre_ag
+    WHERE genre_ag."artistId" = artist."id"
+      AND genre_ag."genreId" = ${genreId}
+  )`;
+}

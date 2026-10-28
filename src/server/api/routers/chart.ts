@@ -2,7 +2,10 @@ import { createTRPCRouter, protectedProcedure } from "../trpc";
 import type { PeriodGrouping } from "@/lib/consts/periods";
 import { getPeriods } from "@/lib/periods";
 import { periodSchema } from "@/server/api/lib";
-import { getSelectedPeriodSql } from "@/server/api/sql-snippets";
+import {
+  getSelectedPeriodSql,
+  getTrackInGenreSql,
+} from "@/server/api/sql-snippets";
 import { tryCatch } from "@/lib/try-catch";
 import { TRPCError } from "@trpc/server";
 import { Prisma } from "generated/prisma";
@@ -33,8 +36,8 @@ const DAY_OF_WEEK_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
 const TRACK_LENGTH_BUCKETS = [
   "Under 2 min",
-  "2–4 min",
-  "4–6 min",
+  "2-4 min",
+  "4-6 min",
   "6+ min",
 ] as const;
 
@@ -756,12 +759,9 @@ export const chartRouter = createTRPCRouter({
               ${groupSql} AS "date"
             FROM playback
             JOIN track ON playback."trackId" = track."id"
-            JOIN artist_track ON track."id" = artist_track."trackId"
-              AND artist_track."role" = 'primary'
-            JOIN artist_genre ON artist_genre."artistId" = artist_track."artistId"
-              AND artist_genre."genreId" = ${input.genreId}
             WHERE ${getSelectedPeriodSql(ctx.session.user.timezone, start, end)}
               AND playback."userId" = ${ctx.session.user.id}
+              AND ${getTrackInGenreSql(input.genreId)}
             GROUP BY ${groupSql}
             ORDER BY "date" ASC
           `,
@@ -799,12 +799,9 @@ export const chartRouter = createTRPCRouter({
             COUNT(*)::float8 AS count
           FROM playback
           JOIN track ON playback."trackId" = track."id"
-          JOIN artist_track ON track."id" = artist_track."trackId"
-            AND artist_track."role" = 'primary'
-          JOIN artist_genre ON artist_genre."artistId" = artist_track."artistId"
-            AND artist_genre."genreId" = ${input.genreId}
           WHERE ${getSelectedPeriodSql(ctx.session.user.timezone, start, end)}
             AND playback."userId" = ${ctx.session.user.id}
+            AND ${getTrackInGenreSql(input.genreId)}
           GROUP BY ${groupSql}
           ORDER BY "date" ASC
         `,

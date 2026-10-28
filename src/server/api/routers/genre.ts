@@ -13,8 +13,11 @@ import type {
 import { Prisma } from "generated/prisma";
 import {
   getAlbumArtistsLateralSql,
+  getAlbumInGenreSql,
+  getArtistInGenreSql,
   getSelectedPeriodSql,
   getTrackArtistsLateralSql,
+  getTrackInGenreSql,
 } from "../sql-snippets";
 
 const genreTopSortSchema = z.enum(["count", "duration"]);
@@ -46,20 +49,31 @@ export const genreRouter = createTRPCRouter({
         tryCatch(ctx.db.genre.findUnique({ where: { id: input.id } })),
         tryCatch(
           ctx.db.$queryRaw<GenreMetrics[]>(Prisma.sql`
+            WITH genre_playbacks AS (
+              SELECT
+                playback."duration" AS "duration",
+                track."id" AS "trackId",
+                track."albumId" AS "albumId"
+              FROM playback
+              JOIN track ON playback."trackId" = track."id"
+              WHERE playback."userId" = ${ctx.session.user.id}
+                AND ${getSelectedPeriodSql(timezone, start, end)}
+                AND ${getTrackInGenreSql(input.id)}
+            )
             SELECT
-              COUNT(DISTINCT album."id") FILTER (WHERE album."id" IS NOT NULL)::float8 AS "albums",
-              COUNT(DISTINCT track."id")::float8 AS "tracks",
-              COUNT(DISTINCT artist."id")::float8 AS "artists",
-              SUM(playback."duration")::float8 AS "duration",
+              COUNT(DISTINCT "albumId") FILTER (WHERE "albumId" IS NOT NULL)::float8 AS "albums",
+              COUNT(DISTINCT "trackId")::float8 AS "tracks",
+              (
+                SELECT COUNT(DISTINCT artist_track."artistId")::float8
+                FROM genre_playbacks gp
+                JOIN artist_track ON artist_track."trackId" = gp."trackId"
+                  AND artist_track."role" = 'primary'
+                JOIN artist_genre ON artist_genre."artistId" = artist_track."artistId"
+                  AND artist_genre."genreId" = ${input.id}
+              ) AS "artists",
+              COALESCE(SUM("duration"), 0)::float8 AS "duration",
               COUNT(*)::float8 AS "plays"
-            FROM playback
-            JOIN track ON playback."trackId" = track."id"
-            JOIN artist_track ON track."id" = artist_track."trackId" AND artist_track."role" = 'primary'
-            JOIN artist ON artist_track."artistId" = artist."id"
-            JOIN artist_genre ON artist_genre."artistId" = artist."id" AND artist_genre."genreId" = ${input.id}
-            LEFT JOIN album ON track."albumId" = album."id"
-            WHERE playback."userId" = ${ctx.session.user.id}
-              AND ${getSelectedPeriodSql(timezone, start, end)}
+            FROM genre_playbacks
           `),
         ),
       ]);
@@ -109,10 +123,9 @@ export const genreRouter = createTRPCRouter({
               COALESCE(SUM(playback."duration"), 0)::float8 AS "totalDuration"
             FROM playback
             JOIN track ON playback."trackId" = track."id"
-            JOIN artist_track ON track."id" = artist_track."trackId" AND artist_track."role" = 'primary'
-            JOIN artist_genre ON artist_genre."artistId" = artist_track."artistId" AND artist_genre."genreId" = ${input.id}
             WHERE playback."userId" = ${userId}
               AND ${getSelectedPeriodSql(timezone, start, end)}
+              AND ${getTrackInGenreSql(input.id)}
           `,
         ),
       );
@@ -128,10 +141,9 @@ export const genreRouter = createTRPCRouter({
               track."image"
             FROM playback
             JOIN track ON playback."trackId" = track."id"
-            JOIN artist_track ON track."id" = artist_track."trackId"
-            JOIN artist_genre ON artist_genre."artistId" = artist_track."artistId" AND artist_genre."genreId" = ${input.id}
             WHERE playback."userId" = ${userId}
               AND ${getSelectedPeriodSql(timezone, start, end)}
+              AND ${getTrackInGenreSql(input.id)}
             GROUP BY track."id", track."name", track."image"
             ORDER BY ${sortColumn} DESC
             LIMIT 10
@@ -206,10 +218,10 @@ export const genreRouter = createTRPCRouter({
               COALESCE(SUM(playback."duration"), 0)::float8 AS "totalDuration"
             FROM playback
             JOIN track ON playback."trackId" = track."id"
-            JOIN artist_track ON track."id" = artist_track."trackId" AND artist_track."role" = 'primary'
-            JOIN artist_genre ON artist_genre."artistId" = artist_track."artistId" AND artist_genre."genreId" = ${input.id}
+            JOIN album ON track."albumId" = album."id"
             WHERE playback."userId" = ${userId}
               AND ${getSelectedPeriodSql(timezone, start, end)}
+              AND ${getAlbumInGenreSql(input.id)}
           `,
         ),
       );
@@ -226,10 +238,9 @@ export const genreRouter = createTRPCRouter({
             FROM playback
             JOIN track ON playback."trackId" = track."id"
             JOIN album ON track."albumId" = album."id"
-            JOIN album_artist ON album."id" = album_artist."albumId" AND album_artist."role" = 'primary'
-            JOIN artist_genre ON album_artist."artistId" = artist_genre."artistId" AND artist_genre."genreId" = ${input.id}
             WHERE playback."userId" = ${userId}
               AND ${getSelectedPeriodSql(timezone, start, end)}
+              AND ${getAlbumInGenreSql(input.id)}
             GROUP BY album."id", album."name", album."image"
             ORDER BY ${sortColumn} DESC
             LIMIT 10
@@ -294,11 +305,9 @@ export const genreRouter = createTRPCRouter({
               COALESCE(SUM(playback."duration"), 0)::float8 AS "totalDuration"
             FROM playback
             JOIN track ON playback."trackId" = track."id"
-            JOIN artist_track ON track."id" = artist_track."trackId" AND artist_track."role" = 'primary'
-            JOIN artist_genre ON artist_genre."artistId" = artist_track."artistId" AND artist_genre."genreId" = ${input.id}
             WHERE playback."userId" = ${userId}
-            AND timezone(${timezone}, playback."playedAt") >= timezone(${timezone}, ${start})
-            AND timezone(${timezone}, playback."playedAt") <= timezone(${timezone}, ${end})
+              AND ${getSelectedPeriodSql(timezone, start, end)}
+              AND ${getTrackInGenreSql(input.id)}
           `,
         ),
       );
@@ -315,10 +324,9 @@ export const genreRouter = createTRPCRouter({
           JOIN track ON playback."trackId" = track."id"
           JOIN artist_track ON track."id" = artist_track."trackId" AND artist_track."role" = 'primary'
           JOIN artist ON artist_track."artistId" = artist."id"
-          JOIN artist_genre ON artist_genre."artistId" = artist."id" AND artist_genre."genreId" = ${input.id}
           WHERE playback."userId" = ${userId}
-            AND timezone(${timezone}, playback."playedAt") >= timezone(${timezone}, ${start})
-            AND timezone(${timezone}, playback."playedAt") <= timezone(${timezone}, ${end})
+            AND ${getSelectedPeriodSql(timezone, start, end)}
+            AND ${getArtistInGenreSql(input.id)}
           GROUP BY artist."id", artist."name", artist."image"
           ORDER BY ${sortColumn} DESC
           LIMIT 10
@@ -361,11 +369,9 @@ export const genreRouter = createTRPCRouter({
         SELECT playback."playedAt", track."id" AS "trackId", track."name" AS "trackName", track."image" AS "trackImage"
         FROM playback
         JOIN track ON playback."trackId" = track."id"
-        JOIN artist_track ON track."id" = artist_track."trackId" AND artist_track."role" = 'primary'
-        JOIN artist_genre ON artist_genre."artistId" = artist_track."artistId" AND artist_genre."genreId" = ${input.id}
         WHERE playback."userId" = ${ctx.session.user.id}
-          AND timezone(${timezone}, playback."playedAt") >= timezone(${timezone}, ${start})
-          AND timezone(${timezone}, playback."playedAt") <= timezone(${timezone}, ${end})
+          AND ${getSelectedPeriodSql(timezone, start, end)}
+          AND ${getTrackInGenreSql(input.id)}
         ORDER BY playback."playedAt" ASC
         LIMIT 1
       `);
@@ -381,11 +387,9 @@ export const genreRouter = createTRPCRouter({
         SELECT playback."playedAt", track."id" AS "trackId", track."name" AS "trackName", track."image" AS "trackImage"
         FROM playback
         JOIN track ON playback."trackId" = track."id"
-        JOIN artist_track ON track."id" = artist_track."trackId" AND artist_track."role" = 'primary'
-        JOIN artist_genre ON artist_genre."artistId" = artist_track."artistId" AND artist_genre."genreId" = ${input.id}
         WHERE playback."userId" = ${ctx.session.user.id}
-          AND timezone(${timezone}, playback."playedAt") >= timezone(${timezone}, ${start})
-          AND timezone(${timezone}, playback."playedAt") <= timezone(${timezone}, ${end})
+          AND ${getSelectedPeriodSql(timezone, start, end)}
+          AND ${getTrackInGenreSql(input.id)}
         ORDER BY playback."playedAt" DESC
         LIMIT 1
       `);
@@ -434,17 +438,12 @@ export const genreRouter = createTRPCRouter({
             playlist."image" AS "playlistImage"
             FROM playback
           JOIN track ON playback."trackId" = track."id"
-          JOIN artist_track as filter_at ON track."id" = filter_at."trackId" AND filter_at."role" = 'primary'
           LEFT JOIN artist_track ON track."id" = artist_track."trackId"
           LEFT JOIN artist ON artist_track."artistId" = artist."id"
           LEFT JOIN album ON track."albumId" = album."id"
           LEFT JOIN playlist ON playback."contextId" = playlist."spotifyId" AND playback."context" IN ('playlist', 'collection')
           WHERE playback."userId" = ${userId}
-            AND EXISTS (
-              SELECT 1 FROM artist_track at2
-              INNER JOIN artist_genre ag ON ag."artistId" = at2."artistId" AND ag."genreId" = ${input.id}
-              WHERE at2."trackId" = track."id" AND at2."role" = 'primary'
-            )
+            AND ${getTrackInGenreSql(input.id)}
           GROUP BY playback."id", track."id", track."name", track."image", album."id", album."name", playback."duration", playlist."id", playlist."name", playlist."image"
           ORDER BY playback."playedAt" DESC
           LIMIT 10
