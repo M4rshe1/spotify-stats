@@ -15,10 +15,12 @@ export function RecentPlaysCard({
   plays,
   isLoading,
   emptyDescription,
+  compact = false,
 }: {
   plays: PlaybackHistoryItemData[] | undefined;
   isLoading: boolean;
   emptyDescription: string;
+  compact?: boolean;
 }) {
   const { playTrack } = usePlayTrack();
 
@@ -49,6 +51,7 @@ export function RecentPlaysCard({
               key={item.id}
               item={item}
               onPlay={playTrack}
+              compact={compact}
             />
           ))}
         </div>
@@ -57,57 +60,92 @@ export function RecentPlaysCard({
   );
 }
 
-export function ArtistRecentPlays({ id }: { id: number }) {
+export function ArtistRecentPlays({
+  id,
+  compact = false,
+}: {
+  id: number;
+  compact?: boolean;
+}) {
   const { data, isLoading } = api.artist.recentPlaybacks.useQuery({ id });
   return (
     <RecentPlaysCard
       plays={data}
       isLoading={isLoading}
       emptyDescription="No recent plays for this artist."
+      compact={compact}
     />
   );
 }
 
-export function AlbumRecentPlays({ id }: { id: number }) {
+export function AlbumRecentPlays({
+  id,
+  compact = false,
+}: {
+  id: number;
+  compact?: boolean;
+}) {
   const { data, isLoading } = api.album.recentPlaybacks.useQuery({ id });
   return (
     <RecentPlaysCard
       plays={data}
       isLoading={isLoading}
       emptyDescription="No recent plays from this album."
+      compact={compact}
     />
   );
 }
 
-export function PlaylistRecentPlays({ id }: { id: number }) {
+export function PlaylistRecentPlays({
+  id,
+  compact = false,
+}: {
+  id: number;
+  compact?: boolean;
+}) {
   const { data, isLoading } = api.playlist.recentPlaybacks.useQuery({ id });
   return (
     <RecentPlaysCard
       plays={data}
       isLoading={isLoading}
       emptyDescription="No recent plays from this playlist."
+      compact={compact}
     />
   );
 }
 
-export function TrackRecentPlays({ id }: { id: number }) {
+export function TrackRecentPlays({
+  id,
+  compact = false,
+}: {
+  id: number;
+  compact?: boolean;
+}) {
   const { data, isLoading } = api.track.recentPlaybacks.useQuery({ id });
   return (
     <RecentPlaysCard
       plays={data}
       isLoading={isLoading}
       emptyDescription="No recent plays for this track."
+      compact={compact}
     />
   );
 }
 
-export function GenreRecentPlays({ id }: { id: number }) {
+export function GenreRecentPlays({
+  id,
+  compact = false,
+}: {
+  id: number;
+  compact?: boolean;
+}) {
   const { data, isLoading } = api.genre.recentPlaybacks.useQuery({ id });
   return (
     <RecentPlaysCard
       plays={data}
       isLoading={isLoading}
       emptyDescription="No recent plays for this genre."
+      compact={compact}
     />
   );
 }
