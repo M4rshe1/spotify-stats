@@ -11,7 +11,7 @@ import z from "zod";
 import type { FirstLastPlayed, PlaybackRow } from "../types/sql-rows";
 
 export const dashboardRouter = createTRPCRouter({
-  getTracksMetric: protectedProcedure
+  getPlaysMetric: protectedProcedure
     .input(periodSchema)
     .query(async ({ ctx, input }) => {
       const { start, end, previousStart } = getPeriods(
@@ -25,11 +25,11 @@ export const dashboardRouter = createTRPCRouter({
       const [period, previousPeriod] = await Promise.all([
         tryCatch(
           ctx.db.$queryRaw<
-            { duration: number | null; tracks: bigint }[]
+            { duration: number | null; plays: bigint }[]
           >(Prisma.sql`
               SELECT
                 SUM(duration)::float8 AS duration,
-                COUNT(*)::bigint AS tracks
+                COUNT(*)::bigint AS plays
               FROM playback
               WHERE "userId" = ${userId}
                 AND ${getSelectedPeriodSql(timezone, start, end)}
@@ -37,11 +37,11 @@ export const dashboardRouter = createTRPCRouter({
         ),
         tryCatch(
           ctx.db.$queryRaw<
-            { duration: number | null; tracks: bigint }[]
+            { duration: number | null; plays: bigint }[]
           >(Prisma.sql`
               SELECT
                 SUM(duration)::float8 AS duration,
-                COUNT(*)::bigint AS tracks
+                COUNT(*)::bigint AS plays
               FROM playback
               WHERE "userId" = ${userId}
                 AND ${getSelectedPeriodSql(timezone, previousStart, start)}
@@ -51,14 +51,14 @@ export const dashboardRouter = createTRPCRouter({
       if (period.error || previousPeriod.error) {
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
-          message: "Failed to get tracks listened",
+          message: "Failed to get plays listened",
         });
       }
       const currentMetrics = period.data?.[0];
       const previousMetrics = previousPeriod.data?.[0];
       return {
-        tracks: Number(currentMetrics?.tracks ?? 0n),
-        previousTracks: Number(previousMetrics?.tracks ?? 0n),
+        plays: Number(currentMetrics?.plays ?? 0n),
+        previousPlays: Number(previousMetrics?.plays ?? 0n),
       };
     }),
   getDurationMetric: protectedProcedure

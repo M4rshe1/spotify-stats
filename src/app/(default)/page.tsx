@@ -15,7 +15,7 @@ export const metadata: Metadata = {
 export default withAuth(async () => {
   const metricsInput = await getPreferredMetricsInput();
   await Promise.all([
-    api.dashboard.getTracksMetric.prefetch(metricsInput),
+    api.dashboard.getPlaysMetric.prefetch(metricsInput),
     api.dashboard.getDurationMetric.prefetch(metricsInput),
     api.dashboard.getArtistsMetric.prefetch(metricsInput),
     api.dashboard.getRecentlyPlayed.prefetch({

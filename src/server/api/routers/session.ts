@@ -32,8 +32,8 @@ export const sessionRouter = createTRPCRouter({
             plays: number;
             uniqueTracks: number;
           }[]
-        // Two playbacks are part of the same session if the gap between the end of
-        // the previous play and the start of the next is within SESSION_GAP_SECONDS.
+          // Two playbacks are part of the same session if the gap between the end of
+          // the previous play and the start of the next is within SESSION_GAP_SECONDS.
         >(Prisma.sql`
           WITH ordered AS (
             SELECT
@@ -75,7 +75,7 @@ export const sessionRouter = createTRPCRouter({
           FROM grouped
           GROUP BY "sessionId"
           ORDER BY "duration" DESC, MIN("playedAt") DESC
-          LIMIT 5
+          LIMIT 10
         `),
       );
 
@@ -95,7 +95,7 @@ export const sessionRouter = createTRPCRouter({
         uniqueTracks: session.uniqueTracks,
       }));
     }),
-  getSessionTracks: protectedProcedure
+  getSessionPlays: protectedProcedure
     .input(
       z.object({
         startAt: z.date(),
@@ -105,7 +105,7 @@ export const sessionRouter = createTRPCRouter({
     .query(async ({ ctx, input }) => {
       const userId = ctx.session.user.id;
 
-      const tracksResult = await tryCatch(
+      const playsResult = await tryCatch(
         ctx.db.$queryRaw<
           {
             playbackId: string;
@@ -151,22 +151,22 @@ export const sessionRouter = createTRPCRouter({
         `),
       );
 
-      if (tracksResult.error) {
+      if (playsResult.error) {
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
-          message: "Failed to get session tracks",
+          message: "Failed to get session plays",
         });
       }
 
-      return tracksResult.data.map((track) => ({
-        playbackId: track.playbackId,
-        playedAt: track.playedAt,
-        duration: track.duration,
-        trackId: track.trackId,
-        title: track.trackName,
-        image: track.trackImage,
-        artists: track.artistNames ?? [],
-        artistIds: track.artistIds ?? [],
+      return playsResult.data.map((play) => ({
+        playbackId: play.playbackId,
+        playedAt: play.playedAt,
+        duration: play.duration,
+        trackId: play.trackId,
+        title: play.trackName,
+        image: play.trackImage,
+        artists: play.artistNames ?? [],
+        artistIds: play.artistIds ?? [],
       }));
     }),
 });
