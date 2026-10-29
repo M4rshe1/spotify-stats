@@ -54,7 +54,9 @@ const GenreCard = ({ id, period }: { id: number; period: ProviderPeriod }) => {
               genreColor?.bg,
             )}
           >
-            <Tags className={cn("size-16 stroke-[1.25]", genreColor?.fg)} />
+            <span className={cn("text-[256px] font-bold", genreColor?.fg)}>
+              {genre.name.slice(0, 1).toUpperCase()}
+            </span>
           </div>
           <div className="grid h-full min-w-0 grid-cols-1 grid-rows-[1fr_auto_1fr] justify-between">
             <div>

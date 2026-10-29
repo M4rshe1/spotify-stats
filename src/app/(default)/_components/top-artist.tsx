@@ -78,7 +78,7 @@ export default function TopArtist({ period }: { period: ProviderPeriod }) {
                   <span className="text-lg font-semibold tracking-tight tabular-nums">
                     {topArtist.tracks.toLocaleString()}
                   </span>
-                  <span className="text-muted-foreground text-sm">tracks</span>
+                  <span className="text-muted-foreground text-sm">plays</span>
                 </div>
               </div>
               <div className="flex items-center gap-2"></div>

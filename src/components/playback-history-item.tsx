@@ -35,7 +35,7 @@ export function PlaybackHistoryItem({
       <CoverTintBackdrop coverUrl={item.image} className="rounded-md" />
       <div
         className={cn(
-          "relative z-10 grid min-w-0 grid-cols-[3rem_35%_auto_auto] items-center gap-x-4 px-4 py-3",
+          "relative z-10 grid min-w-0 grid-cols-[3rem_35%_auto_auto] items-center gap-x-4 px-2 py-2 pr-4",
           !compact && "xl:grid-cols-[3rem_30%_18%_17%_auto_auto]",
         )}
       >

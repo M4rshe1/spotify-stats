@@ -31,7 +31,7 @@ export default function LongestSessionPage() {
   const expandedSession = data?.find(
     (session) => session.sessionId === expandedSessionId,
   );
-  const sessionTracksQuery = api.session.getSessionTracks.useQuery(
+  const sessionPlaysQuery = api.session.getSessionPlays.useQuery(
     {
       startAt: expandedSession?.startAt ?? new Date(0),
       endAt: expandedSession?.endAt ?? new Date(0),
@@ -103,21 +103,21 @@ export default function LongestSessionPage() {
                 </div>
                 {expandedSessionId === session.sessionId ? (
                   <div className="mt-2 border-t pt-2">
-                    {sessionTracksQuery.isLoading ? (
+                    {sessionPlaysQuery.isLoading ? (
                       <p className="text-muted-foreground text-xs">
                         Loading tracks...
                       </p>
-                    ) : sessionTracksQuery.isError ? (
+                    ) : sessionPlaysQuery.isError ? (
                       <p className="text-destructive text-xs">
                         Failed to load tracks for this session.
                       </p>
-                    ) : !sessionTracksQuery.data?.length ? (
+                    ) : !sessionPlaysQuery.data?.length ? (
                       <p className="text-muted-foreground text-xs">
                         No tracks found for this session.
                       </p>
                     ) : (
                       <div className="space-y-2">
-                        {sessionTracksQuery.data.map((track, trackIndex) => (
+                        {sessionPlaysQuery.data.map((track, trackIndex) => (
                           <div
                             key={track.playbackId}
                             className="bg-muted/30 riybde relative isolate flex items-center gap-2 overflow-hidden rounded-md px-2 py-1.5"
@@ -171,8 +171,11 @@ export default function LongestSessionPage() {
                               </p>
                             </div>
                             <div className="text-muted-foreground text-right text-xs">
-                              <p>{format(new Date(track.playedAt), "HH:mm")}</p>
-                              <p>{formatTrackDuration(track.duration)}</p>
+                              <p>
+                                at{" "}
+                                {format(new Date(track.playedAt), "HH:mm:ss")}
+                              </p>
+                              <p>for {formatTrackDuration(track.duration)}</p>
                             </div>
                           </div>
                         ))}

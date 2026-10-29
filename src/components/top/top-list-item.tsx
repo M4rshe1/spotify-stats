@@ -141,8 +141,8 @@ export function TopListItem({
   const href = getHref(type, item.id);
   const content = (
     <>
-      <div className="flex w-12 shrink-0 flex-col items-end justify-center gap-0.5">
-        <div className="text-muted-foreground text-xl leading-none font-semibold">
+      <div className="flex w-12 shrink-0 flex-col items-center justify-center gap-0.5">
+        <div className="text-muted-foreground w-full text-center text-xl leading-none font-semibold">
           {rank}
         </div>
         <RankDelta
@@ -279,7 +279,7 @@ export function TopListItem({
         }
         className="rounded-md"
       />
-      <div className="relative z-10 flex w-full items-center gap-3 p-2">
+      <div className="relative z-10 flex w-full items-center gap-3 p-2 pr-4">
         {content}
       </div>
     </div>
