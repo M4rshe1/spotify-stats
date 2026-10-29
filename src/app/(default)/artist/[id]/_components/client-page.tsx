@@ -33,7 +33,7 @@ const ClientPage = ({ id }: { id: number }) => {
         <TopAlbums id={id} />
       </div>
       <div className="h-fit lg:col-span-2">
-        <ArtistRecentPlays id={id} />
+        <ArtistRecentPlays id={id} compact />
       </div>
     </div>
   );

@@ -9,7 +9,7 @@ import { CoverTintBackdrop } from "@/components/cards/cover-tint-backdrop";
 import { ProxyImage } from "@/components/proxy-image";
 import { Button } from "@/components/ui/button";
 import type { RouterOutputs } from "@/trpc/react";
-import { duration } from "@/lib/utils";
+import { cn, duration } from "@/lib/utils";
 
 export type PlaybackHistoryItemData =
   RouterOutputs["playlist"]["recentPlaybacks"][number];
@@ -24,14 +24,21 @@ function formatRelativePlayedAt(playedAt: Date | string) {
 export function PlaybackHistoryItem({
   item,
   onPlay,
+  compact = false,
 }: {
   item: PlaybackHistoryItemData;
   onPlay: (trackId: number, event: MouseEvent<HTMLButtonElement>) => void;
+  compact?: boolean;
 }) {
   return (
     <div className="bg-muted/30 relative isolate overflow-hidden rounded-md border">
       <CoverTintBackdrop coverUrl={item.image} className="rounded-md" />
-      <div className="relative z-10 grid min-w-0 grid-cols-[3rem_35%_auto] items-center gap-x-4 px-4 py-3 lg:grid-cols-[3rem_35%__auto_auto] xl:grid-cols-[3rem_30%_18%_17%_auto_auto]">
+      <div
+        className={cn(
+          "relative z-10 grid min-w-0 grid-cols-[3rem_35%_auto_auto] items-center gap-x-4 px-4 py-3",
+          !compact && "xl:grid-cols-[3rem_30%_18%_17%_auto_auto]",
+        )}
+      >
         <div className="group relative h-12 w-12 shrink-0 overflow-hidden rounded-sm">
           <Link href={`/track/${item.trackId}`} className="block">
             <ProxyImage
@@ -95,7 +102,7 @@ export function PlaybackHistoryItem({
           </p>
         </div>
         {/* Playlist */}
-        <div className="hidden max-w-[14rem] min-w-[6rem] items-center truncate text-right text-xs xl:flex">
+        <div className="hidden max-w-[14rem] min-w-[6rem] items-center truncate text-right text-xs lg:flex">
           {item.playlist?.id ? (
             <Link
               href={`/playlist/${item.playlist.id}`}
@@ -118,34 +125,38 @@ export function PlaybackHistoryItem({
           )}
         </div>
         {/* Album */}
-        <div className="flex hidden w-full min-w-[6rem] justify-end truncate text-xs xl:block">
-          <div className="w-full text-left">
-            {item.album.id ? (
-              <Link
-                href={`/album/${item.album.id}`}
-                className="underline-offset-2 hover:underline"
-                title={item.album.name}
-              >
-                {item.album.name}
-              </Link>
-            ) : (
-              item.album.name
-            )}
+        {!compact && (
+          <div className="flex hidden w-full min-w-[6rem] justify-end truncate text-xs xl:block">
+            <div className="w-full text-left">
+              {item.album.id ? (
+                <Link
+                  href={`/album/${item.album.id}`}
+                  className="underline-offset-2 hover:underline"
+                  title={item.album.name}
+                >
+                  {item.album.name}
+                </Link>
+              ) : (
+                item.album.name
+              )}
+            </div>
           </div>
-        </div>
+        )}
         {/* Duration */}
-        <div className="flex hidden w-full min-w-[4rem] justify-end text-xs lg:block">
-          <div className="w-full text-right">
-            {duration(item.duration).toBestDurationString(false)}
+        {!compact && (
+          <div className="flex hidden w-full min-w-[4rem] justify-end text-xs xl:block">
+            <div className="w-full text-right">
+              {duration(item.duration).toBestDurationString(false)}
+            </div>
           </div>
-        </div>
+        )}
         {/* Played at (time && relative) */}
         <div className="flex w-full min-w-[7rem] flex-col items-end justify-center gap-1 text-xs whitespace-nowrap">
           <div className="w-full text-right">
             {format(new Date(item.playedAt), "HH:mm")}{" "}
           </div>
           <div className="text-muted-foreground">
-            ({formatRelativePlayedAt(item.playedAt)})
+            {formatRelativePlayedAt(item.playedAt)}
           </div>
         </div>
       </div>
