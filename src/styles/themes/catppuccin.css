@@ -33,11 +33,11 @@
   --success: oklch(0.86 0.08 145);
   --success-foreground: oklch(0.32 0.1 145);
   --destructive: oklch(0.55 0.2 15);
-  --chart-1: oklch(0.52 0.24 295);
-  --chart-2: oklch(0.62 0.16 240);
-  --chart-3: oklch(0.72 0.12 25);
-  --chart-4: oklch(0.78 0.12 55);
-  --chart-5: oklch(0.68 0.1 145);
+  --chart-1: oklch(0.62 0.16 240);
+  --chart-2: oklch(0.72 0.12 25);
+  --chart-3: oklch(0.78 0.12 55);
+  --chart-4: oklch(0.68 0.1 145);
+  --chart-5: oklch(0.52 0.24 295);
 }
 
 .dark[data-theme="catppuccin"] {
@@ -73,9 +73,9 @@
   --success: oklch(0.82 0.1 145);
   --success-foreground: oklch(0.22 0.03 275);
   --destructive: oklch(0.72 0.14 355);
-  --chart-1: oklch(0.78 0.12 295);
-  --chart-2: oklch(0.78 0.1 240);
-  --chart-3: oklch(0.78 0.1 355);
-  --chart-4: oklch(0.82 0.1 55);
-  --chart-5: oklch(0.82 0.08 145);
+  --chart-1: oklch(0.78 0.1 240);
+  --chart-2: oklch(0.78 0.1 355);
+  --chart-3: oklch(0.82 0.1 55);
+  --chart-4: oklch(0.82 0.08 145);
+  --chart-5: oklch(0.78 0.12 295);
 }

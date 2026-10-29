@@ -99,9 +99,6 @@ function ThemePreviewCard({
       <div className="flex items-center justify-between gap-2 px-3 py-2.5">
         <div>
           <p className="text-sm font-medium">{theme.label}</p>
-          <p className="text-muted-foreground text-xs">
-            Background, surfaces, and accents
-          </p>
         </div>
         {isSelected ? (
           <span className="bg-primary text-primary-foreground flex size-5 shrink-0 items-center justify-center rounded-full">

@@ -29,6 +29,26 @@ export const colorThemes = {
     id: "catppuccin",
     label: "Catppuccin",
   },
+  gruvbox: {
+    id: "gruvbox",
+    label: "Gruvbox",
+  },
+  tokyonight: {
+    id: "tokyonight",
+    label: "Tokyo Night",
+  },
+  dracula: {
+    id: "dracula",
+    label: "Dracula",
+  },
+  github: {
+    id: "github",
+    label: "GitHub",
+  },
+  ayu: {
+    id: "ayu",
+    label: "Ayu",
+  },
 } as const;
 
 export type ColorThemeId = keyof typeof colorThemes;
