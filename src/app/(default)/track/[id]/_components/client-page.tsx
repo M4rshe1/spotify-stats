@@ -25,7 +25,7 @@ const ClientPage = ({ id }: { id: number }) => {
         <TrackTimeDistribution trackId={id} period={selectedPeriod} />
       </div>
       <div className="h-fit lg:col-span-2">
-        <TrackRecentPlays id={id} compact />
+        <TrackRecentPlays id={id} />
       </div>
     </div>
   );

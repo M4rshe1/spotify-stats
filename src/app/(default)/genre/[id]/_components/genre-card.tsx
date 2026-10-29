@@ -92,10 +92,10 @@ const GenreCard = ({ id, period }: { id: number; period: ProviderPeriod }) => {
               </div>
               <div className="flex flex-wrap items-baseline gap-x-1.5 gap-y-0">
                 <span className="text-lg font-semibold tracking-tight tabular-nums">
-                  {genre.metrics.tracks.toLocaleString()}
+                  {genre.metrics.plays.toLocaleString()}
                 </span>
                 <span className="text-muted-foreground text-sm">
-                  {genre.metrics.tracks === 1 ? "track" : "tracks"}
+                  {genre.metrics.plays === 1 ? "play" : "plays"}
                 </span>
               </div>
             </div>

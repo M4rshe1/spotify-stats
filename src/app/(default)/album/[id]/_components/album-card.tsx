@@ -104,10 +104,10 @@ const AlbumCard = ({ id, period }: { id: number; period: ProviderPeriod }) => {
               </div>
               <div className="flex flex-wrap items-baseline gap-x-1.5 gap-y-0">
                 <span className="text-lg font-semibold tracking-tight tabular-nums">
-                  {album.metrics.tracks.toLocaleString()}
+                  {album.metrics.plays.toLocaleString()}
                 </span>
                 <span className="text-muted-foreground text-sm">
-                  {album.metrics.tracks === 1 ? "track" : "tracks"}
+                  {album.metrics.plays === 1 ? "play" : "plays"}
                 </span>
               </div>
             </div>
