@@ -140,7 +140,7 @@ export function NavCommandSearch({
             <span className="flex-1 text-left">Search</span>
             <kbd
               className={cn(
-                "bg-muted text-muted-foreground pointer-events-none hidden h-5 items-center gap-1 rounded-sm border px-1.5 font-mono text-[10px] font-medium select-none sm:inline-flex",
+                "bg-muted text-muted-foreground pointer-events-none hidden h-5 items-center gap-1 border px-1.5 font-mono text-[10px] font-medium select-none sm:inline-flex",
               )}
             >
               {shortcutLabel}
