@@ -1,7 +1,7 @@
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 import type { PeriodGrouping } from "@/lib/consts/periods";
 import { getPeriods } from "@/lib/periods";
-import { periodSchema } from "@/server/api/lib";
+import { periodSchema, scopedPeriodSchema } from "@/server/api/lib";
 import {
   getSelectedPeriodSql,
   getTrackInGenreSql,
@@ -257,9 +257,25 @@ const genrePeriodSchema = periodSchema.extend({
   genreId: z.number(),
 });
 
+function playbackOwnerSql(
+  ctx: { session: { user: { id: string; role?: string | null } } },
+  scope: "user" | "all" | undefined,
+) {
+  if (scope === "all") {
+    if (ctx.session.user.role !== "admin") {
+      throw new TRPCError({
+        code: "FORBIDDEN",
+        message: "Instance statistics are limited to admins",
+      });
+    }
+    return Prisma.sql`TRUE`;
+  }
+  return Prisma.sql`playback."userId" = ${ctx.session.user.id}`;
+}
+
 export const chartRouter = createTRPCRouter({
   getTimeListened: protectedProcedure
-    .input(periodSchema)
+    .input(scopedPeriodSchema)
     .query(async ({ ctx, input }) => {
       const { start, end, grouping } = getPeriods(
         input.period,
@@ -280,7 +296,7 @@ export const chartRouter = createTRPCRouter({
               ${groupSql} as "date"
             FROM playback
             WHERE ${getSelectedPeriodSql(ctx.session.user.timezone, start, end)}
-              AND "userId" = ${ctx.session.user.id}
+              AND ${playbackOwnerSql(ctx, input.scope)}
             GROUP BY ${groupSql}
             ORDER BY "date" ASC
           `,
@@ -354,7 +370,7 @@ export const chartRouter = createTRPCRouter({
       };
     }),
   getTimeDistribution: protectedProcedure
-    .input(periodSchema)
+    .input(scopedPeriodSchema)
     .query(async ({ ctx, input }) => {
       const { start, end } = getPeriods(input.period, input.from, input.to);
       const groupSql = getSQLGroupingString("hour", ctx.session.user.timezone);
@@ -367,7 +383,7 @@ export const chartRouter = createTRPCRouter({
             COUNT(*)::float8 AS count
           FROM playback
           WHERE ${getSelectedPeriodSql(ctx.session.user.timezone, start, end)}
-            AND "userId" = ${ctx.session.user.id}
+            AND ${playbackOwnerSql(ctx, input.scope)}
           GROUP BY ${groupSql}
           ORDER BY "date" ASC
         `,
@@ -834,7 +850,7 @@ export const chartRouter = createTRPCRouter({
       return { data, totalDuration, totalCount };
     }),
   getPlatformDistribution: protectedProcedure
-    .input(periodSchema)
+    .input(scopedPeriodSchema)
     .query(async ({ ctx, input }) => {
       const { start, end } = getPeriods(input.period, input.from, input.to);
       const result = await tryCatch(
@@ -848,7 +864,7 @@ export const chartRouter = createTRPCRouter({
               COALESCE(SUM(playback."duration"), 0)::float8 AS "duration"
             FROM playback
             WHERE ${getSelectedPeriodSql(ctx.session.user.timezone, start, end)}
-              AND playback."userId" = ${ctx.session.user.id}
+              AND ${playbackOwnerSql(ctx, input.scope)}
             GROUP BY NULLIF(TRIM(playback."platform"), '')
             ORDER BY "count" DESC
           `,
@@ -869,7 +885,7 @@ export const chartRouter = createTRPCRouter({
       }));
     }),
   getDeviceDistribution: protectedProcedure
-    .input(periodSchema)
+    .input(scopedPeriodSchema)
     .query(async ({ ctx, input }) => {
       const { start, end } = getPeriods(input.period, input.from, input.to);
       const result = await tryCatch(
@@ -883,7 +899,7 @@ export const chartRouter = createTRPCRouter({
               COALESCE(SUM(playback."duration"), 0)::float8 AS "duration"
             FROM playback
             WHERE ${getSelectedPeriodSql(ctx.session.user.timezone, start, end)}
-              AND playback."userId" = ${ctx.session.user.id}
+              AND ${playbackOwnerSql(ctx, input.scope)}
             GROUP BY NULLIF(TRIM(playback."device"), '')
             ORDER BY "count" DESC
           `,
@@ -904,7 +920,7 @@ export const chartRouter = createTRPCRouter({
       }));
     }),
   getContextDistribution: protectedProcedure
-    .input(periodSchema)
+    .input(scopedPeriodSchema)
     .query(async ({ ctx, input }) => {
       const { start, end } = getPeriods(input.period, input.from, input.to);
       const result = await tryCatch(
@@ -918,7 +934,7 @@ export const chartRouter = createTRPCRouter({
               COALESCE(SUM(playback."duration"), 0)::float8 AS "duration"
             FROM playback
             WHERE ${getSelectedPeriodSql(ctx.session.user.timezone, start, end)}
-              AND playback."userId" = ${ctx.session.user.id}
+              AND ${playbackOwnerSql(ctx, input.scope)}
             GROUP BY NULLIF(TRIM(playback."context"), '')
             ORDER BY "count" DESC
           `,
@@ -939,7 +955,7 @@ export const chartRouter = createTRPCRouter({
       }));
     }),
   getArtistCountDistribution: protectedProcedure
-    .input(periodSchema)
+    .input(scopedPeriodSchema)
     .query(async ({ ctx, input }) => {
       const { start, end } = getPeriods(input.period, input.from, input.to);
       const result = await tryCatch(
@@ -959,7 +975,7 @@ export const chartRouter = createTRPCRouter({
               JOIN track ON track."id" = playback."trackId"
               JOIN artist_track ON artist_track."trackId" = track."id"
               WHERE ${getSelectedPeriodSql(ctx.session.user.timezone, start, end)}
-                AND playback."userId" = ${ctx.session.user.id}
+                AND ${playbackOwnerSql(ctx, input.scope)}
               GROUP BY playback."id"
             ) AS sub
             GROUP BY sub."count"
@@ -982,7 +998,7 @@ export const chartRouter = createTRPCRouter({
       }));
     }),
   getDayOfWeekDistribution: protectedProcedure
-    .input(periodSchema)
+    .input(scopedPeriodSchema)
     .query(async ({ ctx, input }) => {
       const { start, end } = getPeriods(input.period, input.from, input.to);
       const timezone = ctx.session.user.timezone;
@@ -996,7 +1012,7 @@ export const chartRouter = createTRPCRouter({
               COALESCE(SUM(playback."duration"), 0)::float8 AS duration
             FROM playback
             WHERE ${getSelectedPeriodSql(timezone, start, end)}
-              AND playback."userId" = ${ctx.session.user.id}
+              AND ${playbackOwnerSql(ctx, input.scope)}
             GROUP BY EXTRACT(ISODOW FROM ${playedAt})::int
             ORDER BY day ASC
           `,
@@ -1030,7 +1046,7 @@ export const chartRouter = createTRPCRouter({
       return { data, totalDuration, totalCount };
     }),
   getGenreDistribution: protectedProcedure
-    .input(periodSchema)
+    .input(scopedPeriodSchema)
     .query(async ({ ctx, input }) => {
       const { start, end } = getPeriods(input.period, input.from, input.to);
       const result = await tryCatch(
@@ -1047,7 +1063,7 @@ export const chartRouter = createTRPCRouter({
             JOIN artist_genre ON artist_genre."artistId" = artist_track."artistId"
             JOIN genre ON genre."id" = artist_genre."genreId"
             WHERE ${getSelectedPeriodSql(ctx.session.user.timezone, start, end)}
-              AND playback."userId" = ${ctx.session.user.id}
+              AND ${playbackOwnerSql(ctx, input.scope)}
             GROUP BY genre."id", genre."name"
             ORDER BY duration DESC
           `,
@@ -1064,7 +1080,7 @@ export const chartRouter = createTRPCRouter({
       return toDistributionResponse(collapseTopDistribution(result.data, 8));
     }),
   getExplicitDistribution: protectedProcedure
-    .input(periodSchema)
+    .input(scopedPeriodSchema)
     .query(async ({ ctx, input }) => {
       const { start, end } = getPeriods(input.period, input.from, input.to);
       const result = await tryCatch(
@@ -1080,7 +1096,7 @@ export const chartRouter = createTRPCRouter({
             FROM playback
             JOIN track ON playback."trackId" = track."id"
             WHERE ${getSelectedPeriodSql(ctx.session.user.timezone, start, end)}
-              AND playback."userId" = ${ctx.session.user.id}
+              AND ${playbackOwnerSql(ctx, input.scope)}
             GROUP BY track."explicit"
             ORDER BY duration DESC
           `,
@@ -1099,7 +1115,7 @@ export const chartRouter = createTRPCRouter({
       );
     }),
   getTrackLengthDistribution: protectedProcedure
-    .input(periodSchema)
+    .input(scopedPeriodSchema)
     .query(async ({ ctx, input }) => {
       const { start, end } = getPeriods(input.period, input.from, input.to);
       const result = await tryCatch(
@@ -1117,7 +1133,7 @@ export const chartRouter = createTRPCRouter({
             FROM playback
             JOIN track ON playback."trackId" = track."id"
             WHERE ${getSelectedPeriodSql(ctx.session.user.timezone, start, end)}
-              AND playback."userId" = ${ctx.session.user.id}
+              AND ${playbackOwnerSql(ctx, input.scope)}
             GROUP BY
               CASE
                 WHEN track."duration" < 120000 THEN 'Under 2 min'
@@ -1141,7 +1157,7 @@ export const chartRouter = createTRPCRouter({
       );
     }),
   getReleaseDecadeDistribution: protectedProcedure
-    .input(periodSchema)
+    .input(scopedPeriodSchema)
     .query(async ({ ctx, input }) => {
       const { start, end } = getPeriods(input.period, input.from, input.to);
       const result = await tryCatch(
@@ -1158,7 +1174,7 @@ export const chartRouter = createTRPCRouter({
             JOIN track ON playback."trackId" = track."id"
             ${getTrackReleaseYearJoinSql()}
             WHERE ${getSelectedPeriodSql(ctx.session.user.timezone, start, end)}
-              AND playback."userId" = ${ctx.session.user.id}
+              AND ${playbackOwnerSql(ctx, input.scope)}
             GROUP BY
               CASE
                 WHEN release_year.year IS NULL THEN 'Unknown'
@@ -1184,7 +1200,7 @@ export const chartRouter = createTRPCRouter({
       return toDistributionResponse([...known, ...unknown]);
     }),
   getReleaseYearDistribution: protectedProcedure
-    .input(periodSchema)
+    .input(scopedPeriodSchema)
     .query(async ({ ctx, input }) => {
       const { start, end } = getPeriods(input.period, input.from, input.to);
       const result = await tryCatch(
@@ -1198,7 +1214,7 @@ export const chartRouter = createTRPCRouter({
             JOIN track ON playback."trackId" = track."id"
             ${getTrackReleaseYearJoinSql()}
             WHERE ${getSelectedPeriodSql(ctx.session.user.timezone, start, end)}
-              AND playback."userId" = ${ctx.session.user.id}
+              AND ${playbackOwnerSql(ctx, input.scope)}
               AND release_year.year IS NOT NULL
             GROUP BY release_year.year
             ORDER BY release_year.year ASC
@@ -1228,7 +1244,7 @@ export const chartRouter = createTRPCRouter({
       return { data, totalDuration, totalCount };
     }),
   getSkipDistribution: protectedProcedure
-    .input(periodSchema)
+    .input(scopedPeriodSchema)
     .query(async ({ ctx, input }) => {
       const { start, end } = getPeriods(input.period, input.from, input.to);
       const result = await tryCatch(
@@ -1243,7 +1259,7 @@ export const chartRouter = createTRPCRouter({
               COALESCE(SUM(playback."duration"), 0)::float8 AS duration
             FROM playback
             WHERE ${getSelectedPeriodSql(ctx.session.user.timezone, start, end)}
-              AND playback."userId" = ${ctx.session.user.id}
+              AND ${playbackOwnerSql(ctx, input.scope)}
               AND playback."skipped" IS NOT NULL
             GROUP BY playback."skipped"
           `,
@@ -1262,7 +1278,7 @@ export const chartRouter = createTRPCRouter({
       );
     }),
   getShuffleDistribution: protectedProcedure
-    .input(periodSchema)
+    .input(scopedPeriodSchema)
     .query(async ({ ctx, input }) => {
       const { start, end } = getPeriods(input.period, input.from, input.to);
       const result = await tryCatch(
@@ -1277,7 +1293,7 @@ export const chartRouter = createTRPCRouter({
               COALESCE(SUM(playback."duration"), 0)::float8 AS duration
             FROM playback
             WHERE ${getSelectedPeriodSql(ctx.session.user.timezone, start, end)}
-              AND playback."userId" = ${ctx.session.user.id}
+              AND ${playbackOwnerSql(ctx, input.scope)}
               AND playback."shuffle" IS NOT NULL
             GROUP BY playback."shuffle"
           `,
@@ -1296,7 +1312,7 @@ export const chartRouter = createTRPCRouter({
       );
     }),
   getCountryDistribution: protectedProcedure
-    .input(periodSchema)
+    .input(scopedPeriodSchema)
     .query(async ({ ctx, input }) => {
       const { start, end } = getPeriods(input.period, input.from, input.to);
       const result = await tryCatch(
@@ -1308,7 +1324,7 @@ export const chartRouter = createTRPCRouter({
               COALESCE(SUM(playback."duration"), 0)::float8 AS duration
             FROM playback
             WHERE ${getSelectedPeriodSql(ctx.session.user.timezone, start, end)}
-              AND playback."userId" = ${ctx.session.user.id}
+              AND ${playbackOwnerSql(ctx, input.scope)}
               AND playback."country" IS NOT NULL
             GROUP BY COALESCE(NULLIF(TRIM(playback."country"), ''), 'Unknown')
             ORDER BY duration DESC
@@ -1349,7 +1365,7 @@ export const chartRouter = createTRPCRouter({
       );
     }),
   getReasonEndDistribution: protectedProcedure
-    .input(periodSchema)
+    .input(scopedPeriodSchema)
     .query(async ({ ctx, input }) => {
       const { start, end } = getPeriods(input.period, input.from, input.to);
       const result = await tryCatch(
@@ -1361,7 +1377,7 @@ export const chartRouter = createTRPCRouter({
               COALESCE(SUM(playback."duration"), 0)::float8 AS duration
             FROM playback
             WHERE ${getSelectedPeriodSql(ctx.session.user.timezone, start, end)}
-              AND playback."userId" = ${ctx.session.user.id}
+              AND ${playbackOwnerSql(ctx, input.scope)}
               AND playback."reasonEnd" IS NOT NULL
             GROUP BY COALESCE(NULLIF(TRIM(playback."reasonEnd"), ''), 'unknown')
             ORDER BY duration DESC
@@ -1387,7 +1403,7 @@ export const chartRouter = createTRPCRouter({
       );
     }),
   getListeningCalendar: protectedProcedure
-    .input(periodSchema)
+    .input(scopedPeriodSchema)
     .query(async ({ ctx, input }) => {
       const { start, end } = getPeriods(input.period, input.from, input.to);
       if (!start || !end) {
@@ -1407,7 +1423,7 @@ export const chartRouter = createTRPCRouter({
               COALESCE(SUM(playback."duration"), 0)::float8 AS duration
             FROM playback
             WHERE ${getSelectedPeriodSql(timezone, start, end)}
-              AND playback."userId" = ${ctx.session.user.id}
+              AND ${playbackOwnerSql(ctx, input.scope)}
             GROUP BY TO_CHAR(${playedAt}, 'YYYY-MM-DD')
             ORDER BY date ASC
           `,

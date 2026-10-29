@@ -1,8 +1,10 @@
 "use client";
 
 import { Loading } from "@/components/ui/loading";
-import type { ProviderPeriod } from "@/lib/consts/periods";
-import { providerPeriodToQueryInput } from "@/lib/provider-period-query-input";
+import {
+  providerPeriodToQueryInput,
+  type PeriodChartProps,
+} from "@/lib/provider-period-query-input";
 import { duration as formatDuration, formatPercent } from "@/lib/utils";
 import { api } from "@/trpc/react";
 
@@ -18,9 +20,9 @@ type HourDatum = {
   percentage: number;
 };
 
-export function TimeDistribution({ period }: { period: ProviderPeriod }) {
+export function TimeDistribution({ period, scope }: PeriodChartProps) {
   const { data: result, isLoading } = api.chart.getTimeDistribution.useQuery(
-    providerPeriodToQueryInput(period),
+    providerPeriodToQueryInput(period, scope),
   );
 
   if (isLoading) {

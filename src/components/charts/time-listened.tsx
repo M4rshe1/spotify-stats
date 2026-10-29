@@ -3,9 +3,11 @@
 import { format } from "date-fns";
 
 import { Loading } from "@/components/ui/loading";
-import type { ProviderPeriod } from "@/lib/consts/periods";
 import { periods } from "@/lib/consts/periods";
-import { providerPeriodToQueryInput } from "@/lib/provider-period-query-input";
+import {
+  providerPeriodToQueryInput,
+  type PeriodChartProps,
+} from "@/lib/provider-period-query-input";
 import { duration as formatDuration } from "@/lib/utils";
 import { api } from "@/trpc/react";
 
@@ -18,9 +20,11 @@ type TimeListenedDatum = {
   count: number;
 };
 
-export function TimeListened({ period }: { period: ProviderPeriod }) {
+export function TimeListened({ period, scope }: PeriodChartProps) {
   const { data: tracks, isLoading: isLoadingTracks } =
-    api.chart.getTimeListened.useQuery(providerPeriodToQueryInput(period));
+    api.chart.getTimeListened.useQuery(
+      providerPeriodToQueryInput(period, scope),
+    );
 
   if (isLoadingTracks) {
     return <Loading />;

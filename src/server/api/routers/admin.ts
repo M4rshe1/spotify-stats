@@ -4,6 +4,7 @@ import { z } from "zod";
 import { getMasterDataQueue } from "@/server/queues/master-data";
 import { getSettings, setSettings } from "@/lib/settings";
 import { createTRPCRouter, adminProcedure } from "../trpc";
+import { adminStatisticsRouter } from "./admin-statistics";
 import getSpotifyApi from "@/server/spotify";
 import {
   createTracks,
@@ -125,4 +126,5 @@ export const adminRouter = createTRPCRouter({
       await createPlaylists(spotify, true);
       return { success: true };
     }),
+  statistics: adminStatisticsRouter,
 });

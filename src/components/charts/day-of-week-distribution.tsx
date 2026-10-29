@@ -1,8 +1,10 @@
 "use client";
 
 import { Loading } from "@/components/ui/loading";
-import type { ProviderPeriod } from "@/lib/consts/periods";
-import { providerPeriodToQueryInput } from "@/lib/provider-period-query-input";
+import {
+  providerPeriodToQueryInput,
+  type PeriodChartProps,
+} from "@/lib/provider-period-query-input";
 import { duration as formatDuration, formatPercent } from "@/lib/utils";
 import { api } from "@/trpc/react";
 
@@ -16,10 +18,11 @@ type DayDatum = {
   percentage: number;
 };
 
-export function DayOfWeekDistribution({ period }: { period: ProviderPeriod }) {
-  const { data: result, isLoading } = api.chart.getDayOfWeekDistribution.useQuery(
-    providerPeriodToQueryInput(period),
-  );
+export function DayOfWeekDistribution({ period, scope }: PeriodChartProps) {
+  const { data: result, isLoading } =
+    api.chart.getDayOfWeekDistribution.useQuery(
+      providerPeriodToQueryInput(period, scope),
+    );
 
   if (isLoading) {
     return <Loading />;

@@ -39,12 +39,13 @@ export const adminSubNavItems: AdminSubNavItem[] = [
   },
   {
     tag: {
-      title: "SOON",
-      variant: "outline",
+      title: "NEW",
+      variant: "default",
     },
     title: "Statistics",
     url: "/admin/statistics",
-    description: "Aggregate usage and reporting.",
+    description:
+      "Listening time, genres, devices, and top songs across every account.",
     icon: BarChart3,
     iconClassName: "text-fuchsia-600 dark:text-fuchsia-400",
   },

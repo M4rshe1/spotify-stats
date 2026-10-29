@@ -8,6 +8,7 @@ import { ContextSplitChart } from "@/components/charts/context-split-chart";
 import { PlatformSplitChart } from "@/components/charts/platform-split-chart";
 import { TimeDistribution } from "@/components/charts/time-distribution";
 import { TimeListened } from "@/components/charts/time-listened";
+import type { StatsScope } from "@/lib/provider-period-query-input";
 import { usePeriod } from "@/providers/period-provider";
 import { ArtistCountSplitChart } from "@/components/charts/artist-count-split-chart";
 import { DayOfWeekDistribution } from "@/components/charts/day-of-week-distribution";
@@ -31,7 +32,7 @@ import {
 
 const EXPORT_STATS_OPEN_KEY = "all-stats-export-charts-open";
 
-export default function AllStatsPage() {
+export default function AllStatsPage({ scope }: { scope?: StatsScope }) {
   const { selectedPeriod } = usePeriod();
   const [exportStatsOpen, setExportStatsOpen] = useState(true);
 
@@ -54,43 +55,43 @@ export default function AllStatsPage() {
     <div className="space-y-4">
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <div className="lg:col-span-2">
-          <ListeningCalendarChart period={selectedPeriod} />
+          <ListeningCalendarChart period={selectedPeriod} scope={scope} />
         </div>
         <div className="min-h-72">
-          <TimeListened period={selectedPeriod} />
+          <TimeListened period={selectedPeriod} scope={scope} />
         </div>
         <div className="min-h-72">
-          <PlatformSplitChart period={selectedPeriod} />
+          <PlatformSplitChart period={selectedPeriod} scope={scope} />
         </div>
         <div className="min-h-72">
-          <DeviceSplitChart period={selectedPeriod} />
+          <DeviceSplitChart period={selectedPeriod} scope={scope} />
         </div>
         <div className="min-h-72">
-          <TimeDistribution period={selectedPeriod} />
+          <TimeDistribution period={selectedPeriod} scope={scope} />
         </div>
         <div className="min-h-72">
-          <DayOfWeekDistribution period={selectedPeriod} />
+          <DayOfWeekDistribution period={selectedPeriod} scope={scope} />
         </div>
         <div className="min-h-72">
-          <ContextSplitChart period={selectedPeriod} />
+          <ContextSplitChart period={selectedPeriod} scope={scope} />
         </div>
         <div className="min-h-72">
-          <ArtistCountSplitChart period={selectedPeriod} />
+          <ArtistCountSplitChart period={selectedPeriod} scope={scope} />
         </div>
         <div className="min-h-72">
-          <GenreSplitChart period={selectedPeriod} />
+          <GenreSplitChart period={selectedPeriod} scope={scope} />
         </div>
         <div className="min-h-72">
-          <ExplicitSplitChart period={selectedPeriod} />
+          <ExplicitSplitChart period={selectedPeriod} scope={scope} />
         </div>
         <div className="min-h-72">
-          <TrackLengthSplitChart period={selectedPeriod} />
+          <TrackLengthSplitChart period={selectedPeriod} scope={scope} />
         </div>
         <div className="min-h-72">
-          <ReleaseDecadeSplitChart period={selectedPeriod} />
+          <ReleaseDecadeSplitChart period={selectedPeriod} scope={scope} />
         </div>
         <div className="min-h-72">
-          <ReleaseYearDistribution period={selectedPeriod} />
+          <ReleaseYearDistribution period={selectedPeriod} scope={scope} />
         </div>
       </div>
       <Collapsible
@@ -104,8 +105,9 @@ export default function AllStatsPage() {
               Extended history stats
             </span>
             <span className="text-muted-foreground mt-0.5 block text-xs">
-              Skip, shuffle, country, and how plays ended. These need a Spotify
-              extended streaming history import.
+              {scope === "all"
+                ? "Skip, shuffle, country, and how plays ended across every account. These need a Spotify extended streaming history import."
+                : "Skip, shuffle, country, and how plays ended. These need a Spotify extended streaming history import."}
             </span>
           </span>
           <ChevronDownIcon className="text-muted-foreground size-4 shrink-0 transition-transform group-data-[state=open]:rotate-180" />
@@ -113,16 +115,16 @@ export default function AllStatsPage() {
         <CollapsibleContent>
           <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
             <div className="min-h-72">
-              <SkipSplitChart period={selectedPeriod} />
+              <SkipSplitChart period={selectedPeriod} scope={scope} />
             </div>
             <div className="min-h-72">
-              <ShuffleSplitChart period={selectedPeriod} />
+              <ShuffleSplitChart period={selectedPeriod} scope={scope} />
             </div>
             <div className="min-h-72">
-              <CountrySplitChart period={selectedPeriod} />
+              <CountrySplitChart period={selectedPeriod} scope={scope} />
             </div>
             <div className="min-h-72">
-              <ReasonEndSplitChart period={selectedPeriod} />
+              <ReasonEndSplitChart period={selectedPeriod} scope={scope} />
             </div>
           </div>
         </CollapsibleContent>

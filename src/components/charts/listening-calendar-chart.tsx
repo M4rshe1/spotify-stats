@@ -24,8 +24,10 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import type { ProviderPeriod } from "@/lib/consts/periods";
-import { providerPeriodToQueryInput } from "@/lib/provider-period-query-input";
+import {
+  providerPeriodToQueryInput,
+  type PeriodChartProps,
+} from "@/lib/provider-period-query-input";
 import { cn, duration as formatDuration } from "@/lib/utils";
 import { api } from "@/trpc/react";
 
@@ -132,9 +134,9 @@ function monthLabels(
   });
 }
 
-export function ListeningCalendarChart({ period }: { period: ProviderPeriod }) {
+export function ListeningCalendarChart({ period, scope }: PeriodChartProps) {
   const { data, isLoading } = api.chart.getListeningCalendar.useQuery(
-    providerPeriodToQueryInput(period),
+    providerPeriodToQueryInput(period, scope),
   );
 
   const weeks = useMemo(() => buildWeeks(data?.days ?? []), [data?.days]);
