@@ -52,11 +52,6 @@ const TrackCard = ({ id, period }: { id: number; period: ProviderPeriod }) => {
     );
   }
 
-  const artistNames = track.artists
-    .map((a) => a.artist?.name)
-    .filter(Boolean)
-    .join(", ");
-
   return (
     <Card className="relative isolate">
       <CoverTintBackdrop coverUrl={track.image} fillsContainer />
@@ -92,7 +87,7 @@ const TrackCard = ({ id, period }: { id: number; period: ProviderPeriod }) => {
               <p>
                 {track.artists.map((artist, index) => (
                   <Link
-                    key={artist.artist.id}
+                    key={index}
                     href={`/artist/${artist.artist.id}`}
                     className="underline-offset-2 hover:underline"
                   >
@@ -119,10 +114,7 @@ const TrackCard = ({ id, period }: { id: number; period: ProviderPeriod }) => {
             </div>
             <div className="flex items-center gap-2"></div>
             <div className="flex items-center justify-between gap-2">
-              <Button
-                variant="outline"
-                onClick={(e) => playTrack(track.id, e)}
-              >
+              <Button variant="outline" onClick={(e) => playTrack(track.id, e)}>
                 <PlayIcon size={16} />
                 Play
               </Button>

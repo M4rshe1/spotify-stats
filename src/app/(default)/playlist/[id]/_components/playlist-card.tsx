@@ -96,10 +96,10 @@ const PlaylistCard = ({
               </div>
               <div className="flex flex-wrap items-baseline gap-x-1.5 gap-y-0">
                 <span className="text-lg font-semibold tracking-tight tabular-nums">
-                  {playlist.metrics.tracks.toLocaleString()}
+                  {playlist.metrics.plays.toLocaleString()}
                 </span>
                 <span className="text-muted-foreground text-sm">
-                  {playlist.metrics.tracks === 1 ? "track" : "tracks"}
+                  {playlist.metrics.plays === 1 ? "play" : "plays"}
                 </span>
               </div>
             </div>

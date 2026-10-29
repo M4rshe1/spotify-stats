@@ -16,7 +16,10 @@ import { toast } from "sonner";
 
 const ArtistCard = ({ id, period }: { id: number; period: ProviderPeriod }) => {
   const periodInput = providerPeriodToQueryInput(period);
-  const { data: artist, isLoading } = api.artist.get.useQuery({ id, ...periodInput });
+  const { data: artist, isLoading } = api.artist.get.useQuery({
+    id,
+    ...periodInput,
+  });
   const { mutate: refreshArtist } = api.admin.refreshMasterData.useMutation({
     onSuccess: () => {
       utils.invalidate();
@@ -101,9 +104,11 @@ const ArtistCard = ({ id, period }: { id: number; period: ProviderPeriod }) => {
               </div>
               <div className="flex flex-wrap items-baseline gap-x-1.5 gap-y-0">
                 <span className="text-lg font-semibold tracking-tight tabular-nums">
-                  {artist.metrics.albums.toLocaleString()}
+                  {artist.metrics.plays.toLocaleString()}
                 </span>
-                <span className="text-muted-foreground text-sm">tracks</span>
+                <span className="text-muted-foreground text-sm">
+                  {artist.metrics.plays === 1 ? "play" : "plays"}
+                </span>
               </div>
             </div>
             <div className="flex items-center gap-2"></div>
