@@ -1,8 +1,10 @@
 "use client";
 
 import { Loading } from "@/components/ui/loading";
-import type { ProviderPeriod } from "@/lib/consts/periods";
-import { providerPeriodToQueryInput } from "@/lib/provider-period-query-input";
+import {
+  providerPeriodToQueryInput,
+  type PeriodChartProps,
+} from "@/lib/provider-period-query-input";
 import { api } from "@/trpc/react";
 import {
   DistributionPieCard,
@@ -10,9 +12,9 @@ import {
   toChartData,
 } from "@/components/charts/distribution-pie-card";
 
-export function GenreSplitChart({ period }: { period: ProviderPeriod }) {
+export function GenreSplitChart({ period, scope }: PeriodChartProps) {
   const query = api.chart.getGenreDistribution.useQuery(
-    providerPeriodToQueryInput(period),
+    providerPeriodToQueryInput(period, scope),
   );
 
   if (query.isLoading) {

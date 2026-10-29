@@ -4,8 +4,10 @@ import { UploadIcon } from "lucide-react";
 
 import { Loading } from "@/components/ui/loading";
 import { NoDataCard } from "@/components/cards/no-data-card";
-import type { ProviderPeriod } from "@/lib/consts/periods";
-import { providerPeriodToQueryInput } from "@/lib/provider-period-query-input";
+import {
+  providerPeriodToQueryInput,
+  type PeriodChartProps,
+} from "@/lib/provider-period-query-input";
 import { api } from "@/trpc/react";
 import {
   DistributionPieCard,
@@ -56,37 +58,45 @@ function ImportSplitChart({
   );
 }
 
-export function SkipSplitChart({ period }: { period: ProviderPeriod }) {
+export function SkipSplitChart({ period, scope }: PeriodChartProps) {
   const query = api.chart.getSkipDistribution.useQuery(
-    providerPeriodToQueryInput(period),
+    providerPeriodToQueryInput(period, scope),
   );
   return (
     <ImportSplitChart
       title="Skip split"
-      description="Plays marked skipped vs completed in your extended history"
+      description={
+        scope === "all"
+          ? "Plays marked skipped vs completed in extended history"
+          : "Plays marked skipped vs completed in your extended history"
+      }
       emptyTitle="No skip data in this period"
       query={query}
     />
   );
 }
 
-export function ShuffleSplitChart({ period }: { period: ProviderPeriod }) {
+export function ShuffleSplitChart({ period, scope }: PeriodChartProps) {
   const query = api.chart.getShuffleDistribution.useQuery(
-    providerPeriodToQueryInput(period),
+    providerPeriodToQueryInput(period, scope),
   );
   return (
     <ImportSplitChart
       title="Shuffle split"
-      description="Shuffle vs sequential playback from your extended history"
+      description={
+        scope === "all"
+          ? "Shuffle vs sequential playback from extended history"
+          : "Shuffle vs sequential playback from your extended history"
+      }
       emptyTitle="No shuffle data in this period"
       query={query}
     />
   );
 }
 
-export function CountrySplitChart({ period }: { period: ProviderPeriod }) {
+export function CountrySplitChart({ period, scope }: PeriodChartProps) {
   const query = api.chart.getCountryDistribution.useQuery(
-    providerPeriodToQueryInput(period),
+    providerPeriodToQueryInput(period, scope),
   );
   return (
     <ImportSplitChart
@@ -98,9 +108,9 @@ export function CountrySplitChart({ period }: { period: ProviderPeriod }) {
   );
 }
 
-export function ReasonEndSplitChart({ period }: { period: ProviderPeriod }) {
+export function ReasonEndSplitChart({ period, scope }: PeriodChartProps) {
   const query = api.chart.getReasonEndDistribution.useQuery(
-    providerPeriodToQueryInput(period),
+    providerPeriodToQueryInput(period, scope),
   );
   return (
     <ImportSplitChart

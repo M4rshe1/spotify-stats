@@ -1,9 +1,15 @@
 "use client";
 
 import { Loading } from "@/components/ui/loading";
-import type { ProviderPeriod } from "@/lib/consts/periods";
-import { providerPeriodToQueryInput } from "@/lib/provider-period-query-input";
-import { duration as formatDuration, formatPercent, msToMin } from "@/lib/utils";
+import {
+  providerPeriodToQueryInput,
+  type PeriodChartProps,
+} from "@/lib/provider-period-query-input";
+import {
+  duration as formatDuration,
+  formatPercent,
+  msToMin,
+} from "@/lib/utils";
 import { api } from "@/trpc/react";
 
 import { CategoryBarChart } from "./category-bar-chart";
@@ -17,10 +23,11 @@ type YearDatum = {
   percentage: number;
 };
 
-export function ReleaseYearDistribution({ period }: { period: ProviderPeriod }) {
-  const { data: result, isLoading } = api.chart.getReleaseYearDistribution.useQuery(
-    providerPeriodToQueryInput(period),
-  );
+export function ReleaseYearDistribution({ period, scope }: PeriodChartProps) {
+  const { data: result, isLoading } =
+    api.chart.getReleaseYearDistribution.useQuery(
+      providerPeriodToQueryInput(period, scope),
+    );
 
   if (isLoading) {
     return <Loading />;

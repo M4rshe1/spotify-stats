@@ -238,21 +238,10 @@ export function AppSidebar({
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" asChild>
               <a href="/">
-                <div className="bg-accent text-muted-foreground flex aspect-square size-8 items-center justify-center rounded-sm">
-                  <Image
-                    src={"/wave-light.png"}
-                    alt="Spotify"
-                    width={32}
-                    height={32}
-                    className="block dark:hidden"
-                  />
-                  <Image
-                    src={"/wave-dark.png"}
-                    alt="Spotify"
-                    width={32}
-                    height={32}
-                    className="hidden dark:block"
-                  />
+                <div className="bg-accent text-muted-foreground grid aspect-square w-12 grid-cols-3 items-end gap-1 rounded-sm p-1">
+                  <div className="bg-chart-1 h-3/4 rounded-full"></div>
+                  <div className="bg-primary h-full w-full rounded-full"></div>
+                  <div className="bg-chart-1 h-3/4 rounded-full"></div>
                 </div>
                 <div className="grid flex-1 text-left text-sm leading-tight">
                   <span className="truncate font-medium">Spotify</span>

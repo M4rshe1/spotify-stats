@@ -9,6 +9,10 @@ export const periodSchema = z.object({
   to: z.date().nullable().optional(),
 });
 
+export const scopedPeriodSchema = periodSchema.extend({
+  scope: z.enum(["user", "all"]).optional(),
+});
+
 export type PeriodQueryInput = z.infer<typeof periodSchema>;
 
 type ArtistArraysRow = {
