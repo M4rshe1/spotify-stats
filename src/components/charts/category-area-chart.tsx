@@ -4,10 +4,7 @@ import type { ComponentProps } from "react";
 import { useId } from "react";
 import { Area, AreaChart, XAxis, YAxis } from "recharts";
 
-import {
-  ChartTooltip,
-  ChartTooltipContent,
-} from "@/components/ui/chart";
+import { ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 
 import {
   CHART_AXIS_STROKE,
@@ -121,18 +118,18 @@ export function CategoryAreaChart<T extends CategoryRecord>({
         stroke={color}
         strokeWidth={2.5}
         fill={`url(#${gradientId})`}
-        dot={{
-          r: 4,
-          stroke: "white",
-          strokeWidth: 2,
-          fill: color,
-        }}
-        activeDot={{
-          r: 6,
-          stroke: color,
-          strokeWidth: 2,
-          fill: "#fff",
-        }}
+        // dot={{
+        //   r: 4,
+        //   stroke: "white",
+        //   strokeWidth: 2,
+        //   fill: color,
+        // }}
+        // activeDot={{
+        //   r: 6,
+        //   stroke: color,
+        //   strokeWidth: 2,
+        //   fill: "#fff",
+        // }}
         isAnimationActive={animationActive}
       />
       <defs>
