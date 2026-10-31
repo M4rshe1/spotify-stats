@@ -30,6 +30,7 @@ import {
 } from "./ui/dropdown-menu";
 import { api } from "@/trpc/react";
 import { useBreadcrumbs } from "@/providers/breadcrumb-provider";
+import { MAX_PINNED_PERIODS } from "@/lib/consts/favorite-periods";
 
 const AUTO_REFRESH_LS_KEY = "header-auto-refresh-enabled";
 
@@ -53,6 +54,23 @@ const Header = () => {
       setAutoRefresh(stored === "true");
     }
   }, []);
+
+  useEffect(() => {
+    const onPeriodSelect = (e: KeyboardEvent) => {
+      const numbers: string[] = Array.from(
+        { length: MAX_PINNED_PERIODS },
+        (_, i) => (i + 1).toString(),
+      ).slice(0, headerFavoritePeriods.length);
+      if (numbers.includes(e.key) && (e.metaKey || e.ctrlKey)) {
+        e.preventDefault();
+        selectFavoritePreset(
+          headerFavoritePeriods[numbers.indexOf(e.key)] as Period,
+        );
+      }
+    };
+    window.addEventListener("keydown", onPeriodSelect);
+    return () => window.removeEventListener("keydown", onPeriodSelect);
+  }, [headerFavoritePeriods]);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
